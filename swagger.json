@@ -1,0 +1,57 @@
+{
+  "swagger": "2.0",
+  "info": {},
+  "paths": {
+    "/session/{id}": {
+      "post": {
+        "tags": [
+          "session"
+        ],
+        "operationId": "sessionCreate",
+        "parameters": [
+          {
+            "name": "Body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/SessionCreateRequest"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "RuntimeProvider": {
+      "description": "RuntimeProvider is the platform that the node is spawned on. This is where the user\ncode runs",
+      "type": "string",
+      "x-go-package": "github.com/unweave/unweave-v2/config"
+    },
+    "SessionCreateRequest": {
+      "type": "object",
+      "properties": {
+        "runtime": {
+          "$ref": "#/definitions/RuntimeProvider"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/api"
+    },
+    "SessionCreateResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-go-name": "ID"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/api"
+    }
+  },
+  "responses": {
+    "sessionCreateResponse": {
+      "description": "",
+      "schema": {
+        "$ref": "#/definitions/SessionCreateResponse"
+      }
+    }
+  }
+}

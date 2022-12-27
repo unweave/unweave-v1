@@ -1,8 +1,12 @@
 package session
 
-import "github.com/unweave/unweave-v2/config"
+import (
+	"github.com/unweave/unweave-v2/config"
+	"github.com/unweave/unweave-v2/session/runtime"
+)
 
 type Session struct {
+	runtime.Runtime
 }
 
 func NewSession(cfg config.SessionConfig) Session {
