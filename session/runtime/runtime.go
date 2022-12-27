@@ -7,6 +7,11 @@ type SSHConnection struct {
 	Password string
 }
 
+type SSHKeyPair struct {
+	PrivateKey string `json:"privateKey"`
+	PublicKey  string `json:"publicKey"`
+}
+
 // swagger:enum Status
 type Status string
 
@@ -16,7 +21,13 @@ const (
 	StatusStoppingNode     Status = "stoppingNode"
 )
 
+type Node struct {
+	ID      string     `json:"id"`
+	KeyPair SSHKeyPair `json:"sshKeyPair"`
+	Status  Status     `json:"status"`
+}
+
 type Runtime interface {
-	InitNode() (SSHConnection, error)
-	StopNode() error
+	InitNode() (node Node, err error)
+	TerminateNode() error
 }

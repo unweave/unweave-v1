@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/unweave/unweave-v2/config"
+	"github.com/unweave/unweave-v2/model"
 	"github.com/unweave/unweave-v2/session/runtime"
 )
 
@@ -20,15 +20,15 @@ type sessionCreateRequest struct {
 }
 
 type SessionCreateRequest struct {
-	Runtime config.RuntimeProvider `json:"runtime"`
+	Runtime model.RuntimeProvider `json:"runtime"`
 }
 
 func (s *SessionCreateRequest) Bind(r *http.Request) error {
 	if s.Runtime == "" {
 		return errors.New("field `runtime` is required")
 	}
-	if s.Runtime != config.LambdaLabs && s.Runtime != config.Unweave {
-		return fmt.Errorf("invalid runtime provider: %s. Must be one of `%s` or `%s`", s.Runtime, config.LambdaLabs, config.Unweave)
+	if s.Runtime != model.LambdaLabsProvider && s.Runtime != model.UnweaveProvider {
+		return fmt.Errorf("invalid runtime provider: %s. Must be one of `%s` or `%s`", s.Runtime, model.LambdaLabsProvider, model.UnweaveProvider)
 	}
 	return nil
 }

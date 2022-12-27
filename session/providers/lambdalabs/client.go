@@ -3,6 +3,7 @@ package lambdalabs
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -83,8 +84,34 @@ func LaunchInstance(req LaunchInstanceRequest) (*LaunchInstanceResponse, error) 
 	return &launchRes, nil
 }
 
+func GetInstance(id string) (*Instance, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", fmt.Sprintf(ApiUrl+"/instances/%s", id), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var instance Instance
+	if err = json.Unmarshal(resBody, &instance); err != nil {
+		return nil, err
+	}
+	return &instance, nil
+}
+
 type AddSSHKeyRequest struct {
-	Name string `json:"name"`
+	SSHKey
 }
 
 type AddSSHKeyResponse struct {
