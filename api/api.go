@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/config"
-	"github.com/unweave/unweave-v2/session/runtime"
+	"github.com/unweave/unweave-v2/session/model"
 )
 
 func API(cfg config.Config) {
@@ -57,13 +57,7 @@ func API(cfg config.Config) {
 
 			res := &SessionConnectResponse{
 				ID:     id,
-				Status: runtime.StatusRunning,
-				Connection: runtime.SSHConnection{
-					Host:     "localhost",
-					Port:     "22",
-					User:     "noorvir",
-					Password: "",
-				},
+				Status: model.StatusRunning,
 			}
 			render.JSON(w, r, res)
 		})
