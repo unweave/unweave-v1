@@ -30,23 +30,11 @@ func API(cfg config.Config) {
 	r.Route("/session", func(r chi.Router) {
 
 		// swagger:route POST /session/{id} session sessionCreate
-		//
 		// responses:
 		// 	201: sessionCreate
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			scr := SessionCreateRequest{}
-			if err := render.Bind(r, &scr); err != nil {
-				log.Warn().Err(err).Msg("failed to read body")
-				render.Render(w, r, ErrBadRequest("Invalid request body: "+err.Error()))
-				return
-			}
-
-			res := &SessionCreateResponse{ID: "123"}
-			render.JSON(w, r, res)
-		})
+		r.Post("/", sessionCreateHandler)
 
 		// swagger:route GET /session/{id} session sessionGet
-		//
 		// responses:
 		// 	200: sessionGet
 		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {

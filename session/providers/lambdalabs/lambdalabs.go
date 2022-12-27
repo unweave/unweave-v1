@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave-v2/model"
-	"github.com/unweave/unweave-v2/session/runtime"
+	"github.com/unweave/unweave-v2/session/model"
 )
 
 type InstanceDetails struct {
@@ -15,8 +14,7 @@ type InstanceDetails struct {
 	// 	- Filesystems
 }
 
-type LlRuntime struct {
-	SSHKey
+type Runtime struct {
 	InstanceDetails
 }
 
@@ -25,18 +23,10 @@ type SSHKey struct {
 	PublicKey string `json:"public_key"`
 }
 
-func (l *LlRuntime) InitNode() (runtime.Node, error) {
-	node := runtime.Node{
-		ID: "",
-		KeyPair: runtime.SSHKeyPair{
-			PublicKey: l.PublicKey,
-		},
-		Status: runtime.StatusInitializingNode,
-	}
-
+func (r *Runtime) InitNode(sshKey model.SSHKey) (model.Node, error) {
 	// If the SSH key is not provided, generate a new one
-	if l.SSHKey.Name == "" {
-		req := AddSSHKeyRequest{
+	if sshKey.Name == "" {
+		req := addSSHKeyRequest{
 			SSHKey: SSHKey{
 				Name:      "uw-generated-key",
 				PublicKey: "",
@@ -47,42 +37,41 @@ func (l *LlRuntime) InitNode() (runtime.Node, error) {
 			Str(model.RuntimeProviderKey, model.LambdaLabsProvider.String()).
 			Msgf("SSH Key not provided, generating new key")
 
-		res, err := AddSSHKey(req)
+		res, err := addSSHKey(req)
 		if err != nil {
-			return runtime.Node{}, err
+			return model.Node{}, err
 		}
 
-		l.SSHKey.Name = res.Data.Name
-		l.SSHKey.PublicKey = res.Data.PublicKey
-		node.KeyPair.PrivateKey = res.Data.PrivateKey
-		node.KeyPair.PublicKey = res.Data.PublicKey
+		sshKey.Name = res.Data.Name
+		sshKey.PublicKey = res.Data.PublicKey
 	}
 
 	// Launch instance
-	launchReq := LaunchInstanceRequest{
-		RegionName:      string(l.Region),
-		InstanceType:    string(l.Type),
-		SSHKeyNames:     []string{l.SSHKey.Name},
+	launchReq := launchInstanceRequest{
+		RegionName:      string(r.Region),
+		InstanceType:    string(r.Type),
+		SSHKeyNames:     []string{sshKey.Name},
 		FileSystemNames: nil,
 		Quantity:        1,
 		Name:            "uw-initialized-instance",
 	}
-	res, err := LaunchInstance(launchReq)
+	res, err := launchInstance(launchReq)
 	if err != nil {
-		return runtime.Node{}, fmt.Errorf("failed to launch instance, err: %v", err)
+		return model.Node{}, fmt.Errorf("failed to launch instance, err: %v", err)
 	}
-	node.ID = res.Data.InstanceIDs[0]
 
-	return node, nil
+	return model.Node{
+		ID:      res.Data.InstanceIDs[0],
+		KeyPair: sshKey,
+		Status:  model.StatusInitializingNode,
+	}, nil
 }
 
-func (l *LlRuntime) TerminateNode() error {
+func (r *Runtime) TerminateNode(nodeID string) error {
 	return nil
 }
 
-func NewProvider(key SSHKey) LlRuntime {
+func NewProvider(apiKey string) *Runtime {
 	// Load LambdaLabsProvider credentials
-	return LlRuntime{
-		SSHKey: key,
-	}
+	return &Runtime{}
 }

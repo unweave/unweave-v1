@@ -37,7 +37,7 @@ type Instance struct {
 	JupyterURL      string       `json:"jupyter_url,omitempty"`
 }
 
-type LaunchInstanceRequest struct {
+type launchInstanceRequest struct {
 	RegionName      string   `json:"region_name"`
 	InstanceType    string   `json:"instance_type_name"`
 	SSHKeyNames     []string `json:"ssh_key_names"`
@@ -46,13 +46,13 @@ type LaunchInstanceRequest struct {
 	Name            string   `json:"name"`
 }
 
-type LaunchInstanceResponse struct {
+type launchInstanceResponse struct {
 	Data struct {
 		InstanceIDs []string `json:"instance_ids"`
 	} `json:"data"`
 }
 
-func LaunchInstance(req LaunchInstanceRequest) (*LaunchInstanceResponse, error) {
+func launchInstance(req launchInstanceRequest) (*launchInstanceResponse, error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func LaunchInstance(req LaunchInstanceRequest) (*LaunchInstanceResponse, error) 
 		return nil, err
 	}
 
-	var launchRes LaunchInstanceResponse
+	var launchRes launchInstanceResponse
 	if err := json.Unmarshal(resBody, &launchRes); err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func LaunchInstance(req LaunchInstanceRequest) (*LaunchInstanceResponse, error) 
 	return &launchRes, nil
 }
 
-func GetInstance(id string) (*Instance, error) {
+func getInstance(id string) (*Instance, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf(ApiUrl+"/instances/%s", id), nil)
 	if err != nil {
@@ -110,11 +110,11 @@ func GetInstance(id string) (*Instance, error) {
 	return &instance, nil
 }
 
-type AddSSHKeyRequest struct {
+type addSSHKeyRequest struct {
 	SSHKey
 }
 
-type AddSSHKeyResponse struct {
+type addSSHKeyResponse struct {
 	Data struct {
 		ID         string `json:"id"`
 		Name       string `json:"name"`
@@ -123,7 +123,7 @@ type AddSSHKeyResponse struct {
 	} `json:"data"`
 }
 
-func AddSSHKey(req AddSSHKeyRequest) (*AddSSHKeyResponse, error) {
+func addSSHKey(req addSSHKeyRequest) (*addSSHKeyResponse, error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func AddSSHKey(req AddSSHKeyRequest) (*AddSSHKeyResponse, error) {
 		return nil, err
 	}
 
-	var askRes AddSSHKeyResponse
+	var askRes addSSHKeyResponse
 	if err := json.Unmarshal(resBody, &askRes); err != nil {
 		return nil, err
 	}
@@ -155,17 +155,17 @@ func AddSSHKey(req AddSSHKeyRequest) (*AddSSHKeyResponse, error) {
 	return &askRes, nil
 }
 
-type TerminateInstanceRequest struct {
+type terminateInstanceRequest struct {
 	Instances []Instance `json:"instances"`
 }
 
-type TerminateInstanceResponse struct {
+type terminateInstanceResponse struct {
 	Data struct {
 		TerminatedInstances []Instance `json:"terminated_instances"`
 	} `json:"data"`
 }
 
-func TerminateInstance(req TerminateInstanceRequest) (*TerminateInstanceResponse, error) {
+func terminateInstance(req terminateInstanceRequest) (*terminateInstanceResponse, error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
@@ -189,7 +189,7 @@ func TerminateInstance(req TerminateInstanceRequest) (*TerminateInstanceResponse
 		return nil, err
 	}
 
-	var terminateRes TerminateInstanceResponse
+	var terminateRes terminateInstanceResponse
 	if err := json.Unmarshal(resBody, &terminateRes); err != nil {
 		return nil, err
 	}

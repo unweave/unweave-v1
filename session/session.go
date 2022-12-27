@@ -1,20 +1,19 @@
 package session
 
 import (
-	"github.com/unweave/unweave-v2/config"
-	"github.com/unweave/unweave-v2/session/runtime"
+	"github.com/unweave/unweave-v2/session/model"
+	"github.com/unweave/unweave-v2/session/providers/lambdalabs"
+	"github.com/unweave/unweave-v2/session/providers/unweave"
 )
 
-type Session struct {
-	runtime.Runtime
-}
+func NewRuntime(provider model.RuntimeProvider) Runtime {
+	switch provider {
+	case model.LambdaLabsProvider:
+		return lambdalabs.NewProvider("")
 
-func NewSession(cfg config.SessionConfig) Session {
-	switch cfg.Runtime {
-	case config.LambdaLabs:
-		return Session{}
-	case config.Unweave:
-		return Session{}
+	case model.UnweaveProvider:
+		return unweave.NewProvider("")
+
 	default:
 		panic("Unknown runtime provider")
 	}

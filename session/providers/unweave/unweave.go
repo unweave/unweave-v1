@@ -1,21 +1,19 @@
 package unweave
 
-import "github.com/unweave/unweave-v2/session/runtime"
+import (
+	"github.com/unweave/unweave-v2/session/model"
+)
 
 type Runtime struct{}
 
-func (u *Runtime) InitNode() (runtime.Node, error) {
-	return "", nil
+func (r *Runtime) InitNode(model.SSHKey) (model.Node, error) {
+	return model.Node{}, nil
 }
 
-func (u *Runtime) TerminateNode() error {
+func (r *Runtime) TerminateNode(nodeID string) error {
 	return nil
 }
 
-func NewProvider() Runtime {
-	// Load credentials to make sure we're running on the Unweave platform
-
-	// init node
-	//
-	return Runtime{}
+func NewProvider(apiKey string) *Runtime {
+	return &Runtime{}
 }

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/unweave/unweave-v2/model"
-	"github.com/unweave/unweave-v2/session/runtime"
+	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave-v2/session"
+	"github.com/unweave/unweave-v2/session/model"
 )
 
 // ---------------------------------------------------------------------------------------
@@ -21,6 +23,7 @@ type sessionCreateRequest struct {
 
 type SessionCreateRequest struct {
 	Runtime model.RuntimeProvider `json:"runtime"`
+	model.SSHKey
 }
 
 func (s *SessionCreateRequest) Bind(r *http.Request) error {
@@ -40,7 +43,29 @@ type sessionCreateResponse struct {
 }
 
 type SessionCreateResponse struct {
-	ID string `json:"id"`
+	ID         string       `json:"id"`
+	SSHKeyPair model.SSHKey `json:"sshKeyPair"`
+}
+
+func sessionCreateHandler(w http.ResponseWriter, r *http.Request) {
+	scr := SessionCreateRequest{}
+	if err := render.Bind(r, &scr); err != nil {
+		log.Warn().Err(err).Msg("failed to read body")
+		render.Render(w, r, ErrBadRequest("Invalid request body: "+err.Error()))
+		return
+	}
+
+	rt := session.NewRuntime(scr.Runtime)
+	node, err := rt.InitNode(scr.SSHKey)
+	if err != nil {
+		log.Warn().Err(err).Msg("failed to init node")
+		render.Render(w, r, ErrInternalServer("Failed to initialize node"))
+		return
+	}
+
+	// add to db
+	res := &SessionCreateResponse{ID: node.ID, SSHKeyPair: node.KeyPair}
+	render.JSON(w, r, res)
 }
 
 // ---------------------------------------------------------------------------------------
@@ -54,8 +79,8 @@ type sessionGetResponse struct {
 }
 
 type SessionGetResponse struct {
-	ID     string         `json:"id"`
-	Status runtime.Status `json:"runtimeStatus"`
+	ID     string       `json:"id"`
+	Status model.Status `json:"runtimeStatus"`
 }
 
 // ---------------------------------------------------------------------------------------
@@ -69,7 +94,6 @@ type sessionConnectResponse struct {
 }
 
 type SessionConnectResponse struct {
-	ID         string                `json:"id"`
-	Status     runtime.Status        `json:"runtimeStatus"`
-	Connection runtime.SSHConnection `json:"sshConnection"`
+	ID     string       `json:"id"`
+	Status model.Status `json:"runtimeStatus"`
 }
