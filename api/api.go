@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -10,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/config"
+	"github.com/unweave/unweave-v2/session/runtime"
 )
 
 func API(cfg config.Config) {
@@ -28,7 +28,12 @@ func API(cfg config.Config) {
 	}))
 
 	r.Route("/session", func(r chi.Router) {
-		r.Post("/{id}", func(w http.ResponseWriter, r *http.Request) {
+
+		// swagger:route POST /session/{id} session sessionCreate
+		//
+		// responses:
+		// 	201: sessionCreate
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			scr := SessionCreateRequest{}
 			if err := render.Bind(r, &scr); err != nil {
 				log.Warn().Err(err).Msg("failed to read body")
@@ -36,8 +41,43 @@ func API(cfg config.Config) {
 				return
 			}
 
-			fmt.Println(scr.Runtime)
-			w.WriteHeader(http.StatusOK)
+			res := &SessionCreateResponse{ID: "123"}
+			render.JSON(w, r, res)
+		})
+
+		// swagger:route GET /session/{id} session sessionGet
+		//
+		// responses:
+		// 	200: sessionGet
+		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+
+			res := &SessionGetResponse{ID: id}
+			render.JSON(w, r, res)
+		})
+
+		// swagger:route GET /session/{id}/connect session sessionConnect
+		//
+		// Returns the SSH connection details for the session. This will return a 404 if
+		// the session is not yet ready.
+		//
+		// responses:
+		// 	200: sessionConnect
+		//  404: errorResponse
+		r.Get("/{id}/connect", func(w http.ResponseWriter, r *http.Request) {
+			id := chi.URLParam(r, "id")
+
+			res := &SessionConnectResponse{
+				ID:     id,
+				Status: runtime.StatusRunning,
+				Connection: runtime.SSHConnection{
+					Host:     "localhost",
+					Port:     "22",
+					User:     "noorvir",
+					Password: "",
+				},
+			}
+			render.JSON(w, r, res)
 		})
 
 	})

@@ -6,8 +6,16 @@ import (
 	"github.com/go-chi/render"
 )
 
+// swagger:response errorResponse
+type httpError struct {
+	// in: body
+	Body HTTPError
+}
+
 type HTTPError struct {
-	Code    int    `json:"code"`
+	// Example: 400
+	Code int `json:"code"`
+	// Example: Bad Request
 	Message string `json:"message"`
 }
 
@@ -19,6 +27,13 @@ func (e *HTTPError) Render(w http.ResponseWriter, r *http.Request) error {
 func ErrBadRequest(msg string) render.Renderer {
 	return &HTTPError{
 		Code:    400,
+		Message: msg,
+	}
+}
+
+func ErrInternalServer(msg string) render.Renderer {
+	return &HTTPError{
+		Code:    500,
 		Message: msg,
 	}
 }

@@ -3,6 +3,17 @@
   "info": {},
   "paths": {
     "/session/{id}": {
+      "get": {
+        "tags": [
+          "session"
+        ],
+        "operationId": "sessionGet",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/sessionGet"
+          }
+        }
+      },
       "post": {
         "tags": [
           "session"
@@ -16,15 +27,94 @@
               "$ref": "#/definitions/SessionCreateRequest"
             }
           }
-        ]
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/sessionCreate"
+          }
+        }
+      }
+    },
+    "/session/{id}/connect": {
+      "put": {
+        "tags": [
+          "session"
+        ],
+        "operationId": "sessionConnect",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/sessionConnect"
+          },
+          "404": {
+            "$ref": "#/responses/errorResponse"
+          }
+        }
       }
     }
   },
   "definitions": {
+    "HTTPError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Code",
+          "example": 400
+        },
+        "message": {
+          "type": "string",
+          "x-go-name": "Message",
+          "example": "Bad Request"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/api"
+    },
     "RuntimeProvider": {
       "description": "RuntimeProvider is the platform that the node is spawned on. This is where the user\ncode runs",
       "type": "string",
       "x-go-package": "github.com/unweave/unweave-v2/config"
+    },
+    "SSHConnection": {
+      "type": "object",
+      "properties": {
+        "Host": {
+          "type": "string"
+        },
+        "Password": {
+          "type": "string"
+        },
+        "Port": {
+          "type": "string"
+        },
+        "User": {
+          "type": "string"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/session/runtime"
+    },
+    "SessionConnectResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-go-name": "ID"
+        },
+        "runtimeStatus": {
+          "type": "string",
+          "enum": [
+            "initializingNode",
+            "running",
+            "stoppingNode"
+          ],
+          "x-go-enum-desc": "initializingNode StatusInitializingNode\nrunning StatusRunning\nstoppingNode StatusStoppingNode",
+          "x-go-name": "Status"
+        },
+        "sshConnection": {
+          "$ref": "#/definitions/SSHConnection"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/api"
     },
     "SessionCreateRequest": {
       "type": "object",
@@ -44,13 +134,51 @@
         }
       },
       "x-go-package": "github.com/unweave/unweave-v2/api"
+    },
+    "SessionGetResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "x-go-name": "ID"
+        },
+        "runtimeStatus": {
+          "type": "string",
+          "enum": [
+            "initializingNode",
+            "running",
+            "stoppingNode"
+          ],
+          "x-go-enum-desc": "initializingNode StatusInitializingNode\nrunning StatusRunning\nstoppingNode StatusStoppingNode",
+          "x-go-name": "Status"
+        }
+      },
+      "x-go-package": "github.com/unweave/unweave-v2/api"
     }
   },
   "responses": {
-    "sessionCreateResponse": {
+    "errorResponse": {
+      "description": "",
+      "schema": {
+        "$ref": "#/definitions/HTTPError"
+      }
+    },
+    "sessionConnect": {
+      "description": "",
+      "schema": {
+        "$ref": "#/definitions/SessionConnectResponse"
+      }
+    },
+    "sessionCreate": {
       "description": "",
       "schema": {
         "$ref": "#/definitions/SessionCreateResponse"
+      }
+    },
+    "sessionGet": {
+      "description": "",
+      "schema": {
+        "$ref": "#/definitions/SessionGetResponse"
       }
     }
   }
