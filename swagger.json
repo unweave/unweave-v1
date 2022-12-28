@@ -1,30 +1,38 @@
 {
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
   "swagger": "2.0",
-  "info": {},
+  "info": {
+    "description": "Documentation of the Unweave API",
+    "title": "Unweave API.",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "host": "api.unweave.io",
+  "basePath": "/",
   "paths": {
-    "/session/{id}": {
-      "get": {
-        "tags": [
-          "session"
-        ],
-        "operationId": "sessionGet",
-        "responses": {
-          "200": {
-            "$ref": "#/responses/sessionGet"
-          }
-        }
-      },
+    "/session": {
       "post": {
         "tags": [
           "session"
         ],
-        "operationId": "sessionCreate",
+        "operationId": "create",
         "parameters": [
           {
             "name": "Body",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/SessionCreateRequest"
+              "$ref": "#/definitions/SessionCreateParams"
             }
           }
         ],
@@ -35,18 +43,24 @@
         }
       }
     },
-    "/session/{id}/connect": {
-      "put": {
+    "/session/{id}": {
+      "get": {
         "tags": [
           "session"
         ],
-        "operationId": "sessionConnect",
+        "operationId": "get-session",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "session ID",
+            "name": "id",
+            "in": "path",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
-            "$ref": "#/responses/sessionConnect"
-          },
-          "404": {
-            "$ref": "#/responses/errorResponse"
+            "$ref": "#/responses/sessionGetResponse"
           }
         }
       }
@@ -73,27 +87,27 @@
     "RuntimeProvider": {
       "description": "RuntimeProvider is the platform that the node is spawned on. This is where the user\ncode runs",
       "type": "string",
-      "x-go-package": "github.com/unweave/unweave-v2/config"
+      "x-go-package": "github.com/unweave/unweave-v2/session/model"
     },
-    "SSHConnection": {
+    "SSHKey": {
       "type": "object",
       "properties": {
-        "Host": {
-          "type": "string"
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
         },
-        "Password": {
-          "type": "string"
+        "privateKey": {
+          "type": "string",
+          "x-go-name": "PrivateKey"
         },
-        "Port": {
-          "type": "string"
-        },
-        "User": {
-          "type": "string"
+        "publicKey": {
+          "type": "string",
+          "x-go-name": "PublicKey"
         }
       },
-      "x-go-package": "github.com/unweave/unweave-v2/session/runtime"
+      "x-go-package": "github.com/unweave/unweave-v2/session/model"
     },
-    "SessionConnectResponse": {
+    "Session": {
       "type": "object",
       "properties": {
         "id": {
@@ -110,47 +124,20 @@
           "x-go-enum-desc": "initializingNode StatusInitializingNode\nrunning StatusRunning\nstoppingNode StatusStoppingNode",
           "x-go-name": "Status"
         },
-        "sshConnection": {
-          "$ref": "#/definitions/SSHConnection"
+        "sshKey": {
+          "$ref": "#/definitions/SSHKey"
         }
       },
       "x-go-package": "github.com/unweave/unweave-v2/api"
     },
-    "SessionCreateRequest": {
+    "SessionCreateParams": {
       "type": "object",
       "properties": {
         "runtime": {
           "$ref": "#/definitions/RuntimeProvider"
-        }
-      },
-      "x-go-package": "github.com/unweave/unweave-v2/api"
-    },
-    "SessionCreateResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "x-go-name": "ID"
-        }
-      },
-      "x-go-package": "github.com/unweave/unweave-v2/api"
-    },
-    "SessionGetResponse": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "x-go-name": "ID"
         },
-        "runtimeStatus": {
-          "type": "string",
-          "enum": [
-            "initializingNode",
-            "running",
-            "stoppingNode"
-          ],
-          "x-go-enum-desc": "initializingNode StatusInitializingNode\nrunning StatusRunning\nstoppingNode StatusStoppingNode",
-          "x-go-name": "Status"
+        "sshKey": {
+          "$ref": "#/definitions/SSHKey"
         }
       },
       "x-go-package": "github.com/unweave/unweave-v2/api"
@@ -163,22 +150,16 @@
         "$ref": "#/definitions/HTTPError"
       }
     },
-    "sessionConnect": {
-      "description": "",
-      "schema": {
-        "$ref": "#/definitions/SessionConnectResponse"
-      }
-    },
     "sessionCreate": {
       "description": "",
       "schema": {
-        "$ref": "#/definitions/SessionCreateResponse"
+        "$ref": "#/definitions/Session"
       }
     },
-    "sessionGet": {
+    "sessionGetResponse": {
       "description": "",
       "schema": {
-        "$ref": "#/definitions/SessionGetResponse"
+        "$ref": "#/definitions/Session"
       }
     }
   }

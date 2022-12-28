@@ -6,7 +6,7 @@ const (
 
 type SSHKey struct {
 	Name       string `json:"name"`
-	PrivateKey string `json:"privateKey"`
+	PrivateKey string `json:"privateKey,omitempty"`
 	PublicKey  string `json:"publicKey"`
 }
 

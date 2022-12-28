@@ -19,6 +19,14 @@ services:
     expose:
       - "8000"
 
+  generate-spec:
+    image: quay.io/goswagger/swagger
+    working_dir: /home/unweave/
+    volumes:
+      - .:/home/unweave/
+    entrypoint: "sh -c"
+    command: ["swagger generate spec -o ./swagger.json && swagger validate ./swagger.json"]
+
   swagger:
     image: swaggerapi/swagger-ui
     ports:

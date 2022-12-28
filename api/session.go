@@ -5,28 +5,19 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/session"
 	"github.com/unweave/unweave-v2/session/model"
 )
 
-// ---------------------------------------------------------------------------------------
-// SessionCreate POST /session
-// ---------------------------------------------------------------------------------------
-
-// swagger:parameters sessionCreate
-type sessionCreateRequest struct {
-	// in: body
-	Body SessionCreateRequest
-}
-
-type SessionCreateRequest struct {
+type SessionCreateParams struct {
 	Runtime model.RuntimeProvider `json:"runtime"`
-	model.SSHKey
+	SSHKey  model.SSHKey          `json:"sshKey"`
 }
 
-func (s *SessionCreateRequest) Bind(r *http.Request) error {
+func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Runtime == "" {
 		return errors.New("field `runtime` is required")
 	}
@@ -36,19 +27,14 @@ func (s *SessionCreateRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-// swagger:response sessionCreate
-type sessionCreateResponse struct {
-	// in: body
-	Body SessionCreateResponse
-}
-
-type SessionCreateResponse struct {
-	ID         string       `json:"id"`
-	SSHKeyPair model.SSHKey `json:"sshKeyPair"`
+type Session struct {
+	ID     string       `json:"id"`
+	SSHKey model.SSHKey `json:"sshKey"`
+	Status model.Status `json:"runtimeStatus"`
 }
 
 func sessionCreateHandler(w http.ResponseWriter, r *http.Request) {
-	scr := SessionCreateRequest{}
+	scr := SessionCreateParams{}
 	if err := render.Bind(r, &scr); err != nil {
 		log.Warn().Err(err).Msg("failed to read body")
 		render.Render(w, r, ErrBadRequest("Invalid request body: "+err.Error()))
@@ -64,36 +50,12 @@ func sessionCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// add to db
-	res := &SessionCreateResponse{ID: node.ID, SSHKeyPair: node.KeyPair}
+	res := &Session{ID: node.ID, SSHKey: node.KeyPair}
 	render.JSON(w, r, res)
 }
 
-// ---------------------------------------------------------------------------------------
-// SessionGet GET /session/{id}
-// ---------------------------------------------------------------------------------------
-
-// swagger:response sessionGet
-type sessionGetResponse struct {
-	// in: body
-	Body SessionGetResponse
-}
-
-type SessionGetResponse struct {
-	ID     string       `json:"id"`
-	Status model.Status `json:"runtimeStatus"`
-}
-
-// ---------------------------------------------------------------------------------------
-// SessionConnect PUT /session/{id}/connect
-// ---------------------------------------------------------------------------------------
-
-// swagger:response sessionConnect
-type sessionConnectResponse struct {
-	// in: body
-	Body SessionConnectResponse
-}
-
-type SessionConnectResponse struct {
-	ID     string       `json:"id"`
-	Status model.Status `json:"runtimeStatus"`
+func sessionGetHandler(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	res := &Session{ID: id}
+	render.JSON(w, r, res)
 }

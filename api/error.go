@@ -6,12 +6,6 @@ import (
 	"github.com/go-chi/render"
 )
 
-// swagger:response errorResponse
-type httpError struct {
-	// in: body
-	Body HTTPError
-}
-
 type HTTPError struct {
 	// Example: 400
 	Code int `json:"code"`
