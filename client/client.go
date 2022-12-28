@@ -19,12 +19,18 @@ type Config struct {
 type Client struct {
 	cfg    *Config
 	client *http.Client
+
+	Session *SessionService
 }
 
 func NewClient(cfg Config) *Client {
-	return &Client{
-		cfg: &cfg,
+	c := &Client{
+		cfg:    &cfg,
+		client: &http.Client{},
 	}
+	c.Session = &SessionService{client: c}
+
+	return c
 }
 
 type RestRequestType string
@@ -43,7 +49,7 @@ type RestRequest struct {
 	Type   RestRequestType
 }
 
-func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params map[string]string) (
+func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params map[string]string, body interface{}) (
 	*RestRequest, error,
 ) {
 	query := ""
@@ -55,18 +61,25 @@ func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params m
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
 
+	var buf *bytes.Buffer
+	if body != nil {
+		if err := json.NewEncoder(buf).Encode(body); err != nil {
+			return nil, err
+		}
+	}
+
 	return &RestRequest{
 		Url:    url,
 		Header: header,
-		Body:   &bytes.Buffer{},
+		Body:   buf,
 		Type:   rtype,
 	}, nil
 }
 
-func (c *Client) NewAuthorizedRestRequest(rtype RestRequestType, endpoint string, params map[string]string) (
+func (c *Client) NewAuthorizedRestRequest(rtype RestRequestType, endpoint string, params map[string]string, body interface{}) (
 	*RestRequest, error,
 ) {
-	req, err := c.NewRestRequest(rtype, endpoint, params)
+	req, err := c.NewRestRequest(rtype, endpoint, params, body)
 	if err != nil {
 		return nil, err
 	}
