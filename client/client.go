@@ -12,7 +12,7 @@ import (
 )
 
 type Config struct {
-	ApiUrl string `json:"apiURL"`
+	ApiURL string `json:"apiURL"`
 	Token  string `json:"token"`
 }
 
@@ -57,7 +57,7 @@ func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params m
 		query += fmt.Sprintf("%s=%v&", k, v)
 	}
 
-	url := fmt.Sprintf("%s/%s?%s", c.cfg.ApiUrl, endpoint, query)
+	url := fmt.Sprintf("%s/%s?%s", c.cfg.ApiURL, endpoint, query)
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
 

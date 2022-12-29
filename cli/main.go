@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave-v2/cli/cmd"
 	"github.com/unweave/unweave-v2/cli/config"
@@ -18,10 +21,18 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.Version = Version
+	rootCmd.Version = ""
 	rootCmd.Flags().BoolP("version", "v", false, "Get the version of current Unweave CLI")
 	rootCmd.PersistentFlags().StringVarP(&config.UnweaveConfig.User.Token, "token", "t", "", "Use a specific token to authenticate - overrides login token")
-	rootCmd.PersistentFlags().StringVarP(&Path, "path", "p", "", "Path to an Unweave project to run")
+	rootCmd.PersistentFlags().StringVarP(&config.ProjectPath, "path", "p", "", "ProjectPath to an Unweave project to run")
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "config",
+		Short: "Show the current config",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(config.UnweaveConfig.String())
+		},
+	})
 
 	// Session commands
 	sessionCmd := &cobra.Command{
@@ -36,7 +47,7 @@ func init() {
 		Args:  cobra.NoArgs,
 		RunE:  cmd.SessionCreate,
 	}
-	createCmd.Flags().StringVarP(&SSHKeyPath, "ssh-key", "k", "", "Path to an SSH key to use for the session")
+	createCmd.Flags().StringVarP(&config.SSHKeyPath, "ssh-key", "k", "", "ProjectPath to an SSH key to use for the session")
 	sessionCmd.AddCommand(createCmd)
 
 	sessionCmd.AddCommand(&cobra.Command{
@@ -53,24 +64,30 @@ func init() {
 	})
 	rootCmd.AddCommand(sessionCmd)
 
-	// Token
-	tokenCmd := &cobra.Command{
-		Use:   "token",
-		Short: "Configure authentication tokens for the current user",
+	// Auth
+	authCmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Manage authentication tokens: create-user-token|get-user-tokens",
 		Args:  cobra.NoArgs,
 	}
 
-	tokenCmd.AddCommand(&cobra.Command{
+	authCmd.AddCommand(&cobra.Command{
 		Use:   "create-user-token",
 		Short: "Create a new token",
 		RunE:  cmd.CreateUserToken,
 	})
 
-	tokenCmd.AddCommand(&cobra.Command{
+	authCmd.AddCommand(&cobra.Command{
 		Use:   "get-user-tokens",
 		Short: "Get all tokens for the current user",
 		RunE:  cmd.GetUserTokens,
 	})
-	rootCmd.AddCommand(tokenCmd)
+	rootCmd.AddCommand(authCmd)
+}
 
+func main() {
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

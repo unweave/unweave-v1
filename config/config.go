@@ -1,6 +1,6 @@
 package config
 
-import "github.com/unweave/unweave-v2/model"
+import "github.com/unweave/unweave-v2/session/model"
 
 type DBConfig struct {
 	Host     string `json:"host" env:"UNWEAVE_DB_HOST"`

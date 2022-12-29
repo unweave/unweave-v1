@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +9,17 @@ import (
 
 	"github.com/unweave/unweave-v2/pkg/gonfig"
 )
+
+// AuthToken is used to authenticate with the Unweave API. It is loaded from the saved
+// config file and can be overridden with runtime flags.
+var AuthToken = ""
+
+// ProjectPath is the path to the current project to run commands on. It is loaded from the saved
+// config file and can be overridden with runtime flags.
+var ProjectPath = ""
+
+// SSHKeyPath is the path to the SSH key to use to connect to a new or existing Session.
+var SSHKeyPath = ""
 
 type ProjectConfig struct {
 	ID         string `json:"id"`
@@ -27,8 +39,19 @@ type Config struct {
 	Projects map[string]ProjectConfig `json:"projects"`
 }
 
+func (c *Config) String() string {
+	buf, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		log.Fatal("Failed to marshal config: ", err)
+	}
+	return string(buf)
+}
+
 var Path = ""
-var UnweaveConfig = &Config{}
+var UnweaveConfig = &Config{
+	ApiURL: "https://api.unweave.io",
+	AppURL: "https://app.unweave.io",
+}
 
 func init() {
 	home, err := os.UserHomeDir()
@@ -36,12 +59,19 @@ func init() {
 		log.Fatal("Could not get user home directory")
 	}
 
-	env := os.Getenv("UW_ENV")
+	env := "production"
+	if e, ok := os.LookupEnv("UW_ENV"); ok {
+		env = e
+	}
 	switch env {
 	case "staging", "stg":
 		Path = filepath.Join(home, ".unweave/stg-config.json")
+		UnweaveConfig.ApiURL = "https://api.staging-unweave.io"
+		UnweaveConfig.AppURL = "https://app.staging-unweave.io"
 	case "development", "dev":
 		Path = filepath.Join(home, ".unweave/dev-config.json")
+		UnweaveConfig.ApiURL = "http://localhost:8080"
+		UnweaveConfig.AppURL = "http://localhost:3000"
 	case "production", "prod":
 		Path = filepath.Join(home, ".unweave/config.json")
 	default:
