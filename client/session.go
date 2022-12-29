@@ -11,7 +11,7 @@ type SessionService struct {
 	client *Client
 }
 
-func (s *SessionService) CreateSession(ctx context.Context, params api.SessionCreateParams) (*api.Session, error) {
+func (s *SessionService) Create(ctx context.Context, params api.SessionCreateParams) (*api.Session, error) {
 	req, err := s.client.NewAuthorizedRestRequest(Post, "session", nil, params)
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func (s *SessionService) CreateSession(ctx context.Context, params api.SessionCr
 	return session, nil
 }
 
-func (s *SessionService) GetSession(ctx context.Context, sessionID uuid.UUID) (*api.Session, error) {
+func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*api.Session, error) {
 	req, err := s.client.NewAuthorizedRestRequest(Get, "session/"+sessionID.String(), nil, nil)
 	if err != nil {
 		return nil, err
