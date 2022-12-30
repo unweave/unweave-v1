@@ -47,7 +47,8 @@ func init() {
 		Args:  cobra.NoArgs,
 		RunE:  cmd.SessionCreate,
 	}
-	createCmd.Flags().StringVarP(&config.SSHKeyPath, "ssh-key", "k", "", "ProjectPath to an SSH key to use for the session")
+	createCmd.Flags().StringVarP(&config.SSHKeyName, "ssh-key", "k", "", "Name of the SSH key to use for the session")
+	createCmd.Flags().StringVar(&config.SSHKeyPath, "ssh-key-path", "", "Absolute Path to the SSH public key to use for this session")
 	sessionCmd.AddCommand(createCmd)
 
 	sessionCmd.AddCommand(&cobra.Command{

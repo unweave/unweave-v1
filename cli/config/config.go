@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/unweave/unweave-v2/pkg/gonfig"
+	"github.com/unweave/unweave-v2/types"
 )
 
 // AuthToken is used to authenticate with the Unweave API. It is loaded from the saved
@@ -18,13 +19,24 @@ var AuthToken = ""
 // config file and can be overridden with runtime flags.
 var ProjectPath = ""
 
-// SSHKeyPath is the path to the SSH key to use to connect to a new or existing Session.
+// SSHKeyPath is the path to the SSH public key to use to connect to a new or existing Session.
 var SSHKeyPath = ""
 
+// SSHKeyName is the name of the SSH Key already configured in Unweave to use for a new or existing Session.
+var SSHKeyName = ""
+
+type SSKey struct {
+	types.SSHKey
+	// Path is the path to the SSH key on the local filesystem
+	Path string `json:"path"`
+}
+
 type ProjectConfig struct {
-	ID         string `json:"id"`
-	Token      string `json:"token"`
-	SSHKeyPath string `json:"SSHKeyPath" env:"UW_SSH_KEY_PATH"`
+	ID    string `json:"id"`
+	Token string `json:"token"`
+	// SSHKeys holds the names of the configured SSH keys for the project and their path
+	// in the local file system.
+	SSHKeys []types.SSHKey `json:"sshKeys"`
 }
 
 type UserConfig struct {

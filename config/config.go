@@ -1,6 +1,8 @@
 package config
 
-import "github.com/unweave/unweave-v2/session/model"
+import (
+	"github.com/unweave/unweave-v2/types"
+)
 
 type DBConfig struct {
 	Host     string `json:"host" env:"UNWEAVE_DB_HOST"`
@@ -16,7 +18,7 @@ type LambdaLabsConfig struct {
 }
 
 type SessionConfig struct {
-	Runtime    model.RuntimeProvider `json:"runtime"`
+	Runtime    types.RuntimeProvider `json:"runtime"`
 	LambdaLabs LambdaLabsConfig      `json:"lambdalabs"`
 }
 

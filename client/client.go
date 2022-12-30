@@ -61,7 +61,7 @@ func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params m
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
 
-	var buf *bytes.Buffer
+	buf := &bytes.Buffer{}
 	if body != nil {
 		if err := json.NewEncoder(buf).Encode(body); err != nil {
 			return nil, err

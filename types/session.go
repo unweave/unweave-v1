@@ -1,13 +1,13 @@
-package model
+package types
 
 const (
 	RuntimeProviderKey = "RuntimeProvider"
 )
 
 type SSHKey struct {
-	Name       string `json:"name"`
-	PrivateKey string `json:"privateKey,omitempty"`
-	PublicKey  string `json:"publicKey"`
+	Name       *string `json:"name,omitempty"`
+	PrivateKey *string `json:"privateKey,omitempty"`
+	PublicKey  *string `json:"publicKey,omitempty"`
 }
 
 // swagger:enum Status

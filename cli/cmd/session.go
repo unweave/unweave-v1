@@ -1,29 +1,43 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave-v2/api"
 	"github.com/unweave/unweave-v2/cli/config"
-	"github.com/unweave/unweave-v2/session/model"
+	"github.com/unweave/unweave-v2/cli/ui"
+	"github.com/unweave/unweave-v2/types"
 )
 
 func SessionCreate(cmd *cobra.Command, args []string) error {
-	uwc := InitUnweaveClient()
+	cmd.SilenceUsage = true
 
-	if config.SSHKeyPath == "" {
-		log.Fatal("SSH key path not set")
+	uwc := InitUnweaveClient()
+	sshKey := types.SSHKey{}
+
+	if config.SSHKeyName != "" {
+		sshKey.Name = &config.SSHKeyName
+	} else if config.SSHKeyPath != "" {
+		f, err := os.ReadFile(config.SSHKeyPath)
+		if err != nil {
+			return err
+		}
+		s := string(f)
+		sshKey.PublicKey = &s
+	} else {
+		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key?")
+		if !newKey {
+			fmt.Println("No SSH key path provided")
+			return nil
+		}
+		// Leave the sshKey fields empty to generate a new key
 	}
-	// load the ssh key
 
 	params := api.SessionCreateParams{
-		Runtime: model.LambdaLabsProvider,
-		SSHKey: model.SSHKey{
-			Name:       "",
-			PrivateKey: "",
-			PublicKey:  "",
-		},
+		Runtime: types.LambdaLabsProvider,
+		SSHKey:  sshKey,
 	}
 	_, err := uwc.Session.Create(cmd.Context(), params)
 	if err != nil {

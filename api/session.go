@@ -9,28 +9,28 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/session"
-	"github.com/unweave/unweave-v2/session/model"
+	"github.com/unweave/unweave-v2/types"
 )
 
 type SessionCreateParams struct {
-	Runtime model.RuntimeProvider `json:"runtime"`
-	SSHKey  model.SSHKey          `json:"sshKey"`
+	Runtime types.RuntimeProvider `json:"runtime"`
+	SSHKey  types.SSHKey          `json:"sshKey"`
 }
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Runtime == "" {
 		return errors.New("field `runtime` is required")
 	}
-	if s.Runtime != model.LambdaLabsProvider && s.Runtime != model.UnweaveProvider {
-		return fmt.Errorf("invalid runtime provider: %s. Must be one of `%s` or `%s`", s.Runtime, model.LambdaLabsProvider, model.UnweaveProvider)
+	if s.Runtime != types.LambdaLabsProvider && s.Runtime != types.UnweaveProvider {
+		return fmt.Errorf("invalid runtime provider: %s. Must be one of `%s` or `%s`", s.Runtime, types.LambdaLabsProvider, types.UnweaveProvider)
 	}
 	return nil
 }
 
 type Session struct {
 	ID     string       `json:"id"`
-	SSHKey model.SSHKey `json:"sshKey"`
-	Status model.Status `json:"runtimeStatus"`
+	SSHKey types.SSHKey `json:"sshKey"`
+	Status types.Status `json:"runtimeStatus"`
 }
 
 func sessionCreateHandler(w http.ResponseWriter, r *http.Request) {

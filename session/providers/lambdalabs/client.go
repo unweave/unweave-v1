@@ -111,7 +111,8 @@ func getInstance(id string) (*Instance, error) {
 }
 
 type addSSHKeyRequest struct {
-	SSHKey
+	Name      string `json:"name"`
+	PublicKey string `json:"public_key"`
 }
 
 type addSSHKeyResponse struct {

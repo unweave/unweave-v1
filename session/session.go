@@ -1,17 +1,17 @@
 package session
 
 import (
-	"github.com/unweave/unweave-v2/session/model"
 	"github.com/unweave/unweave-v2/session/providers/lambdalabs"
 	"github.com/unweave/unweave-v2/session/providers/unweave"
+	"github.com/unweave/unweave-v2/types"
 )
 
-func NewRuntime(provider model.RuntimeProvider) Runtime {
+func NewRuntime(provider types.RuntimeProvider) Runtime {
 	switch provider {
-	case model.LambdaLabsProvider:
+	case types.LambdaLabsProvider:
 		return lambdalabs.NewProvider("")
 
-	case model.UnweaveProvider:
+	case types.UnweaveProvider:
 		return unweave.NewProvider("")
 
 	default:
