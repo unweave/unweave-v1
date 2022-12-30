@@ -6,7 +6,7 @@ import (
 	"github.com/unweave/unweave-v2/types"
 )
 
-func NewRuntime(provider types.RuntimeProvider) Runtime {
+func NewRuntime(provider types.RuntimeProvider) (Runtime, error) {
 	switch provider {
 	case types.LambdaLabsProvider:
 		return lambdalabs.NewProvider("")

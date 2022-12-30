@@ -1,0 +1,687 @@
+openapi: 3.0.0
+servers:
+  - url: https://cloud.lambdalabs.com/api/v1/
+    description: Production server
+  - url: /api/v1/
+info:
+  title: Lambda Cloud API
+  description: API for interacting with the Lambda GPU Cloud
+  version: 1.2.0
+paths:
+  /instance-types:
+    get:
+      summary: Retrieve list of offered instance types
+      description: >
+        Returns a detailed list of the instance types offered by Lambda GPU
+        Cloud. The details include the regions, if any, in which each instance
+        type is currently available.
+      operationId: instanceTypes
+      responses:
+        "200":
+          $ref: "#/components/responses/instanceTypes"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+  /instances:
+    get:
+      summary: List running instances
+      description: Retrieves a detailed list of running instances.
+      operationId: listInstances
+      x-cli-aliases:
+        - ls
+      responses:
+        "200":
+          $ref: "#/components/responses/instances"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+  /instances/{id}:
+    get:
+      summary: List details of a specific instance
+      description: >
+        Retrieves details of a specific instance, including whether or not the
+        instance is running.
+      operationId: getInstance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier (ID) of the instance
+          schema:
+            $ref: "#/components/schemas/instanceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/instance"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+        "404":
+          $ref: "#/components/responses/notFound"
+
+  /instance-operations/launch:
+    post:
+      summary: Launch instances
+      description: Launches one or more instances of a given instance type.
+      operationId: launchInstance
+      requestBody:
+        $ref: "#/components/requestBodies/launch"
+      responses:
+        "200":
+          $ref: "#/components/responses/launch"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+        "400":
+          $ref: "#/components/responses/badRequest"
+
+        "404":
+          $ref: "#/components/responses/notFound"
+
+        "500":
+          $ref: "#/components/responses/internalServerError"
+
+  /instance-operations/terminate:
+    post:
+      summary: Terminate an instance
+      description: Terminates a given instance.
+      operationId: terminateInstance
+      requestBody:
+        $ref: "#/components/requestBodies/terminate"
+      responses:
+        "200":
+          $ref: "#/components/responses/terminate"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+        "400":
+          $ref: "#/components/responses/badRequest"
+
+        "404":
+          $ref: "#/components/responses/notFound"
+
+        "500":
+          $ref: "#/components/responses/internalServerError"
+
+  /ssh-keys:
+    get:
+      summary: List SSH keys
+      description: Retrieve the list of SSH keys
+      operationId: listSSHKeys
+      responses:
+        "200":
+          $ref: "#/components/responses/sshKeys"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+    post:
+      summary: Add SSH key
+      description: |
+        Add an SSH key
+
+        To use an existing key pair, enter the public key for the `public_key` property of the request body.
+
+        To generate a new key pair, omit the `public_key` property from the request body. Save the `private_key` from the response somewhere secure. For example, with curl:
+
+        ```
+        curl https://cloud.lambdalabs.com/api/v1/ssh-keys \
+          --fail \
+          -u ${LAMBDA_API_KEY}: \
+          -X POST \
+          -d '{"name": "new key"}' \
+          | jq -r '.data.private_key' > key.pem
+
+        chmod 400 key.pem
+        ```
+
+        Then, after you launch an instance with `new key` attached to it:
+        ```
+        ssh -i key.pem <instance IP>
+        ```
+      operationId: addSSHKey
+      requestBody:
+        $ref: "#/components/requestBodies/addSSHKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/addSSHKey"
+
+        "401":
+          $ref: "#/components/responses/unauthorized"
+
+        "403":
+          $ref: "#/components/responses/forbidden"
+
+        "400":
+          $ref: "#/components/responses/badRequest"
+
+
+components:
+  schemas:
+    errorCode:
+      type: string
+      description: Unique identifier for the type of error
+      enum:
+      - global/unknown
+      - global/invalid-api-key
+      - global/account-inactive
+      - global/invalid-parameters
+      - global/object-does-not-exist
+      - instance-operations/launch/insufficient-capacity
+      - instance-operations/launch/file-system-in-wrong-region
+      - instance-operations/launch/file-systems-not-supported
+    error:
+      type: object
+      additionalProperties: false
+      required:
+      - code
+      - message
+      properties:
+        code:
+          $ref: "#/components/schemas/errorCode"
+        message:
+          type: string
+          description: Detailed description of the error
+          example: API key is invalid, expired, or deleted.
+        suggestion:
+          type: string
+          nullable: true
+          description: Suggestion of possible ways to fix the error.
+          example: Create a new API key and try again.
+    errorResponseBody:
+      type: object
+      additionalProperties: false
+      required:
+      - error
+      properties:
+        error:
+          $ref: "#/components/schemas/error"
+    regionName:
+      type: string
+      description: Short name of a region
+      example: "us-tx-1"
+    region:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+      properties:
+        name:
+          $ref: "#/components/schemas/regionName"
+        description:
+          type: string
+          description: Long name of a region
+          example: "Austin, Texas"
+    instanceId:
+      type: string
+      description: Unique identifier (ID) of an instance
+      example: 0920582c7ff041399e34823a0be62549
+    sshKeyId:
+      type: string
+      description: Unique identifier (ID) of an SSH key
+      example: 0920582c7ff041399e34823a0be62548
+    sshKeyName:
+      type: string
+      description: Name of the SSH key
+      maxLength: 64
+      example: macbook-pro
+    sshPublicKey:
+      type: string
+      description: Public key for the SSH key
+      maxLength: 4096
+      example: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfKpav4ILY54InZe27G user
+    sshPrivateKey:
+      type: string
+      nullable: true
+      description: Private key for the SSH key. Only returned when generating a new key pair.
+      example: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEpQIBAAKCAQEA5IGybv8/wdQM6Y4yYTGiEem4TscBZiAW+9xyW2pDt8S7VDtm
+        ...
+        eCW4938W9u8N3R/kpGwi1tZYiGMLBU4Ks0qKFi/VeEaE9OLeP5WQ8Pk=
+        -----END RSA PRIVATE KEY-----
+    sshKey:
+      type: object
+      additionalProperties: false
+      description: Information about a stored SSH key, which can be used to access instances over SSH
+      required:
+      - id
+      - name
+      - public_key
+      properties:
+        id:
+          $ref: "#/components/schemas/sshKeyId"
+        name:
+          $ref: "#/components/schemas/sshKeyName"
+        public_key:
+          $ref: "#/components/schemas/sshPublicKey"
+        private_key:
+          $ref: "#/components/schemas/sshPrivateKey"
+    fileSystemName:
+      type: string
+      description: Name of a file system
+      example: shared-fs
+    instanceTypeName:
+      type: string
+      description: Name of an instance type
+      example: "gpu_1x_a100"
+    instanceName:
+      type: string
+      nullable: true
+      description: User-provided name for the instance
+      example: training-node-1
+      minLength: 1
+      maxLength: 64
+    instanceType:
+      type: object
+      description: Hardware configuration and pricing of an instance type
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - price_cents_per_hour
+        - specs
+      properties:
+        name:
+          $ref: "#/components/schemas/instanceTypeName"
+        description:
+          type: string
+          example: 1x RTX A100 (24 GB)
+          description: Long name of the instance type
+        price_cents_per_hour:
+          type: integer
+          description: Price of the instance type, in US cents per hour
+          example: 110
+        specs:
+          type: object
+          additionalProperties: false
+          required:
+            - vcpus
+            - memory_gib
+            - storage_gib
+          properties:
+            vcpus:
+              type: integer
+              example: 24
+              description: Number of virtual CPUs
+            memory_gib:
+              type: integer
+              example: 800
+              description: Amount of RAM, in gibibytes (GiB)
+            storage_gib:
+              type: integer
+              example: 512
+              description: Amount of storage, in gibibytes (GiB).
+    instance:
+      type: object
+      description: Virtual machine (VM) in Lambda Cloud
+      required:
+        - id
+        - status
+        - ssh_key_names
+        - file_system_names
+      properties:
+        id:
+          $ref: "#/components/schemas/instanceId"
+        name:
+          $ref: "#/components/schemas/instanceName"
+        ip:
+          type: string
+          nullable: true
+          description: IPv4 address of the instance
+          example: "10.10.10.1"
+        status:
+          type: string
+          description: The current status of the instance
+          enum: ["active", "booting", "unhealthy", "terminated"]
+        ssh_key_names:
+          type: array
+          description: Names of the SSH keys allowed to access the instance
+          items:
+            $ref: "#/components/schemas/sshKeyName"
+        file_system_names:
+          type: array
+          description: Names of the file systems, if any, attached to the instance
+          items:
+            $ref: "#/components/schemas/fileSystemName"
+        region:
+          $ref: "#/components/schemas/region"
+        instance_type:
+          $ref: "#/components/schemas/instanceType"
+        hostname:
+          type: string
+          nullable: true
+          description: Hostname assigned to this instance, which resolves to the instance's IP.
+          example: 10-0-8-196.cloud.lambdalabs.com
+        jupyter_token:
+          type: string
+          nullable: true
+          description: Secret token used to log into the jupyter lab server hosted on the instance.
+          example: 53968f128c4a4489b688c2c0a181d083
+        jupyter_url:
+          type: string
+          nullable: true
+          description: URL that opens a jupyter lab notebook on the instance.
+          example: https://jupyter-3ac4c5c6-9026-47d2-9a33-71efccbcd0ee.lambdaspaces.com/?token=53968f128c4a4489b688c2c0a181d083
+  requestBodies:
+    launch:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - region_name
+              - instance_type_name
+              - ssh_key_names
+            additionalProperties: false
+            properties:
+              region_name:
+                $ref: "#/components/schemas/regionName"
+              instance_type_name:
+                $ref: "#/components/schemas/instanceTypeName"
+              ssh_key_names:
+                type: array
+                minItems: 1
+                maxItems: 1
+                description: Names of the SSH keys to allow access to the instances. Currently, exactly one SSH key must be specified.
+                items:
+                  $ref: "#/components/schemas/sshKeyName"
+              file_system_names:
+                type: array
+                maxItems: 1
+                description: Names of the file systems to attach to the instances. Currently, only one (if any) file system may be specified.
+                items:
+                  $ref: "#/components/schemas/fileSystemName"
+              quantity:
+                type: integer
+                description: Number of instances to launch
+                default: 1
+                minimum: 1
+                maximum: 1
+              name:
+                $ref: "#/components/schemas/instanceName"
+
+    terminate:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - instance_ids
+            additionalProperties: false
+            properties:
+              instance_ids:
+                type: array
+                description: The unique identifiers (IDs) of the instances to terminate
+                items:
+                  $ref: "#/components/schemas/instanceId"
+
+    addSSHKey:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - name
+            description: The name for the SSH key. Optionally, an existing public key can be supplied for the `public_key` property. If the `public_key` property is omitted, a new key pair is generated. The private key is returned in the response.
+            additionalProperties: false
+            properties:
+              name:
+                $ref: "#/components/schemas/sshKeyName"
+              public_key:
+                $ref: "#/components/schemas/sshPublicKey"
+            example:
+              {
+                "name": "newly-generated-key"
+              }
+
+  responses:
+    unauthorized:
+      description: Unauthorized.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponseBody"
+    forbidden:
+      description: Forbidden.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponseBody"
+    notFound:
+      description: Object does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponseBody"
+    badRequest:
+      description: Request parameters were invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponseBody"
+    internalServerError:
+      description: Something unexpected occurred.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorResponseBody"
+    instances:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/instance"
+    instance:
+      description: OK
+      x-go-name: InstanceResponse
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                $ref: "#/components/schemas/instance"
+    instanceTypes:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+            - data
+            properties:
+              data:
+                type: object
+                description: Dict of instance_type_name to instance_type and region availability.
+                additionalProperties:
+                  type: object
+                  additionalProperties: false
+                  required:
+                    - instance_type
+                    - regions_with_capacity_available
+                  properties:
+                    instance_type:
+                      $ref: "#/components/schemas/instanceType"
+                    regions_with_capacity_available:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/region"
+                      description: List of regions, if any, that have this instance type available
+                example: {
+                  "gpu_1x_a100": {
+                    "instance_type": {
+                      "name": "gpu_1x_a100",
+                      "description": "1x RTX A100 (24 GB)",
+                      "price_cents_per_hour": "80",
+                      "specs": {
+                        "vcpus": 24,
+                        "memory_gib": 800,
+                        "storage_gib": 512
+                      }
+                    },
+                    "regions_with_capacity_available": [
+                      {
+                        "name": "us-tx-1",
+                        "description": "Austin, Texas"
+                      }
+                    ]
+                  },
+                  "gpu_4x_a6000": {
+                    "instance_type": {
+                      "name": "gpu_4x_a6000",
+                      "description": "4x RTX 6000 (24 GB)",
+                      "price_cents_per_hour": "110",
+                      "specs": {
+                        "vcpus": 24,
+                        "memory_gib": 800,
+                        "storage_gib": 512
+                      }
+                    },
+                    "regions_with_capacity_available": [
+                      {
+                        "name": "us-az-1",
+                        "description": "Phoenix, Arizona"
+                      }
+                    ]
+                  }
+                }
+    launch:
+      description: OK
+      x-go-name: LaunchResponse
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            additionalProperties: false
+            properties:
+              data:
+                type: object
+                required:
+                - instance_ids
+                additionalProperties: false
+                properties:
+                  instance_ids:
+                    type: array
+                    description: "The unique identifiers (IDs) of the launched instances. Note: if a quantity was specified, fewer than the requested quantity might have been launched."
+                    items:
+                      $ref: "#/components/schemas/instanceId"
+
+    terminate:
+      description: OK
+      x-go-name: TerminateResponse
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            additionalProperties: false
+            properties:
+              data:
+                type: object
+                required:
+                  - terminated_instances
+                additionalProperties: false
+                properties:
+                  terminated_instances:
+                    type: array
+                    description: "List of instances that were terminated. Note: this list might not contain all instances requested to be terminated."
+                    items:
+                      $ref: "#/components/schemas/instance"
+
+    sshKeys:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            additionalProperties: false
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: "#/components/schemas/sshKey"
+
+    addSSHKey:
+      description: OK
+      x-go-name: AddSSHKeyResponseBody
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - data
+            additionalProperties: false
+            description: The added or generated SSH public key. If a new key pair was generated, the response body contains a `private_key` property that *must* be saved locally. Lambda Cloud does not store private keys.
+            properties:
+              data:
+                $ref: "#/components/schemas/sshKey"
+            example:
+              {
+                "data": {
+                  "id": "0920582c7ff041399e34823a0be62548",
+                  "name": "newly-generated-key",
+                  "public_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfKpav4ILY54InZe27G user",
+                  "private_key": "-----BEGIN RSA PRIVATE KEY-----\nKEY CONTENT-----END RSA PRIVATE KEY-----\n"
+                }
+              }
+
+  securitySchemes:
+    basicAuth:
+      description: 'Basic HTTP authentication. Allowed headers--
+        `Authorization: Basic <base64 encoding of api_key>:` | `Authorization: Basic <api_key>`'
+      scheme: basic
+      type: http
+    bearerAuth:
+      bearerFormat: auth-scheme
+      description: 'Bearer HTTP authentication. Allowed headers--
+        `Authorization: Bearer <api_key>`'
+      scheme: bearer
+      type: http
+
+security:
+  - basicAuth: []
+  - bearerAuth: []

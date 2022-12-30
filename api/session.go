@@ -41,8 +41,8 @@ func sessionCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt := session.NewRuntime(scr.Runtime)
-	node, err := rt.InitNode(scr.SSHKey)
+	rt, _ := session.NewRuntime(scr.Runtime)
+	node, err := rt.InitNode(nil, scr.SSHKey)
 	if err != nil {
 		log.Warn().Err(err).Msg("failed to init node")
 		render.Render(w, r, ErrInternalServer("Failed to initialize node"))

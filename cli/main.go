@@ -23,8 +23,10 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.Version = ""
 	rootCmd.Flags().BoolP("version", "v", false, "Get the version of current Unweave CLI")
-	rootCmd.PersistentFlags().StringVarP(&config.UnweaveConfig.User.Token, "token", "t", "", "Use a specific token to authenticate - overrides login token")
-	rootCmd.PersistentFlags().StringVarP(&config.ProjectPath, "path", "p", "", "ProjectPath to an Unweave project to run")
+
+	flags := rootCmd.PersistentFlags()
+	flags.StringVarP(&config.AuthToken, "token", "t", "", "Use a specific token to authenticate - overrides login token")
+	flags.StringVarP(&config.ProjectPath, "path", "p", "", "ProjectPath to an Unweave project to run")
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "config",

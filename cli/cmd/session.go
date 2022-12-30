@@ -27,7 +27,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		s := string(f)
 		sshKey.PublicKey = &s
 	} else {
-		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key?")
+		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key")
 		if !newKey {
 			fmt.Println("No SSH key path provided")
 			return nil
