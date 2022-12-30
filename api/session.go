@@ -47,7 +47,7 @@ func sessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 				Err(err).
 				Msg("failed to init node")
 
-			render.Render(w, r, ErrInternalServer("Failed to initialize node"))
+			render.Render(w, r, ErrHTTPError(err, "Failed to initialize node"))
 			return
 		}
 

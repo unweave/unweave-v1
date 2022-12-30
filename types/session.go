@@ -22,8 +22,8 @@ func (r RuntimeProvider) String() string {
 }
 
 const (
-	LambdaLabsProvider RuntimeProvider = "lambdalabs"
-	UnweaveProvider    RuntimeProvider = "unweave"
+	LambdaLabsProvider RuntimeProvider = "LambdaLabs"
+	UnweaveProvider    RuntimeProvider = "Unweave"
 )
 
 type Node struct {

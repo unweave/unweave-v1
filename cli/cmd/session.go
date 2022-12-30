@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -41,6 +42,11 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 	_, err := uwc.Session.Create(cmd.Context(), params)
 	if err != nil {
+		var e *api.HTTPError
+		if errors.As(err, &e) {
+			fmt.Println(e.Verbose())
+			return nil
+		}
 		return err
 	}
 	return nil

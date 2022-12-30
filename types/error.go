@@ -13,9 +13,9 @@ package types
 //
 // Verbose:
 //
-//		LambdaLabs API error:
-//			code: 400
-//			message: Invalid Public Key
+//	LambdaLabs API error:
+//		code: 400
+//		message: Invalid Public Key
 //	 	endpoint: POST /session
 //
 // Unweave errors
@@ -26,21 +26,22 @@ package types
 //
 // Verbose:
 //
-//		Unweave API error:
-//			code: 404
-//			message: Project not found
+//	Unweave API error:
+//		code: 404
+//		message: Project not found
 //	 	endpoint: POST /session
 //
 // It should be possible to automatically generate the short and verbose versions of the
 // error message from the same struct. The error message should not expose in inner workings
 // of the API.
 type Error struct {
-	Code     int             `json:"code"`
-	Provider RuntimeProvider `json:"provider"`
-	err      error
+	Code       int             `json:"code"`
+	Message    string          `json:"message"`
+	Suggestion string          `json:"suggestion"`
+	Provider   RuntimeProvider `json:"provider"`
+	Err        error           `json:"error"`
 }
 
-type UnweaveError interface {
-	Short() string
-	Verbose() string
+func (e *Error) Error() string {
+	return e.Err.Error()
 }

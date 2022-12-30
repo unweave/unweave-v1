@@ -64,7 +64,25 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 		return types.SSHKey{}, err
 	}
 	if res.JSON200 == nil {
-		return types.SSHKey{}, fmt.Errorf("failed to generate SSH key")
+		err := &types.Error{
+			Code:     res.StatusCode(),
+			Provider: types.LambdaLabsProvider,
+			Err:      fmt.Errorf("failed to generate SSH key"),
+		}
+		if res.JSON401 != nil {
+			err.Message = res.JSON401.Error.Message
+			err.Suggestion = "Make sure your LambdaLabs credentials are up to date."
+			return types.SSHKey{}, err
+		}
+		if res.JSON403 != nil {
+			err.Message = res.JSON403.Error.Message
+			err.Suggestion = "Make sure your LambdaLabs credentials are up to date."
+			return types.SSHKey{}, err
+		}
+		// Don't know what error
+		err.Message = "Unknown error"
+
+		return types.SSHKey{}, err
 	}
 
 	return types.SSHKey{
@@ -98,7 +116,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 	if sshKey.Name == nil {
 		k, err := r.AddSSHKey(ctx, sshKey)
 		if err != nil {
-			return types.Node{}, fmt.Errorf("failed to create a new key, %v", err)
+			return types.Node{}, fmt.Errorf("failed to create a new key, %w", err)
 		}
 		sshKey = k
 	}
