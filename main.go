@@ -5,6 +5,7 @@ import (
 	"github.com/unweave/unweave-v2/api"
 	"github.com/unweave/unweave-v2/config"
 	"github.com/unweave/unweave-v2/pkg/gonfig"
+	"github.com/unweave/unweave-v2/runtime"
 )
 
 func main() {
@@ -16,5 +17,5 @@ func main() {
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
-	api.API(cfg)
+	api.API(cfg, &runtime.DBInitializer{})
 }

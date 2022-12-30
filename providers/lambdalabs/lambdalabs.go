@@ -7,7 +7,7 @@ import (
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/pkg/random"
-	"github.com/unweave/unweave-v2/session/providers/lambdalabs/client"
+	"github.com/unweave/unweave-v2/providers/lambdalabs/client"
 	"github.com/unweave/unweave-v2/types"
 )
 
@@ -20,13 +20,13 @@ type InstanceDetails struct {
 	// 	- Filesystems
 }
 
-type Runtime struct {
+type Session struct {
 	InstanceDetails
 
 	client *client.ClientWithResponses
 }
 
-func (r *Runtime) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
+func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
 	if sshKey.PublicKey != nil {
 		keys, err := r.ListSSHKeys(ctx)
 		if err != nil {
@@ -73,7 +73,7 @@ func (r *Runtime) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 	}, nil
 }
 
-func (r *Runtime) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
+func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	res, err := r.client.ListSSHKeysWithResponse(ctx)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func (r *Runtime) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	return keys, nil
 }
 
-func (r *Runtime) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node, error) {
+func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node, error) {
 	// If the SSH key is not provided, generate a new one
 	if sshKey.Name == nil {
 		k, err := r.AddSSHKey(ctx, sshKey)
@@ -134,11 +134,11 @@ func (r *Runtime) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 	}, nil
 }
 
-func (r *Runtime) TerminateNode(ctx context.Context, nodeID string) error {
+func (r *Session) TerminateNode(ctx context.Context, nodeID string) error {
 	return nil
 }
 
-func NewProvider(apiKey string) (*Runtime, error) {
+func NewSessionProvider(apiKey string) (*Session, error) {
 	bearerTokenProvider, err := securityprovider.NewSecurityProviderBearerToken(apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bearer token provider, err: %v", err)
@@ -149,7 +149,7 @@ func NewProvider(apiKey string) (*Runtime, error) {
 		return nil, fmt.Errorf("failed to create client, err: %v", err)
 	}
 
-	return &Runtime{
+	return &Session{
 		InstanceDetails: InstanceDetails{},
 		client:          llClient,
 	}, nil

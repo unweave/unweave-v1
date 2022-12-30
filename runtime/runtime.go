@@ -1,4 +1,5 @@
-package session
+// Package runtime manages the lifecycle of a session.
+package runtime
 
 import (
 	"context"
@@ -6,7 +7,13 @@ import (
 	"github.com/unweave/unweave-v2/types"
 )
 
-type Runtime interface {
+type Runtime struct {
+	Session
+}
+
+// Session represents an interactive session on a node. You can connect to it via SSH and
+// train your ML models for example.
+type Session interface {
 	// AddSSHKey adds a new SSH key to the provider.
 	//
 	// If sshKey.Name is nil, the provider automatically generates a random, unique,

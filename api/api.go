@@ -9,9 +9,10 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave-v2/config"
+	"github.com/unweave/unweave-v2/runtime"
 )
 
-func API(cfg config.Config) {
+func API(cfg config.Config, rti runtime.Initializer) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -31,9 +32,10 @@ func API(cfg config.Config) {
 		},
 	}))
 
-	r.Route("/session", func(r chi.Router) {
-		r.Post("/", sessionCreateHandler)
-		r.Get("/{id}", sessionGetHandler)
+	r.Route("/sessions", func(r chi.Router) {
+		r.Post("/", sessionsCreate(rti))
+		r.Get("/", sessionsList(rti))
+		r.Get("/{id}", sessionsGet(rti))
 	})
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)
