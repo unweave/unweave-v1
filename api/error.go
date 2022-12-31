@@ -26,12 +26,19 @@ func (e *HTTPError) Short() string {
 }
 
 func (e *HTTPError) Verbose() string {
-	str := fmt.Sprintf(
-		"%s API error:\n\t"+
-			"code: %d\n\t"+
-			"message: %s\n\t"+
-			"suggestion: %s\n\t", e.Provider, e.Code, e.Message, e.Suggestion,
-	)
+	str := "API error:\n"
+	if e.Provider != "" {
+		str = fmt.Sprintf("%s API error:\n", e.Provider)
+	}
+	if e.Code != 0 {
+		str += fmt.Sprintf("  Code: %d\n", e.Code)
+	}
+	if e.Message != "" {
+		str += fmt.Sprintf("  Message: %s\n", e.Message)
+	}
+	if e.Suggestion != "" {
+		str += fmt.Sprintf("  Suggestion: %s\n", e.Suggestion)
+	}
 	return str
 }
 

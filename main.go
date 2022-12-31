@@ -25,5 +25,5 @@ func main() {
 		TimeFormat: time.RFC3339,
 	})
 
-	api.API(cfg, &runtime.DBInitializer{})
+	api.API(cfg, &runtime.ConfigFileInitializer{})
 }

@@ -3,6 +3,7 @@ package lambdalabs
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
@@ -18,6 +19,21 @@ type InstanceDetails struct {
 	Region client.RegionName   `json:"region"`
 	// TODO:
 	// 	- Filesystems
+}
+
+// err400 can happen when ll doesn't have enough capacity to create the instance
+func err400(msg string, err error) *types.Error {
+	suggestion := ""
+	if strings.Contains(strings.ToLower(msg), "not enough capacity") {
+		suggestion = "Try a different region or instance type"
+	}
+	return &types.Error{
+		Code:       400,
+		Provider:   types.LambdaLabsProvider,
+		Message:    msg,
+		Suggestion: suggestion,
+		Err:        err,
+	}
 }
 
 func err401(msg string, err error) *types.Error {
@@ -36,6 +52,16 @@ func err403(msg string, err error) *types.Error {
 		Provider:   types.LambdaLabsProvider,
 		Message:    msg,
 		Suggestion: "Make sure your LambdaLabs credentials are up to date",
+		Err:        err,
+	}
+}
+
+func err404(msg string, err error) *types.Error {
+	return &types.Error{
+		Code:       404,
+		Provider:   types.LambdaLabsProvider,
+		Message:    msg,
+		Suggestion: "",
 		Err:        err,
 	}
 }
@@ -87,7 +113,7 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 		// This should most like never collide with an existing key, but it is possible.
 		// In the future, we should check to see if the key already exists before creating
 		// it.
-		name := "uw-generated-key-" + random.GenerateRandomPhrase(4, "-")
+		name := "uw:" + random.GenerateRandomPhrase(4, "-")
 		sshKey.Name = &name
 	}
 
@@ -164,10 +190,10 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 
 	req := client.LaunchInstanceJSONRequestBody{
 		FileSystemNames:  nil,
-		InstanceTypeName: "",
+		InstanceTypeName: "gpu_1x_a100",
 		Name:             types.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         types.Inty(1),
-		RegionName:       "",
+		RegionName:       "us-east-1",
 		SshKeyNames:      []string{*sshKey.Name},
 	}
 
@@ -185,6 +211,12 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 		}
 		if res.JSON500 != nil {
 			return types.Node{}, err500(res.JSON500.Error.Message, err)
+		}
+		if res.JSON400 != nil {
+			return types.Node{}, err400(res.JSON400.Error.Message, err)
+		}
+		if res.JSON404 != nil {
+			return types.Node{}, err404(res.JSON404.Error.Message, err)
 		}
 		return types.Node{}, errUnknown(res.StatusCode(), err)
 	}

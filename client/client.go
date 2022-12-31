@@ -29,7 +29,6 @@ func NewClient(cfg Config) *Client {
 		client: &http.Client{},
 	}
 	c.Session = &SessionService{client: c}
-
 	return c
 }
 
