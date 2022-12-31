@@ -20,6 +20,46 @@ type InstanceDetails struct {
 	// 	- Filesystems
 }
 
+func err401(msg string, err error) *types.Error {
+	return &types.Error{
+		Code:       401,
+		Provider:   types.LambdaLabsProvider,
+		Message:    msg,
+		Suggestion: "Make sure your LambdaLabs credentials are up to date",
+		Err:        err,
+	}
+}
+
+func err403(msg string, err error) *types.Error {
+	return &types.Error{
+		Code:       403,
+		Provider:   types.LambdaLabsProvider,
+		Message:    msg,
+		Suggestion: "Make sure your LambdaLabs credentials are up to date",
+		Err:        err,
+	}
+}
+
+func err500(msg string, err error) *types.Error {
+	return &types.Error{
+		Code:       500,
+		Message:    "Unknown error",
+		Suggestion: "LambdaLabs might be experiencing issues. Check the service status page at https://status.lambdalabs.com/",
+		Provider:   types.LambdaLabsProvider,
+		Err:        err,
+	}
+}
+
+func errUnknown(code int, err error) *types.Error {
+	return &types.Error{
+		Code:       code,
+		Message:    "Unknown error",
+		Suggestion: "",
+		Provider:   types.LambdaLabsProvider,
+		Err:        err,
+	}
+}
+
 type Session struct {
 	InstanceDetails
 
@@ -64,25 +104,14 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 		return types.SSHKey{}, err
 	}
 	if res.JSON200 == nil {
-		err := &types.Error{
-			Code:     res.StatusCode(),
-			Provider: types.LambdaLabsProvider,
-			Err:      fmt.Errorf("failed to generate SSH key"),
-		}
+		err = fmt.Errorf("failed to generate SSH key")
 		if res.JSON401 != nil {
-			err.Message = res.JSON401.Error.Message
-			err.Suggestion = "Make sure your LambdaLabs credentials are up to date."
-			return types.SSHKey{}, err
+			return types.SSHKey{}, err401(res.JSON401.Error.Message, err)
 		}
 		if res.JSON403 != nil {
-			err.Message = res.JSON403.Error.Message
-			err.Suggestion = "Make sure your LambdaLabs credentials are up to date."
-			return types.SSHKey{}, err
+			return types.SSHKey{}, err403(res.JSON403.Error.Message, err)
 		}
-		// Don't know what error
-		err.Message = "Unknown error"
-
-		return types.SSHKey{}, err
+		return types.SSHKey{}, errUnknown(res.StatusCode(), err)
 	}
 
 	return types.SSHKey{
@@ -98,7 +127,14 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	}
 
 	if res.JSON200 == nil {
-		return nil, fmt.Errorf("failed to list ssh keys")
+		err = fmt.Errorf("failed to list ssh keys")
+		if res.JSON401 != nil {
+			return nil, err401(res.JSON401.Error.Message, err)
+		}
+		if res.JSON403 != nil {
+			return nil, err403(res.JSON403.Error.Message, err)
+		}
+		return nil, errUnknown(res.StatusCode(), err)
 	}
 
 	keys := make([]types.SSHKey, len(res.JSON200.Data))
@@ -140,11 +176,23 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 		return types.Node{}, err
 	}
 	if res.JSON200 == nil {
-		return types.Node{}, fmt.Errorf("failed to launch instance")
+		err := fmt.Errorf("failed to launch instance")
+		if res.JSON401 != nil {
+			return types.Node{}, err401(res.JSON401.Error.Message, err)
+		}
+		if res.JSON403 != nil {
+			return types.Node{}, err403(res.JSON403.Error.Message, err)
+		}
+		if res.JSON500 != nil {
+			return types.Node{}, err500(res.JSON500.Error.Message, err)
+		}
+		return types.Node{}, errUnknown(res.StatusCode(), err)
 	}
+
 	if len(res.JSON200.Data.InstanceIds) == 0 {
 		return types.Node{}, fmt.Errorf("failed to launch instance")
 	}
+
 	return types.Node{
 		ID:      res.JSON200.Data.InstanceIds[0],
 		KeyPair: sshKey,

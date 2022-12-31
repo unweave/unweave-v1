@@ -45,3 +45,8 @@ type Error struct {
 func (e *Error) Error() string {
 	return e.Err.Error()
 }
+
+type UwError interface {
+	Short() string
+	Verbose() string
+}
