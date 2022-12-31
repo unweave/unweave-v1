@@ -2,6 +2,7 @@ package lambdalabs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,16 +24,11 @@ type InstanceDetails struct {
 
 // err400 can happen when ll doesn't have enough capacity to create the instance
 func err400(msg string, err error) *types.Error {
-	suggestion := ""
-	if strings.Contains(strings.ToLower(msg), "not enough capacity") {
-		suggestion = "Try a different region or instance type"
-	}
 	return &types.Error{
-		Code:       400,
-		Provider:   types.LambdaLabsProvider,
-		Message:    msg,
-		Suggestion: suggestion,
-		Err:        err,
+		Code:     400,
+		Provider: types.LambdaLabsProvider,
+		Message:  msg,
+		Err:      err,
 	}
 }
 
@@ -147,20 +143,23 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 }
 
 func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
+	log.Info().
+		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+		Msg("Listing SSH keys")
+
 	res, err := r.client.ListSSHKeysWithResponse(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	if res.JSON200 == nil {
-		err = fmt.Errorf("failed to list ssh keys")
 		if res.JSON401 != nil {
-			return nil, err401(res.JSON401.Error.Message, err)
+			return nil, err401(res.JSON401.Error.Message, nil)
 		}
 		if res.JSON403 != nil {
-			return nil, err403(res.JSON403.Error.Message, err)
+			return nil, err403(res.JSON403.Error.Message, nil)
 		}
-		return nil, errUnknown(res.StatusCode(), err)
+		return nil, errUnknown(res.StatusCode(), nil)
 	}
 
 	keys := make([]types.SSHKey, len(res.JSON200.Data))
@@ -173,6 +172,49 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	return keys, nil
 }
 
+func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeType, error) {
+	log.Info().
+		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+		Msgf("Listing instance availability")
+
+	res, err := r.client.InstanceTypesWithResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.JSON200 == nil {
+		if res.JSON401 != nil {
+			return nil, err401(res.JSON401.Error.Message, nil)
+		}
+		if res.JSON403 != nil {
+			return nil, err403(res.JSON403.Error.Message, nil)
+		}
+		return nil, errUnknown(res.StatusCode(), nil)
+	}
+
+	var availableInstanceTypes []types.NodeType
+	for id, data := range res.JSON200.Data {
+		for _, region := range data.RegionsWithCapacityAvailable {
+			it := types.NodeType{
+				ID:          id,
+				Region:      &region.Name,
+				Available:   true,
+				Name:        &data.InstanceType.Name,
+				Price:       &data.InstanceType.PriceCentsPerHour,
+				Description: &data.InstanceType.Description,
+				Provider:    types.LambdaLabsProvider,
+				Specs: types.NodeSpecs{
+					VCPUs:     data.InstanceType.Specs.Vcpus,
+					Memory:    data.InstanceType.Specs.MemoryGib,
+					GPUMemory: nil,
+				},
+			}
+			availableInstanceTypes = append(availableInstanceTypes, it)
+		}
+	}
+	return availableInstanceTypes, nil
+}
+
 func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node, error) {
 	// If the SSH key is not provided, generate a new one
 	if sshKey.Name == nil {
@@ -183,17 +225,16 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 		sshKey = k
 	}
 
-	// Launch instance
 	log.Info().
 		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
 		Msgf("Launching instance with SSH key %q", *sshKey.Name)
 
 	req := client.LaunchInstanceJSONRequestBody{
 		FileSystemNames:  nil,
-		InstanceTypeName: "gpu_1x_a100",
+		InstanceTypeName: "gpu_8x_a100",
 		Name:             types.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         types.Inty(1),
-		RegionName:       "us-east-1",
+		RegionName:       "asia-south-1",
 		SshKeyNames:      []string{*sshKey.Name},
 	}
 
@@ -202,22 +243,50 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 		return types.Node{}, err
 	}
 	if res.JSON200 == nil {
-		err := fmt.Errorf("failed to launch instance")
 		if res.JSON401 != nil {
-			return types.Node{}, err401(res.JSON401.Error.Message, err)
+			return types.Node{}, err401(res.JSON401.Error.Message, nil)
 		}
 		if res.JSON403 != nil {
-			return types.Node{}, err403(res.JSON403.Error.Message, err)
+			return types.Node{}, err403(res.JSON403.Error.Message, nil)
 		}
 		if res.JSON500 != nil {
-			return types.Node{}, err500(res.JSON500.Error.Message, err)
-		}
-		if res.JSON400 != nil {
-			return types.Node{}, err400(res.JSON400.Error.Message, err)
+			return types.Node{}, err500(res.JSON500.Error.Message, nil)
 		}
 		if res.JSON404 != nil {
-			return types.Node{}, err404(res.JSON404.Error.Message, err)
+			return types.Node{}, err404(res.JSON404.Error.Message, nil)
 		}
+
+		// We get a 400 if the instance type is not available. We check for the available
+		// instances and return them in the error message. Since this is not critical, we
+		// can ignore if there's any errors in the process.
+		if res.JSON400 != nil {
+			suggestion := ""
+			msg := strings.ToLower(res.JSON400.Error.Message)
+			if strings.Contains(msg, "not enough capacity") {
+				// Get a list of available instances
+				instances, e := r.ListInstanceAvailability(ctx)
+				if e != nil {
+					// Log and continue
+					log.Warn().
+						Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+						Msgf("Failed to get a list of available instances: %v", e)
+				}
+
+				b, e := json.MarshalIndent(instances, "", "  ")
+				if e != nil {
+					log.Warn().
+						Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+						Msgf("Failed to marshal available instances to JSON: %v", e)
+				} else {
+					suggestion = "Try a different region or instance type:\nAvailable instances:\n"
+					suggestion += string(b)
+				}
+			}
+			e := err400(res.JSON400.Error.Message, nil)
+			e.Suggestion = suggestion
+			return types.Node{}, e
+		}
+
 		return types.Node{}, errUnknown(res.StatusCode(), err)
 	}
 

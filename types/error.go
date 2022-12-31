@@ -43,7 +43,10 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return e.Err.Error()
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return ""
 }
 
 type UwError interface {

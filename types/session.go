@@ -26,10 +26,31 @@ const (
 	UnweaveProvider    RuntimeProvider = "Unweave"
 )
 
+type NodeSpecs struct {
+	VCPUs int `json:"vCPUs"`
+	// Memory is the RAM in GB
+	Memory int `json:"memory"`
+	// GPUMemory is the GPU RAM in GB
+	GPUMemory *int `json:"gpuMemory"`
+}
+
+type NodeType struct {
+	ID          string          `json:"id"`
+	Available   bool            `json:"available"`
+	Name        *string         `json:"name"`
+	Price       *int            `json:"price"`
+	Region      *string         `json:"region"`
+	Description *string         `json:"description"`
+	Provider    RuntimeProvider `json:"provider"`
+	Specs       NodeSpecs       `json:"specs"`
+}
+
 type Node struct {
-	ID      string `json:"id"`
-	KeyPair SSHKey `json:"sshKeyPair"`
-	Status  Status `json:"status"`
+	ID       string  `json:"id"`
+	Region   *string `json:"region"`
+	KeyPair  SSHKey  `json:"sshKeyPair"`
+	Status   Status  `json:"status"`
+	NodeType `json:"nodeType"`
 }
 
 type SSHKey struct {
