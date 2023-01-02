@@ -34,10 +34,10 @@ func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
 	}))
 
 	r.Route("/sessions", func(r chi.Router) {
-		r.Post("/", sessionsCreate(rti, dbq))
-		r.Get("/", sessionsList(rti))
-		r.Get("/{id}", sessionsGet(rti))
-		r.Put("/{id}/terminate", sessionsTerminate(rti))
+		r.Post("/", SessionsCreate(rti, dbq))
+		r.Get("/", SessionsList(rti))
+		r.Get("/{id}", SessionsGet(rti))
+		r.Put("/{id}/terminate", SessionsTerminate(rti))
 	})
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)

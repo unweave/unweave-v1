@@ -109,7 +109,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 	return key, nil
 }
 
-func sessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
+func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		scr := SessionCreateParams{}

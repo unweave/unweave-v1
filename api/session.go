@@ -9,7 +9,7 @@ import (
 	"github.com/unweave/unweave-v2/types"
 )
 
-func sessionsGet(rti runtime.Initializer) http.HandlerFunc {
+func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		res := &types.Session{ID: id}
@@ -17,7 +17,7 @@ func sessionsGet(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-func sessionsList(rti runtime.Initializer) http.HandlerFunc {
+func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		res := []*types.Session{
 			{ID: "1"},
@@ -26,7 +26,7 @@ func sessionsList(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-func sessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
+func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
 		res := &types.Session{ID: id}

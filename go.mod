@@ -2,6 +2,7 @@ module github.com/unweave/unweave-v2
 
 go 1.19
 
+
 require (
 	github.com/deepmap/oapi-codegen v1.12.4
 	github.com/ghodss/yaml v1.0.0
