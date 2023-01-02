@@ -63,7 +63,7 @@ func ErrHTTPError(err error, fallbackMessage string) render.Renderer {
 	return ErrInternalServer(fallbackMessage)
 }
 
-func ErrBadRequest(msg string) render.Renderer {
+func fmtError(msg string, err error) render.Renderer {
 	return &HTTPError{
 		Code:    400,
 		Message: msg,
@@ -71,8 +71,12 @@ func ErrBadRequest(msg string) render.Renderer {
 }
 
 func ErrInternalServer(msg string) render.Renderer {
+	m := "Internal server error"
+	if msg != "" {
+		m = msg
+	}
 	return &HTTPError{
 		Code:    500,
-		Message: msg,
+		Message: m,
 	}
 }

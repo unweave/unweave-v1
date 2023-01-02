@@ -272,7 +272,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 						Msgf("Failed to get a list of available instances: %v", e)
 				}
 
-				b, e := json.MarshalIndent(instances, "", "  ")
+				b, e := json.Marshal(instances)
 				if e != nil {
 					log.Warn().
 						Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).

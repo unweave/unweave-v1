@@ -44,9 +44,9 @@ type UserConfig struct {
 }
 
 type Config struct {
-	UwEnv    string                   `json:"unweaveEnv" env:"UW_ENV"`
-	ApiURL   string                   `json:"apiURL" env:"UW_API_URL"`
-	AppURL   string                   `json:"appURL" env:"UW_APP_URL"`
+	UwEnv    string                   `json:"unweaveEnv" env:"UNWEAVE_ENV"`
+	ApiURL   string                   `json:"apiURL" env:"UNWEAVE_API_URL"`
+	AppURL   string                   `json:"appURL" env:"UNWEAVE_APP_URL"`
 	User     UserConfig               `json:"user"`
 	Projects map[string]ProjectConfig `json:"projects"`
 }
@@ -72,7 +72,7 @@ func init() {
 	}
 
 	env := "production"
-	if e, ok := os.LookupEnv("UW_ENV"); ok {
+	if e, ok := os.LookupEnv("UNWEAVE_ENV"); ok {
 		env = e
 	}
 	switch env {
@@ -82,7 +82,7 @@ func init() {
 		UnweaveConfig.AppURL = "https://app.staging-unweave.io"
 	case "development", "dev":
 		Path = filepath.Join(home, ".unweave/dev-config.json")
-		UnweaveConfig.ApiURL = "http://localhost:8080"
+		UnweaveConfig.ApiURL = "http://localhost:8000"
 		UnweaveConfig.AppURL = "http://localhost:3000"
 	case "production", "prod":
 		Path = filepath.Join(home, ".unweave/config.json")

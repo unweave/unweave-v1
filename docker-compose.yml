@@ -1,4 +1,4 @@
-version: '3'
+version: '3.9'
 services:
 
   db:
@@ -6,32 +6,37 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      DB_ANON_ROLE: ${DB_ANON_ROLE}
-      DB_SCHEMA: ${DB_SCHEMA}
+      POSTGRES_USER: ${UNWEAVE_DB_USER}
+      POSTGRES_PASSWORD: ${UNWEAVE_DB_PASSWORD}
+      POSTGRES_DB: ${UNWEAVE_DB_NAME}
+      POSTGRES_HOST: ${UNWEAVE_DB_HOST}
+      POSTGRES_PORT: ${UNWEAVE_DB_PORT}
+    healthcheck:
+      test: pg_isready -U ${UNWEAVE_DB_USER} -d ${UNWEAVE_DB_NAME}
+      interval: 2s
+      timeout: 5s
+      retries: 10
 
   api:
-    build: workbench
+    build:
+      context: .
+      dockerfile: ./api/Dockerfile
+      target: dev
+
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
     expose:
       - "8000"
-
-  generate-spec:
-    image: quay.io/goswagger/swagger
-    working_dir: /home/unweave/
-    volumes:
-      - .:/home/unweave/
-    entrypoint: "sh -c"
-    command: ["swagger generate spec -o ./swagger.json && swagger validate ./swagger.json"]
-
-  swagger:
-    image: swaggerapi/swagger-ui
-    ports:
-      - "8080:8080"
-    expose:
-      - "8080"
     environment:
-      API_URL: http://localhost:3000/
+      UNWEAVE_API_PORT: ${UNWEAVE_API_PORT}
+      UNWEAVE_DB_USER: ${UNWEAVE_DB_USER}
+      UNWEAVE_DB_PASSWORD: ${UNWEAVE_DB_PASSWORD}
+      UNWEAVE_DB_NAME: ${UNWEAVE_DB_NAME}
+      UNWEAVE_DB_HOST: db
+      UNWEAVE_DB_PORT: ${UNWEAVE_DB_PORT}
+    working_dir: /home/unweave
+    volumes:
+      - ./:/home/unweave

@@ -4,7 +4,6 @@ const (
 	RuntimeProviderKey = "RuntimeProvider"
 )
 
-// swagger:enum Status
 type Status string
 
 const (
@@ -58,11 +57,13 @@ type SSHKey struct {
 	PrivateKey *string `json:"privateKey,omitempty"`
 	PublicKey  *string `json:"publicKey,omitempty"`
 }
+
 type Session struct {
 	ID     string `json:"id"`
 	SSHKey SSHKey `json:"sshKey"`
 	Status Status `json:"runtimeStatus"`
 }
+
 type ExecParams struct {
 	Cmd   []string `json:"cmd"`
 	Image []string `json:"containerImage"`
