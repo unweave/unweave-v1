@@ -17,6 +17,18 @@ services:
       timeout: 5s
       retries: 10
 
+  dbmate:
+    image: ghcr.io/amacneil/dbmate:main
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./db/initdb:/home/db/initdb
+      - ./db/migrations:/home/db/migrations
+    environment:
+      DATABASE_URL: postgres://${UNWEAVE_DB_USER}:${UNWEAVE_DB_PASSWORD}@db/${UNWEAVE_DB_NAME}?sslmode=disable
+    command: --migrations-dir /home/db/migrations up
+
   api:
     build:
       context: .

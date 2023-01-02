@@ -1,8 +1,8 @@
 version: '3.9'
 
 services:
-  postgres:
-    image: postgres
+  db:
+    image: postgres:14.0
     ports:
       - "5432:5432"
     healthcheck:
