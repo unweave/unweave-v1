@@ -1,4 +1,6 @@
--- migrate:up
+-- +goose Up
+-- +goose StatementBegin
+
 create schema unweave;
 grant all on schema unweave to postgres;
 
@@ -35,5 +37,9 @@ create table unweave.ssh_keys
     public_key text        not null unique
 );
 
--- migrate:down
+-- +goose StatementEnd
 
+-- +goose Down
+-- +goose StatementBegin
+
+-- +goose StatementEnd

@@ -17,17 +17,19 @@ services:
       timeout: 5s
       retries: 10
 
-  dbmate:
-    image: ghcr.io/amacneil/dbmate:main
+  migrate:
+    image: golang:1.19
+    working_dir: /home/db
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      - ./db/initdb:/home/db/initdb
       - ./db/migrations:/home/db/migrations
+      - ./db/seed/:/home/db/seed/
+      - ./db/migrate.sh:/home/db/migrate.sh
     environment:
       DATABASE_URL: postgres://${UNWEAVE_DB_USER}:${UNWEAVE_DB_PASSWORD}@db/${UNWEAVE_DB_NAME}?sslmode=disable
-    command: --migrations-dir /home/db/migrations up
+    entrypoint: ["sh", "-c", "./migrate.sh seed"]
 
   api:
     build:
@@ -38,6 +40,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     ports:
       - "8000:8000"
     expose:
