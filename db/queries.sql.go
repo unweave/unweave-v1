@@ -27,7 +27,9 @@ func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) er
 }
 
 const ProjectGet = `-- name: ProjectGet :one
-select id, name, owner_id, created_at from unweave.projects where id = $1
+select id, name, owner_id, created_at
+from unweave.projects
+where id = $1
 `
 
 func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error) {
@@ -119,7 +121,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, node_id, created_by, created_at, ready_at, exited_at, project_id, runtime
+select id, node_id, created_by, created_at, ready_at, exited_at, status, project_id, runtime
 from unweave.sessions
 where id = $1
 `
@@ -134,8 +136,20 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.CreatedAt,
 		&i.ReadyAt,
 		&i.ExitedAt,
+		&i.Status,
 		&i.ProjectID,
 		&i.Runtime,
 	)
 	return i, err
+}
+
+const SessionSetTerminated = `-- name: SessionSetTerminated :exec
+update unweave.sessions
+set status = unweave.session_status('terminated')
+where id = $1
+`
+
+func (q *Queries) SessionSetTerminated(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, SessionSetTerminated, id)
+	return err
 }

@@ -39,7 +39,11 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 		ctx := r.Context()
 		userID := getUserIDFromContext(ctx)
 
-		log.Info().
+		logger := log.With().
+			Str(ContextKeyUser, userID.String()).
+			Logger()
+
+		logger.Info().
 			Msgf("Executing SessionsTerminate request for user %q", userID)
 
 		// fetch from url params and try converting to uuid
@@ -64,7 +68,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 				})
 				return
 			}
-			log.Error().
+			logger.Error().
 				Err(err).
 				Msgf("Error fetching session %q", sessionID)
 
@@ -74,7 +78,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 
 		rt, err := rti.FromUser(sessionID, types.RuntimeProvider(sess.Runtime))
 		if err != nil {
-			log.Error().
+			logger.Error().
 				Err(err).
 				Msg("Failed to create runtime" + sess.Runtime)
 
@@ -86,8 +90,12 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			render.Render(w, r, ErrHTTPError(err, "Failed to terminate node"))
 			return
 		}
+		if err = dbq.SessionSetTerminated(ctx, sessionID); err != nil {
+			logger.Error().
+				Err(err).
+				Msgf("Failed to set session %q as terminated", sessionID)
+		}
 
-		// TODO: update session in db
 		render.JSON(w, r, &SessionTerminateResponse{Success: true})
 	}
 }

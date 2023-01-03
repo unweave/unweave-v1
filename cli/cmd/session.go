@@ -13,6 +13,8 @@ import (
 	"github.com/unweave/unweave/types"
 )
 
+const defaultProjectID = "00000000-0000-0000-0000-000000000002"
+
 func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
@@ -41,7 +43,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		Runtime: types.LambdaLabsProvider,
 		SSHKey:  sshKey,
 	}
-	_, err := uwc.Session.Create(cmd.Context(), params)
+	_, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {
@@ -72,7 +74,7 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 	}
 
 	uwc := InitUnweaveClient()
-	err = uwc.Session.Terminate(cmd.Context(), sessionID)
+	err = uwc.Session.Terminate(cmd.Context(), uuid.MustParse(defaultProjectID), sessionID)
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {

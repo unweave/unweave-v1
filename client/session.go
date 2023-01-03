@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api"
@@ -12,8 +13,9 @@ type SessionService struct {
 	client *Client
 }
 
-func (s *SessionService) Create(ctx context.Context, params api.SessionCreateParams) (*types.Session, error) {
-	req, err := s.client.NewAuthorizedRestRequest(Post, "sessions", nil, params)
+func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params api.SessionCreateParams) (*types.Session, error) {
+	uri := fmt.Sprintf("projects/%s/sessions", projectID)
+	req, err := s.client.NewAuthorizedRestRequest(Post, uri, nil, params)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +26,9 @@ func (s *SessionService) Create(ctx context.Context, params api.SessionCreatePar
 	return session, nil
 }
 
-func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.Session, error) {
-	req, err := s.client.NewAuthorizedRestRequest(Get, "sessions/"+sessionID.String(), nil, nil)
+func (s *SessionService) Get(ctx context.Context, projectID, sessionID uuid.UUID) (*types.Session, error) {
+	uri := fmt.Sprintf("projects/%s/sessions/%s", projectID, sessionID)
+	req, err := s.client.NewAuthorizedRestRequest(Get, uri, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +40,12 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 }
 
 func (s *SessionService) Exec(ctx context.Context, cmd []string, image string, sessionID *uuid.UUID) (*types.Session, error) {
-
 	return nil, nil
 }
 
-func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) error {
-	req, err := s.client.NewAuthorizedRestRequest(Put, "sessions/"+sessionID.String()+"/terminate", nil, nil)
+func (s *SessionService) Terminate(ctx context.Context, projectID, sessionID uuid.UUID) error {
+	uri := fmt.Sprintf("projects/%s/sessions/%s/terminate", projectID, sessionID)
+	req, err := s.client.NewAuthorizedRestRequest(Put, uri, nil, nil)
 	if err != nil {
 		return err
 	}

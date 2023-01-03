@@ -18,19 +18,22 @@ create table unweave.projects
     created_at timestamptz                        not null default now()
 );
 
+create type unweave.session_status as enum ('initializing', 'active', 'terminated');
+
 create table unweave.sessions
 (
-    id         uuid primary key     default gen_random_uuid(),
+    id         uuid primary key                default gen_random_uuid(),
     -- node_id is provider specific identifier of the compute resource assigned to this session.
-    node_id    text        not null,
-    created_by uuid        not null references unweave.users (id),
-    created_at timestamptz not null default now(),
+    node_id    text                   not null,
+    created_by uuid                   not null references unweave.users (id),
+    created_at timestamptz            not null default now(),
     ready_at   timestamptz,
     exited_at  timestamptz,
-    project_id uuid        not null references unweave.projects (id),
+    status     unweave.session_status not null default 'initializing',
+    project_id uuid                   not null references unweave.projects (id),
     -- We don't want to constrain this to an enum to allow users to register their own
     -- providers without having to update the database schema.
-    runtime    text        not null
+    runtime    text                   not null
 );
 
 create table unweave.ssh_keys

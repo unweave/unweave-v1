@@ -18,6 +18,7 @@ type Querier interface {
 	SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (UnweaveSshKey, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) error
 	SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error)
+	SessionSetTerminated(ctx context.Context, id uuid.UUID) error
 }
 
 var _ Querier = (*Queries)(nil)
