@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/cli/config"
@@ -57,5 +58,29 @@ func SessionList(cmd *cobra.Command, args []string) error {
 }
 
 func SessionTerminate(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+
+	sessionID, err := uuid.Parse(args[0])
+	if err != nil {
+		fmt.Println("Invalid session ID")
+		return nil
+	}
+
+	confirm := ui.Confirm(fmt.Sprintf("Are you sure you want to terminate session %q", sessionID))
+	if !confirm {
+		return nil
+	}
+
+	uwc := InitUnweaveClient()
+	err = uwc.Session.Terminate(cmd.Context(), sessionID)
+	if err != nil {
+		var e *api.HTTPError
+		if errors.As(err, &e) {
+			fmt.Println(e.Verbose())
+			return nil
+		}
+		return err
+	}
+
 	return nil
 }

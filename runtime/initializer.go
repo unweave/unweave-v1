@@ -13,7 +13,7 @@ import (
 
 type Initializer interface {
 	FromUser(userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
-	FromSession(sessionID string, provider types.RuntimeProvider) (*Runtime, error)
+	FromSession(sessionID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
 }
 
 // ConfigFileInitializer is only used in development or if you're self-hosting Unweave.
@@ -59,6 +59,6 @@ func (i *ConfigFileInitializer) FromUser(userID uuid.UUID, provider types.Runtim
 	return nil, fmt.Errorf("unknown runtime provider %q", provider)
 }
 
-func (i *ConfigFileInitializer) FromSession(sessionID string, provider types.RuntimeProvider) (*Runtime, error) {
+func (i *ConfigFileInitializer) FromSession(sessionID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
 	return nil, nil
 }

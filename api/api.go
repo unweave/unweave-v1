@@ -52,7 +52,7 @@ func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
 		r.Post("/", SessionsCreate(rti, dbq))
 		r.Get("/", SessionsList(rti))
 		r.Get("/{id}", SessionsGet(rti))
-		r.Put("/{id}/terminate", SessionsTerminate(rti))
+		r.Put("/{id}/terminate", SessionsTerminate(rti, dbq))
 	})
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)

@@ -17,7 +17,7 @@ func (s *SessionService) Create(ctx context.Context, params api.SessionCreatePar
 	if err != nil {
 		return nil, err
 	}
-	var session *types.Session
+	session := &types.Session{}
 	if err = s.client.ExecuteRest(ctx, req, session); err != nil {
 		return nil, err
 	}
@@ -39,4 +39,13 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 func (s *SessionService) Exec(ctx context.Context, cmd []string, image string, sessionID *uuid.UUID) (*types.Session, error) {
 
 	return nil, nil
+}
+
+func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) error {
+	req, err := s.client.NewAuthorizedRestRequest(Put, "sessions/"+sessionID.String()+"/terminate", nil, nil)
+	if err != nil {
+		return err
+	}
+	res := &api.SessionTerminateResponse{}
+	return s.client.ExecuteRest(ctx, req, res)
 }

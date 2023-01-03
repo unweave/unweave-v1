@@ -61,7 +61,7 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (U
 }
 
 const SessionGet = `-- name: SessionGet :one
-SELECT id, created_by, created_at, ready_at, exited_at, project_id, runtime FROM unweave.sessions WHERE id = $1
+SELECT id, node_id, created_by, created_at, ready_at, exited_at, project_id, runtime FROM unweave.sessions WHERE id = $1
 `
 
 func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error) {
@@ -69,6 +69,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 	var i UnweaveSession
 	err := row.Scan(
 		&i.ID,
+		&i.NodeID,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ReadyAt,

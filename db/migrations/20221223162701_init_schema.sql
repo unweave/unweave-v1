@@ -20,12 +20,16 @@ create table unweave.projects
 create table unweave.sessions
 (
     id         uuid primary key     default gen_random_uuid(),
+    -- node_id is provider specific identifier of the compute resource assigned to this session.
+    node_id    text        not null,
     created_by uuid        not null references unweave.users (id),
     created_at timestamptz not null default now(),
     ready_at   timestamptz,
     exited_at  timestamptz,
     project_id uuid        not null references unweave.projects (id),
-    runtime    text        not null -- we don't want to constrain this to a specific set of values
+    -- We don't want to constrain this to an enum to allow users to register their own
+    -- providers without having to update the database schema.
+    runtime    text        not null
 );
 
 create table unweave.ssh_keys

@@ -112,7 +112,7 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 				log.Info().
 					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
 					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
-				
+
 				return k, nil
 			}
 		}
@@ -320,6 +320,36 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 }
 
 func (r *Session) TerminateNode(ctx context.Context, nodeID string) error {
+	log.Info().
+		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+		Msgf("Terminating instance %q", nodeID)
+
+	req := client.TerminateInstanceJSONRequestBody{
+		InstanceIds: []string{nodeID},
+	}
+	res, err := r.client.TerminateInstanceWithResponse(ctx, req)
+	if err != nil {
+		return err
+	}
+	if res.JSON200 == nil {
+		if res.JSON401 != nil {
+			return err401(res.JSON401.Error.Message, nil)
+		}
+		if res.JSON403 != nil {
+			return err403(res.JSON403.Error.Message, nil)
+		}
+		if res.JSON400 != nil {
+			return err400(res.JSON400.Error.Message, nil)
+		}
+		if res.JSON404 != nil {
+			return err404(res.JSON404.Error.Message, nil)
+		}
+		if res.JSON500 != nil {
+			return err500(res.JSON500.Error.Message, nil)
+		}
+		return errUnknown(res.StatusCode(), err)
+	}
+
 	return nil
 }
 

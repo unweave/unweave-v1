@@ -19,6 +19,7 @@ type UnweaveProject struct {
 
 type UnweaveSession struct {
 	ID        uuid.UUID    `json:"id"`
+	NodeID    string       `json:"nodeID"`
 	CreatedBy uuid.UUID    `json:"createdBy"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ReadyAt   sql.NullTime `json:"readyAt"`
