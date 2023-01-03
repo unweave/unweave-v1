@@ -92,7 +92,8 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		}
 	}
 
-	if _, err := rt.AddSSHKey(ctx, key); err != nil {
+	key, err := rt.AddSSHKey(ctx, key)
+	if err != nil {
 		return types.SSHKey{}, fmt.Errorf("failed to add ssh key to provider: %w", err)
 	}
 
@@ -102,7 +103,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 			Name:      *key.Name,
 			PublicKey: *key.PublicKey,
 		}
-		if err := dbq.SSHKeyAdd(ctx, params); err != nil {
+		if err = dbq.SSHKeyAdd(ctx, params); err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to add ssh key to db: %w", err)
 		}
 	}
@@ -122,15 +123,17 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromUser(uuid.New(), scr.Runtime)
+		userID := uuid.New()
+		rt, err := rti.FromUser(userID, scr.Runtime)
 		if err != nil {
 			log.Error().
 				Err(err).
 				Msg("failed to create runtime")
 			render.Render(w, r, ErrInternalServer(""))
+			return
 		}
 
-		sshKey, err := setupCredentials(ctx, rt, dbq, uuid.New(), scr.SSHKey)
+		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKey)
 		if err != nil {
 			log.Error().
 				Err(err).

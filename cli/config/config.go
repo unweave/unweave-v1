@@ -75,15 +75,18 @@ func init() {
 	if e, ok := os.LookupEnv("UNWEAVE_ENV"); ok {
 		env = e
 	}
+	apiURL := UnweaveConfig.ApiURL
+	appURL := UnweaveConfig.AppURL
+
 	switch env {
 	case "staging", "stg":
 		Path = filepath.Join(home, ".unweave/stg-config.json")
-		UnweaveConfig.ApiURL = "https://api.staging-unweave.io"
-		UnweaveConfig.AppURL = "https://app.staging-unweave.io"
+		apiURL = "https://api.staging-unweave.io"
+		appURL = "https://app.staging-unweave.io"
 	case "development", "dev":
 		Path = filepath.Join(home, ".unweave/dev-config.json")
-		UnweaveConfig.ApiURL = "http://localhost:8000"
-		UnweaveConfig.AppURL = "http://localhost:3000"
+		apiURL = "http://localhost:8000"
+		appURL = "http://localhost:3000"
 	case "production", "prod":
 		Path = filepath.Join(home, ".unweave/config.json")
 	default:
@@ -100,6 +103,10 @@ func init() {
 	} else if err != nil {
 		log.Fatal("Failed to read config file: ", err)
 	}
+
+	// Need to set these after reading the config file so that they can be overridden
+	UnweaveConfig.ApiURL = apiURL
+	UnweaveConfig.AppURL = appURL
 
 	// Override with environment variables
 	gonfig.GetFromEnvVariables(UnweaveConfig)

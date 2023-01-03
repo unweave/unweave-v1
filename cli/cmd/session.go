@@ -16,7 +16,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	uwc := InitUnweaveClient()
-	sshKey := types.SSHKey{}
+	sshKey := &types.SSHKey{}
 
 	if config.SSHKeyName != "" {
 		sshKey.Name = &config.SSHKeyName

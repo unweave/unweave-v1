@@ -89,13 +89,21 @@ type Session struct {
 }
 
 func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
-	if sshKey.PublicKey != nil {
+	if sshKey.PublicKey != nil || sshKey.Name != nil {
 		keys, err := r.ListSSHKeys(ctx)
 		if err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys, err: %w", err)
 		}
+
 		for _, k := range keys {
-			if k.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
+			if sshKey.Name != nil && *sshKey.Name == *k.Name {
+				// Key exists, make sure it has the same public key if provided
+				if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
+					return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
+				}
+				return k, nil
+			}
+			if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
 				log.Info().
 					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
 					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
@@ -133,6 +141,9 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 		if res.JSON403 != nil {
 			return types.SSHKey{}, err403(res.JSON403.Error.Message, err)
 		}
+		if res.JSON400 != nil {
+			return types.SSHKey{}, err400(res.JSON400.Error.Message, err)
+		}
 		return types.SSHKey{}, errUnknown(res.StatusCode(), err)
 	}
 
@@ -164,6 +175,7 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 
 	keys := make([]types.SSHKey, len(res.JSON200.Data))
 	for i, k := range res.JSON200.Data {
+		k := k
 		keys[i] = types.SSHKey{
 			Name:      &k.Name,
 			PublicKey: &k.PublicKey,

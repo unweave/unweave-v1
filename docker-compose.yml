@@ -52,3 +52,4 @@ services:
     working_dir: /home/unweave
     volumes:
       - ./:/home/unweave
+      - ~/.unweave/runtime-config.json:/root/.unweave/runtime-config.json
