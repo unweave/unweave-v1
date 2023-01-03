@@ -5,20 +5,20 @@ grant all on schema unweave to postgres;
 -- Minimal users table to allow for constraints
 create table unweave.users
 (
-    id integer primary key generated always as identity
+    id uuid primary key not null default gen_random_uuid()
 );
 
 create table unweave.projects
 (
     id       uuid primary key default gen_random_uuid(),
-    name     text                                  not null,
-    owner_id integer references unweave.users (id) not null
+    name     text                               not null,
+    owner_id uuid references unweave.users (id) not null
 );
 
 create table unweave.sessions
 (
     id         uuid primary key     default gen_random_uuid(),
-    created_by integer     not null references unweave.users (id),
+    created_by uuid        not null references unweave.users (id),
     created_at timestamptz not null default now(),
     ready_at   timestamptz,
     exited_at  timestamptz,
@@ -28,10 +28,10 @@ create table unweave.sessions
 
 create table unweave.ssh_keys
 (
-    id          uuid primary key     default gen_random_uuid(),
-    name        text        not null,
-    owner_id    integer     not null references unweave.users (id),
-    created_at  timestamptz not null default now(),
+    id         uuid primary key     default gen_random_uuid(),
+    name       text        not null,
+    owner_id   uuid        not null references unweave.users (id),
+    created_at timestamptz not null default now(),
     public_key text        not null unique
 );
 

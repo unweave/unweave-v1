@@ -41,7 +41,7 @@ func (s *SessionCreateParams) Bind(r *http.Request) error {
 	return nil
 }
 
-func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID int32, sshKey *types.SSHKey) (types.SSHKey, error) {
+func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKey *types.SSHKey) (types.SSHKey, error) {
 	exists := false
 
 	key := types.SSHKey{}
@@ -130,7 +130,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			render.Render(w, r, ErrInternalServer(""))
 		}
 
-		sshKey, err := setupCredentials(ctx, rt, dbq, 1, scr.SSHKey)
+		sshKey, err := setupCredentials(ctx, rt, dbq, uuid.New(), scr.SSHKey)
 		if err != nil {
 			log.Error().
 				Err(err).

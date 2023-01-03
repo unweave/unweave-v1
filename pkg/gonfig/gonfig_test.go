@@ -1,26 +1,12 @@
 package gonfig
 
 import (
-	"flag"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/unweave/unweave/workbench/lib/log"
 )
-
-func TestMain(m *testing.M) {
-	var silent bool
-	flag.BoolVar(&silent, "silence-logs", false, "silence-logs")
-	flag.Parse()
-
-	if silent {
-		log.SetOutput(ioutil.Discard)
-	}
-	os.Exit(m.Run())
-}
 
 func Test_GetFromYAML_Filename_Empty_Should_Not_Panic(t *testing.T) {
 

@@ -32,7 +32,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: ./api/Dockerfile
+      dockerfile: ./Dockerfile
       target: dev
 
     depends_on:

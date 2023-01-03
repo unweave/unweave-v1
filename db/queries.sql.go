@@ -16,9 +16,9 @@ INSERT INTO unweave.ssh_keys (owner_id, name, public_key) VALUES ($1, $2, $3)
 `
 
 type SSHKeyAddParams struct {
-	OwnerID   int32  `json:"ownerID"`
-	Name      string `json:"name"`
-	PublicKey string `json:"publicKey"`
+	OwnerID   uuid.UUID `json:"ownerID"`
+	Name      string    `json:"name"`
+	PublicKey string    `json:"publicKey"`
 }
 
 func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {

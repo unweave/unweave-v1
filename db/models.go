@@ -14,12 +14,12 @@ import (
 type UnweaveProject struct {
 	ID      uuid.UUID `json:"id"`
 	Name    string    `json:"name"`
-	OwnerID int32     `json:"ownerID"`
+	OwnerID uuid.UUID `json:"ownerID"`
 }
 
 type UnweaveSession struct {
 	ID        uuid.UUID    `json:"id"`
-	CreatedBy int32        `json:"createdBy"`
+	CreatedBy uuid.UUID    `json:"createdBy"`
 	CreatedAt time.Time    `json:"createdAt"`
 	ReadyAt   sql.NullTime `json:"readyAt"`
 	ExitedAt  sql.NullTime `json:"exitedAt"`
@@ -30,11 +30,11 @@ type UnweaveSession struct {
 type UnweaveSshKey struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
-	OwnerID   int32     `json:"ownerID"`
+	OwnerID   uuid.UUID `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
 	PublicKey string    `json:"publicKey"`
 }
 
 type UnweaveUser struct {
-	ID int32 `json:"id"`
+	ID uuid.UUID `json:"id"`
 }
