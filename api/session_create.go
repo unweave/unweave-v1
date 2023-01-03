@@ -113,6 +113,11 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		userID := ctx.Value(types.ContextKeyUser).(types.UserContext).ID
+
+		log.Info().
+			Msgf("Executing SessionsCreate request for user %q", userID)
+
 		scr := SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			log.Warn().
@@ -123,7 +128,6 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		userID := uuid.New()
 		rt, err := rti.FromUser(userID, scr.Runtime)
 		if err != nil {
 			log.Error().

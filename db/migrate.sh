@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 IS_SEED=0
 DB_URL=${DATABASE_URL}
 
@@ -16,10 +18,8 @@ fi
 
 go install github.com/pressly/goose/v3/cmd/goose@latest
 goose -dir ./migrations postgres "$DB_URL" up
-
 echo "Migrations complete."
 
-echo "Seed" $IS_SEED
 if [ "$IS_SEED" -eq 1 ]; then
   echo "Seeding database..."
   goose -no-versioning -dir ./seed postgres "$DB_URL" up

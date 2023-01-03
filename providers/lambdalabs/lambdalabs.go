@@ -101,12 +101,18 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 				if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
 					return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
 				}
+
+				log.Info().
+					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
+
 				return k, nil
 			}
 			if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
 				log.Info().
 					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
 					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
+				
 				return k, nil
 			}
 		}
