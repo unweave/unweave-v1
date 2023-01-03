@@ -37,13 +37,13 @@ type SessionTerminateResponse struct {
 func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := ctx.Value(types.ContextKeyUser).(types.UserContext).ID
+		userID := getUserIDFromContext(ctx)
 
 		log.Info().
 			Msgf("Executing SessionsTerminate request for user %q", userID)
 
 		// fetch from url params and try converting to uuid
-		id := chi.URLParam(r, "id")
+		id := chi.URLParam(r, "sessionID")
 		sessionID, err := uuid.Parse(id)
 		if err != nil {
 			render.Render(w, r, &HTTPError{
@@ -87,6 +87,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
+		// TODO: update session in db
 		render.JSON(w, r, &SessionTerminateResponse{Success: true})
 	}
 }

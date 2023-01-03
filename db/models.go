@@ -12,9 +12,10 @@ import (
 )
 
 type UnweaveProject struct {
-	ID      uuid.UUID `json:"id"`
-	Name    string    `json:"name"`
-	OwnerID uuid.UUID `json:"ownerID"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	OwnerID   uuid.UUID `json:"ownerID"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type UnweaveSession struct {

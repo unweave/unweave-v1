@@ -11,8 +11,40 @@ import (
 	"github.com/google/uuid"
 )
 
+const ProjectCreate = `-- name: ProjectCreate :exec
+insert into unweave.projects (name, owner_id)
+values ($1, $2)
+`
+
+type ProjectCreateParams struct {
+	Name    string    `json:"name"`
+	OwnerID uuid.UUID `json:"ownerID"`
+}
+
+func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) error {
+	_, err := q.db.ExecContext(ctx, ProjectCreate, arg.Name, arg.OwnerID)
+	return err
+}
+
+const ProjectGet = `-- name: ProjectGet :one
+select id, name, owner_id, created_at from unweave.projects where id = $1
+`
+
+func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error) {
+	row := q.db.QueryRowContext(ctx, ProjectGet, id)
+	var i UnweaveProject
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
-INSERT INTO unweave.ssh_keys (owner_id, name, public_key) VALUES ($1, $2, $3)
+insert INTO unweave.ssh_keys (owner_id, name, public_key)
+values ($1, $2, $3)
 `
 
 type SSHKeyAddParams struct {
@@ -27,7 +59,9 @@ func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
 }
 
 const SSHKeyGetByName = `-- name: SSHKeyGetByName :one
-SELECT id, name, owner_id, created_at, public_key FROM unweave.ssh_keys WHERE name = $1
+select id, name, owner_id, created_at, public_key
+from unweave.ssh_keys
+where name = $1
 `
 
 func (q *Queries) SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshKey, error) {
@@ -44,7 +78,9 @@ func (q *Queries) SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshK
 }
 
 const SSHKeyGetByPublicKey = `-- name: SSHKeyGetByPublicKey :one
-SELECT id, name, owner_id, created_at, public_key FROM unweave.ssh_keys WHERE public_key = $1
+select id, name, owner_id, created_at, public_key
+from unweave.ssh_keys
+where public_key = $1
 `
 
 func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (UnweaveSshKey, error) {
@@ -60,8 +96,32 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (U
 	return i, err
 }
 
+const SessionCreate = `-- name: SessionCreate :exec
+insert into unweave.sessions (node_id, created_by, project_id, runtime)
+values ($1, $2, $3, $4)
+`
+
+type SessionCreateParams struct {
+	NodeID    string    `json:"nodeID"`
+	CreatedBy uuid.UUID `json:"createdBy"`
+	ProjectID uuid.UUID `json:"projectID"`
+	Runtime   string    `json:"runtime"`
+}
+
+func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
+	_, err := q.db.ExecContext(ctx, SessionCreate,
+		arg.NodeID,
+		arg.CreatedBy,
+		arg.ProjectID,
+		arg.Runtime,
+	)
+	return err
+}
+
 const SessionGet = `-- name: SessionGet :one
-SELECT id, node_id, created_by, created_at, ready_at, exited_at, project_id, runtime FROM unweave.sessions WHERE id = $1
+select id, node_id, created_by, created_at, ready_at, exited_at, project_id, runtime
+from unweave.sessions
+where id = $1
 `
 
 func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error) {

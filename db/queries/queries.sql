@@ -1,14 +1,30 @@
+-- name: ProjectCreate :exec
+insert into unweave.projects (name, owner_id)
+values ($1, $2);
+
+-- name: ProjectGet :one
+select * from unweave.projects where id = $1;
+
+-- name: SessionCreate :exec
+insert into unweave.sessions (node_id, created_by, project_id, runtime)
+values ($1, $2, $3, $4);
+
 -- name: SessionGet :one
-SELECT * FROM unweave.sessions WHERE id = $1;
+select *
+from unweave.sessions
+where id = $1;
 
 
 -- name: SSHKeyAdd :exec
-INSERT INTO unweave.ssh_keys (owner_id, name, public_key) VALUES ($1, $2, $3);
+insert INTO unweave.ssh_keys (owner_id, name, public_key)
+values ($1, $2, $3);
 
 -- name: SSHKeyGetByName :one
-SELECT * FROM unweave.ssh_keys WHERE name = $1;
+select *
+from unweave.ssh_keys
+where name = $1;
 
 -- name: SSHKeyGetByPublicKey :one
-SELECT * FROM unweave.ssh_keys WHERE public_key = $1;
-
-
+select *
+from unweave.ssh_keys
+where public_key = $1;

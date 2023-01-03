@@ -113,15 +113,21 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := ctx.Value(types.ContextKeyUser).(types.UserContext).ID
+		userID := getUserIDFromContext(ctx)
+		project := getProjectFromContext(ctx)
 
-		log.Info().
-			Msgf("Executing SessionsCreate request for user %q", userID)
+		logger := log.With().
+			Str(ContextKeyUser, userID.String()).
+			Str(ContextKeyProject, project.ID.String()).
+			Logger()
+
+		logger.Info().Msgf("Executing SessionsCreate request")
 
 		scr := SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
-			log.Warn().
+			logger.Warn().
 				Err(err).
+				Stack().
 				Msg("failed to read body")
 
 			render.Render(w, r, ErrHTTPError(err, "Invalid request body"))
@@ -130,8 +136,9 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		rt, err := rti.FromUser(userID, scr.Runtime)
 		if err != nil {
-			log.Error().
+			logger.Error().
 				Err(err).
+				Stack().
 				Msg("failed to create runtime")
 			render.Render(w, r, ErrInternalServer(""))
 			return
@@ -139,8 +146,9 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKey)
 		if err != nil {
-			log.Error().
+			logger.Error().
 				Err(err).
+				Stack().
 				Msg("failed to setup credentials")
 
 			render.Render(w, r, ErrHTTPError(err, "Failed to setup credentials"))
@@ -149,18 +157,38 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		node, err := rt.InitNode(ctx, sshKey)
 		if err != nil {
-			log.Warn().
+			logger.Warn().
 				Err(err).
+				Stack().
 				Msg("failed to init node")
 
 			render.Render(w, r, ErrHTTPError(err, "Failed to initialize node"))
 			return
 		}
 
-		// add to db
-		res := &types.Session{ID: node.ID, SSHKey: node.KeyPair}
+		params := db.SessionCreateParams{
+			NodeID:    node.ID,
+			CreatedBy: userID,
+			ProjectID: project.ID,
+			Runtime:   scr.Runtime.String(),
+		}
+		if err = dbq.SessionCreate(ctx, params); err != nil {
+			logger.Error().
+				Err(err).
+				Msg("failed to create session")
 
-		// watch status
-		render.JSON(w, r, res)
+			render.Render(w, r, ErrInternalServer(""))
+			return
+
+		}
+
+		session := &types.Session{
+			ID:     node.ID,
+			SSHKey: node.KeyPair,
+			Status: types.StatusInitializingNode,
+		}
+
+		// TODO: watch status
+		render.JSON(w, r, session)
 	}
 }

@@ -11,9 +11,12 @@ import (
 )
 
 type Querier interface {
+	ProjectCreate(ctx context.Context, arg ProjectCreateParams) error
+	ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
 	SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (UnweaveSshKey, error)
+	SessionCreate(ctx context.Context, arg SessionCreateParams) error
 	SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error)
 }
 
