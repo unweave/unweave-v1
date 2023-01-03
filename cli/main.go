@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/unweave/unweave-v2/cli/cmd"
-	"github.com/unweave/unweave-v2/cli/config"
+	"github.com/unweave/unweave/cli/cmd"
+	"github.com/unweave/unweave/cli/config"
 )
 
 var rootCmd = &cobra.Command{

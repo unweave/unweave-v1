@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/unweave/unweave-v2/api"
-	"github.com/unweave/unweave-v2/cli/config"
-	"github.com/unweave/unweave-v2/cli/ui"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/cli/config"
+	"github.com/unweave/unweave/cli/ui"
+	"github.com/unweave/unweave/types"
 )
 
 func SessionCreate(cmd *cobra.Command, args []string) error {

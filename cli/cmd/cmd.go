@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/unweave/unweave-v2/cli/config"
-	"github.com/unweave/unweave-v2/client"
+	"github.com/unweave/unweave/cli/config"
+	"github.com/unweave/unweave/client"
 )
 
 func InitUnweaveClient() *client.Client {

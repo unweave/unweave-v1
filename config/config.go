@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/types"
 )
 
 type DBConfig struct {

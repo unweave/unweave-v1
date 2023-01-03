@@ -7,11 +7,11 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave-v2/api"
-	"github.com/unweave/unweave-v2/config"
-	"github.com/unweave/unweave-v2/db"
-	"github.com/unweave/unweave-v2/pkg/gonfig"
-	"github.com/unweave/unweave-v2/runtime"
+	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/config"
+	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/pkg/gonfig"
+	"github.com/unweave/unweave/runtime"
 )
 
 func main() {

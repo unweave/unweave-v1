@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/unweave/unweave-v2/api"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/types"
 )
 
 type SessionService struct {

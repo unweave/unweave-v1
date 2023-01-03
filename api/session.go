@@ -5,8 +5,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
-	"github.com/unweave/unweave-v2/runtime"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/types"
 )
 
 func SessionsGet(rti runtime.Initializer) http.HandlerFunc {

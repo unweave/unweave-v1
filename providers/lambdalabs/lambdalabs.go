@@ -8,9 +8,9 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave-v2/pkg/random"
-	"github.com/unweave/unweave-v2/providers/lambdalabs/client"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/pkg/random"
+	"github.com/unweave/unweave/providers/lambdalabs/client"
+	"github.com/unweave/unweave/types"
 )
 
 const apiURL = "https://cloud.lambdalabs.com/api/v1/"

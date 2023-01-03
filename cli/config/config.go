@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/unweave/unweave-v2/pkg/gonfig"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/pkg/gonfig"
+	"github.com/unweave/unweave/types"
 )
 
 // AuthToken is used to authenticate with the Unweave API. It is loaded from the saved

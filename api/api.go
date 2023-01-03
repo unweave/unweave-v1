@@ -8,9 +8,9 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave-v2/config"
-	"github.com/unweave/unweave-v2/db"
-	"github.com/unweave/unweave-v2/runtime"
+	"github.com/unweave/unweave/config"
+	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/runtime"
 )
 
 func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {

@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/unweave/unweave-v2/api"
+	"github.com/unweave/unweave/api"
 )
 
 type Config struct {

@@ -1,4 +1,4 @@
-module github.com/unweave/unweave-v2
+module github.com/unweave/unweave
 
 go 1.19
 

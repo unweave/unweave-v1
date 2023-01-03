@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/unweave/unweave-v2/providers/lambdalabs"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/providers/lambdalabs"
+	"github.com/unweave/unweave/types"
 )
 
 type Initializer interface {

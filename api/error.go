@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-	"github.com/unweave/unweave-v2/types"
+	"github.com/unweave/unweave/types"
 )
 
 type HTTPError struct {

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/unweave/unweave-v2/config"
+	"github.com/unweave/unweave/config"
 )
 
 func Connect(cfg config.DBConfig) (*sql.DB, error) {
