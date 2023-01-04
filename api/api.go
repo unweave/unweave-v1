@@ -38,7 +38,7 @@ func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
 		r.Use(withProjectContext(dbq))
 		r.Route("/sessions", func(r chi.Router) {
 			r.Post("/", SessionsCreate(rti, dbq))
-			r.Get("/", SessionsList(rti))
+			r.Get("/", SessionsList(rti, dbq))
 			r.Get("/{sessionID}", SessionsGet(rti))
 			r.Put("/{sessionID}/terminate", SessionsTerminate(rti, dbq))
 		})

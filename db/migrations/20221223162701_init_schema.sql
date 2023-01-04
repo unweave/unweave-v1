@@ -20,6 +20,17 @@ create table unweave.projects
 
 create type unweave.session_status as enum ('initializing', 'active', 'terminated');
 
+create table unweave.ssh_keys
+(
+    id         uuid primary key     default gen_random_uuid(),
+    name       text        not null,
+    owner_id   uuid        not null references unweave.users (id),
+    created_at timestamptz not null default now(),
+    public_key text        not null unique,
+
+    unique (name, owner_id)
+);
+
 create table unweave.sessions
 (
     id         uuid primary key                default gen_random_uuid(),
@@ -33,17 +44,10 @@ create table unweave.sessions
     project_id uuid                   not null references unweave.projects (id),
     -- We don't want to constrain this to an enum to allow users to register their own
     -- providers without having to update the database schema.
-    runtime    text                   not null
+    runtime    text                   not null,
+    ssh_key_id uuid                   not null references unweave.ssh_keys (id)
 );
 
-create table unweave.ssh_keys
-(
-    id         uuid primary key     default gen_random_uuid(),
-    name       text        not null,
-    owner_id   uuid        not null references unweave.users (id),
-    created_at timestamptz not null default now(),
-    public_key text        not null unique
-);
 
 -- +goose StatementEnd
 

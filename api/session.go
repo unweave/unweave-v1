@@ -129,7 +129,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			logger.Warn().
 				Err(err).
 				Stack().
-				Msg("failed to read body")
+				Msg("Failed to read body")
 
 			render.Render(w, r, ErrHTTPError(err, "Invalid request body"))
 			return
@@ -140,7 +140,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			logger.Error().
 				Err(err).
 				Stack().
-				Msg("failed to create runtime")
+				Msg("Failed to create runtime")
 			render.Render(w, r, ErrInternalServer(""))
 			return
 		}
@@ -150,7 +150,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			logger.Error().
 				Err(err).
 				Stack().
-				Msg("failed to setup credentials")
+				Msg("Failed to setup credentials")
 
 			render.Render(w, r, ErrHTTPError(err, "Failed to setup credentials"))
 			return
@@ -161,7 +161,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			logger.Warn().
 				Err(err).
 				Stack().
-				Msg("failed to init node")
+				Msg("Failed to init node")
 
 			render.Render(w, r, ErrHTTPError(err, "Failed to initialize node"))
 			return
@@ -173,10 +173,11 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			ProjectID: project.ID,
 			Runtime:   scr.Runtime.String(),
 		}
-		if err = dbq.SessionCreate(ctx, params); err != nil {
+		sessionID, err := dbq.SessionCreate(ctx, params)
+		if err != nil {
 			logger.Error().
 				Err(err).
-				Msg("failed to create session")
+				Msg("Failed to create session")
 
 			render.Render(w, r, ErrInternalServer(""))
 			return
@@ -184,9 +185,9 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 
 		session := &types.Session{
-			ID:     node.ID,
+			ID:     sessionID,
 			SSHKey: node.KeyPair,
-			Status: types.StatusInitializingNode,
+			Status: types.StatusInitializing,
 		}
 
 		// TODO: watch status
@@ -196,18 +197,57 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		res := &types.Session{ID: id}
+		res := &types.Session{ID: uuid.New()}
 		render.JSON(w, r, res)
 	}
 }
 
-func SessionsList(rti runtime.Initializer) http.HandlerFunc {
+type SessionsListResponse struct {
+	Sessions []types.Session `json:"sessions"`
+}
+
+func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		res := []*types.Session{
-			{ID: "1"},
+		ctx := r.Context()
+		userID := getUserIDFromContext(ctx)
+		project := getProjectFromContext(ctx)
+
+		logger := log.With().
+			Str(ContextKeyUser, userID.String()).
+			Str(ContextKeyProject, project.ID.String()).
+			Logger()
+
+		logger.Info().Msgf("Executing SessionsList request")
+		params := db.SessionsGetParams{
+			ProjectID: project.ID,
+			Limit:     100,
+			Offset:    0,
 		}
-		render.JSON(w, r, res)
+		sessions, err := dbq.SessionsGet(ctx, params)
+		if err != nil {
+			logger.Error().
+				Err(err).
+				Msg("Failed to get sessions")
+
+			render.Render(w, r, ErrInternalServer(""))
+			return
+		}
+
+		res := make([]types.Session, len(sessions))
+		for idx, s := range sessions {
+			s := s
+			res[idx] = types.Session{
+				ID: s.ID,
+				SSHKey: types.SSHKey{
+					// The generated go type for SshKeyName is a nullable string because
+					// of the join, but it will never be null since session have a foreign
+					// key constraint on ssh_key_id.
+					Name: &s.SshKeyName.String,
+				},
+				Status: dbSessionStatusToAPIStatus(s.Status),
+			}
+		}
+		render.JSON(w, r, SessionsListResponse{Sessions: res})
 	}
 }
 
@@ -219,13 +259,9 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := getUserIDFromContext(ctx)
+		logger := log.With().Str(ContextKeyUser, userID.String()).Logger()
 
-		logger := log.With().
-			Str(ContextKeyUser, userID.String()).
-			Logger()
-
-		logger.Info().
-			Msgf("Executing SessionsTerminate request for user %q", userID)
+		logger.Info().Msgf("Executing SessionsTerminate request for user %q", userID)
 
 		// fetch from url params and try converting to uuid
 		id := chi.URLParam(r, "sessionID")

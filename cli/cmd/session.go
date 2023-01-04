@@ -56,6 +56,24 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 }
 
 func SessionList(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+
+	uwc := InitUnweaveClient()
+	listTerminated := config.All
+	sessions, err := uwc.Session.List(cmd.Context(), uuid.MustParse(defaultProjectID), listTerminated)
+	if err != nil {
+		var e *api.HTTPError
+		if errors.As(err, &e) {
+			fmt.Println(e.Verbose())
+			return nil
+		}
+		return err
+	}
+
+	fmt.Println("Sessions:")
+	for _, s := range sessions {
+		fmt.Printf("ID: %s, Status: %s", s.ID, s.Status)
+	}
 	return nil
 }
 

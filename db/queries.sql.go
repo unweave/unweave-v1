@@ -7,13 +7,15 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
 
-const ProjectCreate = `-- name: ProjectCreate :exec
+const ProjectCreate = `-- name: ProjectCreate :one
 insert into unweave.projects (name, owner_id)
 values ($1, $2)
+returning id
 `
 
 type ProjectCreateParams struct {
@@ -21,9 +23,11 @@ type ProjectCreateParams struct {
 	OwnerID uuid.UUID `json:"ownerID"`
 }
 
-func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) error {
-	_, err := q.db.ExecContext(ctx, ProjectCreate, arg.Name, arg.OwnerID)
-	return err
+func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, ProjectCreate, arg.Name, arg.OwnerID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const ProjectGet = `-- name: ProjectGet :one
@@ -98,9 +102,10 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (U
 	return i, err
 }
 
-const SessionCreate = `-- name: SessionCreate :exec
+const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.sessions (node_id, created_by, project_id, runtime)
 values ($1, $2, $3, $4)
+returning id
 `
 
 type SessionCreateParams struct {
@@ -110,18 +115,20 @@ type SessionCreateParams struct {
 	Runtime   string    `json:"runtime"`
 }
 
-func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
-	_, err := q.db.ExecContext(ctx, SessionCreate,
+func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error) {
+	row := q.db.QueryRowContext(ctx, SessionCreate,
 		arg.NodeID,
 		arg.CreatedBy,
 		arg.ProjectID,
 		arg.Runtime,
 	)
-	return err
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, node_id, created_by, created_at, ready_at, exited_at, status, project_id, runtime
+select id, node_id, created_by, created_at, ready_at, exited_at, status, project_id, runtime, ssh_key_id
 from unweave.sessions
 where id = $1
 `
@@ -139,6 +146,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.Status,
 		&i.ProjectID,
 		&i.Runtime,
+		&i.SshKeyID,
 	)
 	return i, err
 }
@@ -152,4 +160,49 @@ where id = $1
 func (q *Queries) SessionSetTerminated(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, SessionSetTerminated, id)
 	return err
+}
+
+const SessionsGet = `-- name: SessionsGet :many
+select sessions.id, ssh_keys.name as ssh_key_name, sessions.status
+from unweave.sessions
+         left join unweave.ssh_keys
+                   on ssh_keys.id = sessions.ssh_key_id
+where project_id = $1
+order by unweave.sessions.created_at desc
+limit $2 offset $3
+`
+
+type SessionsGetParams struct {
+	ProjectID uuid.UUID `json:"projectID"`
+	Limit     int32     `json:"limit"`
+	Offset    int32     `json:"offset"`
+}
+
+type SessionsGetRow struct {
+	ID         uuid.UUID            `json:"id"`
+	SshKeyName sql.NullString       `json:"sshKeyName"`
+	Status     UnweaveSessionStatus `json:"status"`
+}
+
+func (q *Queries) SessionsGet(ctx context.Context, arg SessionsGetParams) ([]SessionsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, SessionsGet, arg.ProjectID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SessionsGetRow
+	for rows.Next() {
+		var i SessionsGetRow
+		if err := rows.Scan(&i.ID, &i.SshKeyName, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

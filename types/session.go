@@ -1,15 +1,17 @@
 package types
 
+import "github.com/google/uuid"
+
 const (
 	RuntimeProviderKey = "RuntimeProvider"
 )
 
-type Status string
+type SessionStatus string
 
 const (
-	StatusInitializingNode Status = "initializingNode"
-	StatusRunning          Status = "running"
-	StatusStoppingNode     Status = "stoppingNode"
+	StatusInitializing SessionStatus = "initializing"
+	StatusActive       SessionStatus = "active"
+	StatusTerminated   SessionStatus = "terminated"
 )
 
 // RuntimeProvider is the platform that the node is spawned on. This is where the user
@@ -45,10 +47,10 @@ type NodeType struct {
 }
 
 type Node struct {
-	ID       string  `json:"id"`
-	Region   *string `json:"region"`
-	KeyPair  SSHKey  `json:"sshKeyPair"`
-	Status   Status  `json:"status"`
+	ID       string        `json:"id"`
+	Region   *string       `json:"region"`
+	KeyPair  SSHKey        `json:"sshKeyPair"`
+	Status   SessionStatus `json:"status"`
 	NodeType `json:"nodeType"`
 }
 
@@ -59,9 +61,9 @@ type SSHKey struct {
 }
 
 type Session struct {
-	ID     string `json:"id"`
-	SSHKey SSHKey `json:"sshKey"`
-	Status Status `json:"runtimeStatus"`
+	ID     uuid.UUID     `json:"id"`
+	SSHKey SSHKey        `json:"sshKey"`
+	Status SessionStatus `json:"runtimeStatus"`
 }
 
 type ExecParams struct {

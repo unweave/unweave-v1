@@ -75,10 +75,10 @@ func (c *Client) NewRestRequest(rtype RestRequestType, endpoint string, params m
 	}, nil
 }
 
-func (c *Client) NewAuthorizedRestRequest(rtype RestRequestType, endpoint string, params map[string]string, body interface{}) (
+func (c *Client) NewAuthorizedRestRequest(rtype RestRequestType, endpoint string, query map[string]string, body interface{}) (
 	*RestRequest, error,
 ) {
-	req, err := c.NewRestRequest(rtype, endpoint, params, body)
+	req, err := c.NewRestRequest(rtype, endpoint, query, body)
 	if err != nil {
 		return nil, err
 	}

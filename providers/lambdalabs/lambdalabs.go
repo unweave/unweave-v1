@@ -315,7 +315,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 	return types.Node{
 		ID:      res.JSON200.Data.InstanceIds[0],
 		KeyPair: sshKey,
-		Status:  types.StatusInitializingNode,
+		Status:  types.StatusInitializing,
 	}, nil
 }
 

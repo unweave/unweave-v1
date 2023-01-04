@@ -53,12 +53,16 @@ func init() {
 	createCmd.Flags().StringVar(&config.SSHKeyPath, "ssh-key-path", "", "Absolute Path to the SSH public key to use for this session")
 	sessionCmd.AddCommand(createCmd)
 
-	sessionCmd.AddCommand(&cobra.Command{
+	lsCmd := &cobra.Command{
 		Use:   "ls",
-		Short: "List all active Unweave sessions",
+		Short: "List active Unweave sessions",
+		Long:  "List active Unweave sessions. To list all sessions, use the --all flag.",
 		Args:  cobra.NoArgs,
 		RunE:  cmd.SessionList,
-	})
+	}
+	lsCmd.Flags().BoolVarP(&config.All, "all", "a", false, "List all sessions")
+	sessionCmd.AddCommand(lsCmd)
+
 	sessionCmd.AddCommand(&cobra.Command{
 		Use:   "terminate <session-id>",
 		Short: "Terminate an Unweave session",

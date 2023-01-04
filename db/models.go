@@ -73,6 +73,7 @@ type UnweaveSession struct {
 	Status    UnweaveSessionStatus `json:"status"`
 	ProjectID uuid.UUID            `json:"projectID"`
 	Runtime   string               `json:"runtime"`
+	SshKeyID  uuid.UUID            `json:"sshKeyID"`
 }
 
 type UnweaveSshKey struct {
