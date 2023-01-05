@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/pkg/random"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
@@ -45,7 +46,14 @@ func (s *SessionCreateParams) Bind(r *http.Request) error {
 
 func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	exists := false
-	key := types.SSHKey{}
+	key := types.SSHKey{
+		// This is overridden if the key already exists.
+		//
+		// This should most like never collide with an existing key, but it is possible.
+		// In the future, we should check to see if the key already exists before creating
+		// it.
+		Name: "uw:" + random.GenerateRandomPhrase(4, "-"),
+	}
 
 	if sshKeyName != nil {
 		k, err := dbq.SSHKeyGetByName(ctx, *sshKeyName)
@@ -80,8 +88,9 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		}
 	}
 
-	// If key exists in the DB and with the provider, exit early.
 	if exists {
+		// Key exists in the DB. Check if it exists with the provider and exit early if it
+		// does.
 		providerKeys, err := rt.ListSSHKeys(ctx)
 		if err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys from provider: %w", err)

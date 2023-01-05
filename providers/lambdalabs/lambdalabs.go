@@ -106,36 +106,30 @@ func (r *Session) GetProvider() types.RuntimeProvider {
 }
 
 func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
-	if sshKey.PublicKey != nil || sshKey.Name != "" {
-		keys, err := r.ListSSHKeys(ctx)
-		if err != nil {
-			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys, err: %w", err)
-		}
+	if sshKey.Name == "" {
+		return types.SSHKey{}, fmt.Errorf("SSH key name is required")
+	}
 
-		for _, k := range keys {
-			if sshKey.Name == k.Name {
-				// Key exists, make sure it has the same public key if provided
-				if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
-					return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
-				}
-				log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
-				return k, nil
+	keys, err := r.ListSSHKeys(ctx)
+	if err != nil {
+		return types.SSHKey{}, fmt.Errorf("failed to list ssh keys, err: %w", err)
+	}
+
+	for _, k := range keys {
+		if sshKey.Name == k.Name {
+			// Key exists, make sure it has the same public key if provided
+			if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
+				return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
 			}
-			if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
-				log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
-				return k, nil
-			}
+			log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
+			return k, nil
+		}
+		if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
+			log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
+			return k, nil
 		}
 	}
 	// Key doesn't exist, create a new one
-
-	if sshKey.Name == "" {
-		// This should most like never collide with an existing key, but it is possible.
-		// In the future, we should check to see if the key already exists before creating
-		// it.
-		name := "uw:" + random.GenerateRandomPhrase(4, "-")
-		sshKey.Name = name
-	}
 
 	log.Ctx(ctx).Info().Msgf("Generating new SSH key %q", sshKey.Name)
 
