@@ -207,9 +207,12 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 
 		session := &types.Session{
-			ID:     sessionID,
-			SSHKey: node.KeyPair,
-			Status: types.StatusInitializing,
+			ID:         sessionID,
+			SSHKey:     node.KeyPair,
+			Status:     types.StatusInitializing,
+			NodeTypeID: node.TypeID,
+			Region:     node.Region,
+			Provider:   node.Provider,
 		}
 
 		// TODO: watch status

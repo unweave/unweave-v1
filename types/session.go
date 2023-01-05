@@ -47,11 +47,12 @@ type NodeType struct {
 }
 
 type Node struct {
-	ID       string        `json:"id"`
-	Region   *string       `json:"region"`
-	KeyPair  SSHKey        `json:"sshKeyPair"`
-	Status   SessionStatus `json:"status"`
-	NodeType `json:"nodeType"`
+	ID       string          `json:"id"`
+	TypeID   string          `json:"typeID"`
+	Region   string          `json:"region"`
+	KeyPair  SSHKey          `json:"sshKeyPair"`
+	Status   SessionStatus   `json:"status"`
+	Provider RuntimeProvider `json:"provider"`
 }
 
 type SSHKey struct {
@@ -61,9 +62,12 @@ type SSHKey struct {
 }
 
 type Session struct {
-	ID     uuid.UUID     `json:"id"`
-	SSHKey SSHKey        `json:"sshKey"`
-	Status SessionStatus `json:"runtimeStatus"`
+	ID         uuid.UUID       `json:"id"`
+	SSHKey     SSHKey          `json:"sshKey"`
+	Status     SessionStatus   `json:"runtimeStatus"`
+	NodeTypeID string          `json:"nodeTypeID"`
+	Region     string          `json:"region"`
+	Provider   RuntimeProvider `json:"provider"`
 }
 
 type ExecParams struct {

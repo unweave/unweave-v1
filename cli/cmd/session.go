@@ -112,11 +112,18 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		}
 		return err
 	}
-	fmt.Printf("Session created: \n"+
-		"  ID:      %s\n"+
-		"  Status:  %s\n"+
-		"  SSH Key: %s\n", session.ID, session.Status, session.SSHKey.Name,
-	)
+
+	results := []ui.ResultEntry{
+		{Key: "ID", Value: session.ID.String()},
+		{Key: "Type", Value: session.NodeTypeID},
+		{Key: "Region", Value: session.Region},
+		{Key: "Status", Value: fmt.Sprintf("%s", session.Status)},
+		{Key: "SSHKey", Value: fmt.Sprintf("%s", session.SSHKey.Name)},
+	}
+
+	ui.ResultTitle("Session Created:")
+	ui.Result(results, ui.IndentWidth)
+
 	return nil
 }
 
@@ -169,5 +176,6 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	ui.Success("Session terminated")
 	return nil
 }

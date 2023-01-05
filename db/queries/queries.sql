@@ -12,7 +12,7 @@ where id = $1;
 insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_keys
-                         where name = @ssh_key_name) and owner_id = $2)
+                         where name = @ssh_key_name and owner_id = $2))
 returning id;
 
 -- name: SessionGet :one

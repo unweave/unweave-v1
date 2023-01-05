@@ -15,13 +15,6 @@ import (
 
 const apiURL = "https://cloud.lambdalabs.com/api/v1/"
 
-type InstanceDetails struct {
-	Type   client.InstanceType `json:"type"`
-	Region client.RegionName   `json:"region"`
-	// TODO:
-	// 	- Filesystems
-}
-
 // err400 can happen when ll doesn't have enough capacity to create the instance
 func err400(msg string, err error) *types.Error {
 	return &types.Error{
@@ -96,8 +89,6 @@ func errUnknown(code int, err error) *types.Error {
 }
 
 type Session struct {
-	InstanceDetails
-
 	client *client.ClientWithResponses
 }
 
@@ -234,15 +225,45 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 	return availableInstanceTypes, nil
 }
 
+func (r *Session) finRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
+	availableInstanceTypes, err := r.ListInstanceAvailability(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
+	}
+
+	for _, it := range availableInstanceTypes {
+		if it.ID == nodeTypeID {
+			if it.Region == nil {
+				log.Ctx(ctx).
+					Warn().
+					Msgf("Node type %q has no region", nodeTypeID)
+				continue
+			}
+			return *it.Region, nil
+		}
+	}
+	return "", err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
+}
+
 func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
 	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
+
+	if region == nil {
+		var err error
+		var nr string
+		nr, err = r.finRegionForNode(ctx, nodeTypeID)
+		if err != nil {
+			return types.Node{}, err
+		}
+		region = &nr
+	}
 
 	req := client.LaunchInstanceJSONRequestBody{
 		FileSystemNames:  nil,
 		InstanceTypeName: nodeTypeID,
 		Name:             types.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         types.Inty(1),
-		RegionName:       "asia-south-1",
+		RegionName:       *region,
 		SshKeyNames:      []string{sshKey.Name},
 	}
 
@@ -300,9 +321,12 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID 
 	}
 
 	return types.Node{
-		ID:      res.JSON200.Data.InstanceIds[0],
-		KeyPair: sshKey,
-		Status:  types.StatusInitializing,
+		ID:       res.JSON200.Data.InstanceIds[0],
+		TypeID:   nodeTypeID,
+		Region:   *region,
+		KeyPair:  sshKey,
+		Status:   types.StatusInitializing,
+		Provider: types.LambdaLabsProvider,
 	}, nil
 }
 
@@ -349,8 +373,5 @@ func NewSessionProvider(apiKey string) (*Session, error) {
 		return nil, fmt.Errorf("failed to create client, err: %v", err)
 	}
 
-	return &Session{
-		InstanceDetails: InstanceDetails{},
-		client:          llClient,
-	}, nil
+	return &Session{client: llClient}, nil
 }
