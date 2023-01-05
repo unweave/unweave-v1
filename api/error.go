@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -18,28 +17,6 @@ type HTTPError struct {
 
 func (e *HTTPError) Error() string {
 	return e.Message
-}
-
-func (e *HTTPError) Short() string {
-	str := fmt.Sprintf("%s API error: %s", e.Provider, e.Message)
-	return str
-}
-
-func (e *HTTPError) Verbose() string {
-	str := "API error:\n"
-	if e.Provider != "" {
-		str = fmt.Sprintf("%s API error:\n", e.Provider)
-	}
-	if e.Code != 0 {
-		str += fmt.Sprintf("  Code: %d\n", e.Code)
-	}
-	if e.Message != "" {
-		str += fmt.Sprintf("  Message: %s\n", e.Message)
-	}
-	if e.Suggestion != "" {
-		str += fmt.Sprintf("  Suggestion: %s\n", e.Suggestion)
-	}
-	return str
 }
 
 func (e *HTTPError) Render(w http.ResponseWriter, r *http.Request) error {

@@ -61,7 +61,6 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {
-
 			// If error 503, it's mostly likely an out of capacity error. Try and marshal,
 			// the error message into the list of available instances.
 			if e.Code == 503 {
@@ -100,14 +99,16 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 						}
 					}
 
-					fmt.Println(e.Short())
+					uie := &ui.Error{HTTPError: e}
+					fmt.Println(uie.Short())
 					fmt.Println()
 					ui.Table("Available Instances", cols, rows)
 				} else {
-					fmt.Println(e.Verbose())
+					uie := &ui.Error{HTTPError: e}
+					fmt.Println(uie.Verbose())
 				}
 			}
-			return nil
+			os.Exit(1)
 		}
 		return err
 	}
@@ -128,8 +129,9 @@ func SessionList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {
-			fmt.Println(e.Verbose())
-			return nil
+			uie := &ui.Error{HTTPError: e}
+			fmt.Println(uie.Verbose())
+			os.Exit(1)
 		}
 		return err
 	}
@@ -160,8 +162,9 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {
-			fmt.Println(e.Verbose())
-			return nil
+			uie := &ui.Error{HTTPError: e}
+			fmt.Println(uie.Verbose())
+			os.Exit(1)
 		}
 		return err
 	}

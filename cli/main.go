@@ -74,6 +74,20 @@ func init() {
 	})
 	rootCmd.AddCommand(sessionCmd)
 
+	// SSH Key commands
+	sshKeyCmd := &cobra.Command{
+		Use:   "ssh-key",
+		Short: "Manage Unweave SSH keys: add|ls",
+		Args:  cobra.NoArgs,
+	}
+	sshKeyCmd.AddCommand(&cobra.Command{
+		Use:   "add <public-key-path> [name]",
+		Short: "Add a new SSH key to Unweave",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE:  cmd.SSHKeyAdd,
+	})
+	rootCmd.AddCommand(sshKeyCmd)
+
 	// Auth
 	authCmd := &cobra.Command{
 		Use:   "auth",
