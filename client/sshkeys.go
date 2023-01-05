@@ -23,3 +23,16 @@ func (s *SSHKeyService) Add(ctx context.Context, params api.SSHKeyAddParams) err
 	}
 	return nil
 }
+
+func (s *SSHKeyService) List(ctx context.Context) ([]api.SSHKey, error) {
+	uri := fmt.Sprintf("ssh-keys")
+	req, err := s.client.NewAuthorizedRestRequest(Get, uri, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	res := &api.SSHKeyListResponse{}
+	if err = s.client.ExecuteRest(ctx, req, res); err != nil {
+		return nil, err
+	}
+	return res.Keys, nil
+}

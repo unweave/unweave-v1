@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
 	"github.com/jackc/pgconn"
@@ -12,7 +13,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/pkg/random"
-	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
 )
@@ -40,7 +40,7 @@ type SSHKeyAddResponse struct {
 //
 // This does not add the key to the user's configured providers. That is done lazily
 // when the user first tries to use the key.
-func SSHKeyAdd(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
+func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := getUserIDFromContext(ctx)
@@ -119,5 +119,48 @@ func SSHKeyAdd(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 
 		render.JSON(w, r, &SSHKeyAddResponse{Success: true})
+	}
+}
+
+type SSHKey struct {
+	Name      string    `json:"name"`
+	PublicKey string    `json:"publicKey"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type SSHKeyListResponse struct {
+	Keys []SSHKey `json:"keys"`
+}
+
+func SSHKeyList(dbq db.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID := getUserIDFromContext(ctx)
+
+		ctx = log.With().Stringer(ContextKeyUser, userID).Logger().WithContext(ctx)
+		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
+
+		keys, err := dbq.SSHKeysGet(ctx, userID)
+		if err != nil {
+			log.Ctx(ctx).
+				Error().
+				Err(err).
+				Msg("Failed to list ssh keys from db")
+
+			render.Render(w, r, ErrInternalServer(""))
+			return
+		}
+
+		res := SSHKeyListResponse{
+			Keys: make([]SSHKey, len(keys)),
+		}
+		for idx, key := range keys {
+			res.Keys[idx] = SSHKey{
+				Name:      key.Name,
+				PublicKey: key.PublicKey,
+				CreatedAt: key.CreatedAt,
+			}
+		}
+		render.JSON(w, r, res)
 	}
 }

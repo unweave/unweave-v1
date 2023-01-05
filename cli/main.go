@@ -40,7 +40,7 @@ func init() {
 	// Session commands
 	sessionCmd := &cobra.Command{
 		Use:   "session",
-		Short: "Manage Unweave sessions: create|ls|terminate",
+		Short: "Manage Unweave sessions: create | ls | terminate",
 		Args:  cobra.NoArgs,
 	}
 
@@ -77,7 +77,7 @@ func init() {
 	// SSH Key commands
 	sshKeyCmd := &cobra.Command{
 		Use:   "ssh-key",
-		Short: "Manage Unweave SSH keys: add|ls",
+		Short: "Manage Unweave SSH keys: add | ls",
 		Args:  cobra.NoArgs,
 	}
 	sshKeyCmd.AddCommand(&cobra.Command{
@@ -85,6 +85,12 @@ func init() {
 		Short: "Add a new SSH key to Unweave",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE:  cmd.SSHKeyAdd,
+	})
+	sshKeyCmd.AddCommand(&cobra.Command{
+		Use:   "ls",
+		Short: "List Unweave SSH keys",
+		Args:  cobra.NoArgs,
+		RunE:  cmd.SSHKeyList,
 	})
 	rootCmd.AddCommand(sshKeyCmd)
 

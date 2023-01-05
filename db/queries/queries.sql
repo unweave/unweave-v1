@@ -38,6 +38,11 @@ where id = $1;
 insert INTO unweave.ssh_keys (owner_id, name, public_key)
 values ($1, $2, $3);
 
+-- name: SSHKeysGet :many
+select *
+from unweave.ssh_keys
+where owner_id = $1;
+
 -- name: SSHKeyGetByName :one
 select *
 from unweave.ssh_keys

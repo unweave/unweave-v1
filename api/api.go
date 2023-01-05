@@ -45,7 +45,8 @@ func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
 	})
 
 	r.Route("/ssh-keys", func(r chi.Router) {
-		r.Post("/", SSHKeyAdd(rti, dbq))
+		r.Post("/", SSHKeyAdd(dbq))
+		r.Get("/", SSHKeyList(dbq))
 	})
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)

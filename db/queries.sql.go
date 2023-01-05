@@ -102,6 +102,41 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (U
 	return i, err
 }
 
+const SSHKeysGet = `-- name: SSHKeysGet :many
+select id, name, owner_id, created_at, public_key
+from unweave.ssh_keys
+where owner_id = $1
+`
+
+func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error) {
+	rows, err := q.db.QueryContext(ctx, SSHKeysGet, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveSshKey
+	for rows.Next() {
+		var i UnweaveSshKey
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.OwnerID,
+			&i.CreatedAt,
+			&i.PublicKey,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
 values ($1, $2, $3, $4, (select id

@@ -82,7 +82,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 						specID := fmt.Sprintf("%s-%d-%d-%d", instance.ID, instance.Specs.VCPUs, instance.Specs.Memory, instance.Specs.GPUMemory)
 						rowID, ok := idx[specID]
 						if !ok {
-							row := []string{
+							row := ui.Row{
 								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Name))),
 								fmt.Sprintf("%s", dashIfZeroValue(instance.ID)),
 								fmt.Sprintf("$%2.2f", float32(types.IntInv(instance.Price))/100),
