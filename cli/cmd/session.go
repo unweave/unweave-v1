@@ -28,6 +28,7 @@ func dashIfZeroValue(v interface{}) interface{} {
 func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
+	nodeID := args[0]
 	uwc := InitUnweaveClient()
 	sshKeyName := types.Stringy("")
 	sshPublicKey := types.Stringy("")
@@ -52,6 +53,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 
 	params := api.SessionCreateParams{
 		Runtime:      types.LambdaLabsProvider,
+		NodeTypeID:   nodeID,
 		SSHKeyName:   sshKeyName,
 		SSHPublicKey: sshPublicKey,
 	}

@@ -231,16 +231,15 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 		}
 	}
 
-	fmt.Println(availableInstanceTypes)
 	return availableInstanceTypes, nil
 }
 
-func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node, error) {
+func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
 	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
 
 	req := client.LaunchInstanceJSONRequestBody{
 		FileSystemNames:  nil,
-		InstanceTypeName: "gpu_1x_a10",
+		InstanceTypeName: nodeTypeID,
 		Name:             types.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         types.Inty(1),
 		RegionName:       "asia-south-1",

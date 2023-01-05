@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/muesli/reflow/wordwrap"
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/cli/cmd"
 	"github.com/unweave/unweave/cli/config"
@@ -44,13 +45,15 @@ func init() {
 	}
 
 	createCmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new Unweave session",
-		Args:  cobra.NoArgs,
-		RunE:  cmd.SessionCreate,
+		Use:   "create <node-type-id> [region]",
+		Short: "Create a new Unweave session.",
+		Long: wordwrap.String("Create a new Unweave session. If no region is provided,"+
+			"the first available one will be selected.", 100),
+		Args: cobra.RangeArgs(1, 2),
+		RunE: cmd.SessionCreate,
 	}
 	createCmd.Flags().StringVarP(&config.SSHKeyName, "ssh-key", "k", "", "Name of the SSH key to use for the session")
-	createCmd.Flags().StringVar(&config.SSHKeyPath, "ssh-key-path", "", "Absolute Path to the SSH public key to use for this session")
+	createCmd.Flags().StringVar(&config.SSHKeyPath, "ssh-key-path", "", "Absolute Path to the SSH public key to use")
 	sessionCmd.AddCommand(createCmd)
 
 	lsCmd := &cobra.Command{

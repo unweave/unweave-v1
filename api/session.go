@@ -19,7 +19,7 @@ import (
 
 type SessionCreateParams struct {
 	Runtime      types.RuntimeProvider `json:"runtime"`
-	TypeID       *string               `json:"typeID,omitempty"`
+	NodeTypeID   string                `json:"nodeTypeID,omitempty"`
 	Region       *string               `json:"region,omitempty"`
 	SSHKeyName   *string               `json:"sshKeyName"`
 	SSHPublicKey *string               `json:"sshPublicKey"`
@@ -175,7 +175,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		node, err := rt.InitNode(ctx, sshKey)
+		node, err := rt.InitNode(ctx, sshKey, scr.NodeTypeID, nil)
 		if err != nil {
 			log.Ctx(ctx).
 				Warn().
