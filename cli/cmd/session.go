@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -15,21 +18,29 @@ import (
 
 const defaultProjectID = "00000000-0000-0000-0000-000000000002"
 
+func dashIfZeroValue(v interface{}) interface{} {
+	if v == reflect.Zero(reflect.TypeOf(v)).Interface() {
+		return "-"
+	}
+	return v
+}
+
 func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	uwc := InitUnweaveClient()
-	sshKey := &types.SSHKey{}
+	sshKeyName := types.Stringy("")
+	sshPublicKey := types.Stringy("")
 
 	if config.SSHKeyName != "" {
-		sshKey.Name = &config.SSHKeyName
+		sshKeyName = &config.SSHKeyName
 	} else if config.SSHKeyPath != "" {
 		f, err := os.ReadFile(config.SSHKeyPath)
 		if err != nil {
 			return err
 		}
 		s := string(f)
-		sshKey.PublicKey = &s
+		sshPublicKey = &s
 	} else {
 		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key")
 		if !newKey {
@@ -40,18 +51,75 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	params := api.SessionCreateParams{
-		Runtime: types.LambdaLabsProvider,
-		SSHKey:  sshKey,
+		Runtime:      types.LambdaLabsProvider,
+		SSHKeyName:   sshKeyName,
+		SSHPublicKey: sshPublicKey,
 	}
-	_, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
+	session, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
 	if err != nil {
 		var e *api.HTTPError
 		if errors.As(err, &e) {
-			fmt.Println(e.Verbose())
+
+			// If error 503, it's mostly likely an out of capacity error. Try and marshal,
+			// the error message into the list of available instances.
+			if e.Code == 503 {
+				var availableInstances []types.NodeType
+				if err = json.Unmarshal([]byte(e.Suggestion), &availableInstances); err == nil {
+					fmt.Println("No available instances. Try a different region or instance type.")
+
+					cols := []ui.Column{
+						{Title: "Name", Width: 25},
+						{Title: "ID", Width: 15},
+						{Title: "Price", Width: 10},
+						{Title: "VCPUs", Width: 10},
+						{Title: "RAM (GB)", Width: 15},
+						{Title: "GPU RAM (GB)", Width: 15},
+						{Title: "Regions", Width: 50},
+					}
+
+					idx := map[string]int{}
+					var rows []ui.Row
+
+					for _, instance := range availableInstances {
+						instance := instance
+
+						specID := fmt.Sprintf("%d-%d-%d", instance.Specs.VCPUs, instance.Specs.Memory, instance.Specs.GPUMemory)
+						rowID, ok := idx[specID]
+						if !ok {
+							row := []string{
+								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Name))),
+								fmt.Sprintf("%s", dashIfZeroValue(instance.ID)),
+								fmt.Sprintf("$%2.2f", float32(types.IntInv(instance.Price))/100),
+								fmt.Sprintf("%v", dashIfZeroValue(instance.Specs.VCPUs)),
+								fmt.Sprintf("%v", dashIfZeroValue(instance.Specs.Memory)),
+								fmt.Sprintf("%v", dashIfZeroValue(types.IntInv(instance.Specs.GPUMemory))),
+								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Region))),
+							}
+							rows = append(rows, row)
+							idx[specID] = len(rows) - 1
+							continue
+						}
+						row := rows[rowID]
+						if !strings.Contains(row[6], types.StringInv(instance.Region)) {
+							row[6] = fmt.Sprintf("%s, %s", row[6], types.StringInv(instance.Region))
+						}
+					}
+
+					fmt.Println()
+					ui.Table("Available Instances", cols, rows)
+				} else {
+					fmt.Println(e.Verbose())
+				}
+			}
 			return nil
 		}
 		return err
 	}
+	fmt.Printf("Session created: \n"+
+		"  ID:      %s\n"+
+		"  Status:  %s\n"+
+		"  SSH Key: %s\n", session.ID, session.Status, session.SSHKey.Name,
+	)
 	return nil
 }
 

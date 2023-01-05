@@ -63,12 +63,25 @@ func err404(msg string, err error) *types.Error {
 }
 
 func err500(msg string, err error) *types.Error {
+	if msg == "" {
+		msg = "Unknown error"
+	}
 	return &types.Error{
 		Code:       500,
-		Message:    "Unknown error",
+		Message:    msg,
 		Suggestion: "LambdaLabs might be experiencing issues. Check the service status page at https://status.lambdalabs.com/",
 		Provider:   types.LambdaLabsProvider,
 		Err:        err,
+	}
+}
+
+// We return this when LambdaLabs doesn't have enough capacity to create the instance.
+func err503(msg string, err error) *types.Error {
+	return &types.Error{
+		Code:     503,
+		Provider: types.LambdaLabsProvider,
+		Message:  msg,
+		Err:      err,
 	}
 }
 
@@ -88,51 +101,46 @@ type Session struct {
 	client *client.ClientWithResponses
 }
 
+func (r *Session) GetProvider() types.RuntimeProvider {
+	return types.LambdaLabsProvider
+}
+
 func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
-	if sshKey.PublicKey != nil || sshKey.Name != nil {
+	if sshKey.PublicKey != nil || sshKey.Name != "" {
 		keys, err := r.ListSSHKeys(ctx)
 		if err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys, err: %w", err)
 		}
 
 		for _, k := range keys {
-			if sshKey.Name != nil && *sshKey.Name == *k.Name {
+			if sshKey.Name == k.Name {
 				// Key exists, make sure it has the same public key if provided
 				if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
 					return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
 				}
-
-				log.Info().
-					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
-
+				log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
 				return k, nil
 			}
 			if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
-				log.Info().
-					Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-					Msgf("SSH Key %q already exists, using existing key", *sshKey.Name)
-
+				log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
 				return k, nil
 			}
 		}
 	}
 	// Key doesn't exist, create a new one
 
-	if sshKey.Name == nil {
+	if sshKey.Name == "" {
 		// This should most like never collide with an existing key, but it is possible.
 		// In the future, we should check to see if the key already exists before creating
 		// it.
 		name := "uw:" + random.GenerateRandomPhrase(4, "-")
-		sshKey.Name = &name
+		sshKey.Name = name
 	}
 
-	log.Info().
-		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-		Msgf("Generating new SSH key %q", *sshKey.Name)
+	log.Ctx(ctx).Info().Msgf("Generating new SSH key %q", sshKey.Name)
 
 	req := client.AddSSHKeyJSONRequestBody{
-		Name:      *sshKey.Name,
+		Name:      sshKey.Name,
 		PublicKey: sshKey.PublicKey,
 	}
 	res, err := r.client.AddSSHKeyWithResponse(ctx, req)
@@ -154,15 +162,13 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 	}
 
 	return types.SSHKey{
-		Name:      &res.JSON200.Data.Name,
+		Name:      res.JSON200.Data.Name,
 		PublicKey: &res.JSON200.Data.PublicKey,
 	}, nil
 }
 
 func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
-	log.Info().
-		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-		Msg("Listing SSH keys")
+	log.Ctx(ctx).Info().Msg("Listing SSH keys")
 
 	res, err := r.client.ListSSHKeysWithResponse(ctx)
 	if err != nil {
@@ -183,7 +189,7 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	for i, k := range res.JSON200.Data {
 		k := k
 		keys[i] = types.SSHKey{
-			Name:      &k.Name,
+			Name:      k.Name,
 			PublicKey: &k.PublicKey,
 		}
 	}
@@ -191,9 +197,7 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 }
 
 func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeType, error) {
-	log.Info().
-		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-		Msgf("Listing instance availability")
+	log.Ctx(ctx).Info().Msgf("Listing instance availability")
 
 	res, err := r.client.InstanceTypesWithResponse(ctx)
 	if err != nil {
@@ -217,9 +221,9 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 				ID:          id,
 				Region:      &region.Name,
 				Available:   true,
-				Name:        &data.InstanceType.Name,
+				Name:        &data.InstanceType.Description,
 				Price:       &data.InstanceType.PriceCentsPerHour,
-				Description: &data.InstanceType.Description,
+				Description: nil,
 				Provider:    types.LambdaLabsProvider,
 				Specs: types.NodeSpecs{
 					VCPUs:     data.InstanceType.Specs.Vcpus,
@@ -234,26 +238,15 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 }
 
 func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node, error) {
-	// If the SSH key is not provided, generate a new one
-	if sshKey.Name == nil {
-		k, err := r.AddSSHKey(ctx, sshKey)
-		if err != nil {
-			return types.Node{}, fmt.Errorf("failed to create a new key, %w", err)
-		}
-		sshKey = k
-	}
-
-	log.Info().
-		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-		Msgf("Launching instance with SSH key %q", *sshKey.Name)
+	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
 
 	req := client.LaunchInstanceJSONRequestBody{
 		FileSystemNames:  nil,
-		InstanceTypeName: "gpu_8x_a100",
+		InstanceTypeName: "gpu_1x_a10",
 		Name:             types.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         types.Inty(1),
 		RegionName:       "asia-south-1",
-		SshKeyNames:      []string{*sshKey.Name},
+		SshKeyNames:      []string{sshKey.Name},
 	}
 
 	res, err := r.client.LaunchInstanceWithResponse(ctx, req)
@@ -285,22 +278,19 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 				instances, e := r.ListInstanceAvailability(ctx)
 				if e != nil {
 					// Log and continue
-					log.Warn().
-						Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+					log.Ctx(ctx).Warn().
 						Msgf("Failed to get a list of available instances: %v", e)
 				}
 
-				b, e := json.Marshal(instances)
+				b, e := json.MarshalIndent(instances, "", "  ")
 				if e != nil {
-					log.Warn().
-						Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
+					log.Ctx(ctx).Warn().
 						Msgf("Failed to marshal available instances to JSON: %v", e)
 				} else {
-					suggestion = "Try a different region or instance type:\nAvailable instances:\n"
 					suggestion += string(b)
 				}
 			}
-			e := err400(res.JSON400.Error.Message, nil)
+			e := err503(res.JSON400.Error.Message, nil)
 			e.Suggestion = suggestion
 			return types.Node{}, e
 		}
@@ -320,9 +310,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey) (types.Node
 }
 
 func (r *Session) TerminateNode(ctx context.Context, nodeID string) error {
-	log.Info().
-		Str(types.RuntimeProviderKey, types.LambdaLabsProvider.String()).
-		Msgf("Terminating instance %q", nodeID)
+	log.Ctx(ctx).Info().Msgf("Terminating instance %q", nodeID)
 
 	req := client.TerminateInstanceJSONRequestBody{
 		InstanceIds: []string{nodeID},

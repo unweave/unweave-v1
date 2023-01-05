@@ -17,11 +17,12 @@ import (
 )
 
 type SessionCreateParams struct {
-	Runtime types.RuntimeProvider `json:"runtime"`
-	TypeID  *string               `json:"typeID,omitempty"`
-	Region  *string               `json:"region,omitempty"`
-	SSHKey  *types.SSHKey         `json:"sshKey"`
-	Specs   *types.NodeSpecs      `json:"specs,omitempty"`
+	Runtime      types.RuntimeProvider `json:"runtime"`
+	TypeID       *string               `json:"typeID,omitempty"`
+	Region       *string               `json:"region,omitempty"`
+	SSHKeyName   *string               `json:"sshKeyName"`
+	SSHPublicKey *string               `json:"sshPublicKey"`
+	Specs        *types.NodeSpecs      `json:"specs,omitempty"`
 }
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
@@ -42,18 +43,15 @@ func (s *SessionCreateParams) Bind(r *http.Request) error {
 	return nil
 }
 
-func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKey *types.SSHKey) (types.SSHKey, error) {
+func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	exists := false
-
 	key := types.SSHKey{}
-	if sshKey != nil {
-		key = *sshKey
-	}
 
-	if key.Name != nil {
-		k, err := dbq.SSHKeyGetByName(ctx, *key.Name)
+	if sshKeyName != nil {
+		k, err := dbq.SSHKeyGetByName(ctx, *sshKeyName)
 		if err == nil {
 			exists = true
+			key.Name = *sshKeyName
 			key.PublicKey = &k.PublicKey
 		}
 		if err != nil && err != sql.ErrNoRows {
@@ -74,20 +72,22 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		k, err := dbq.SSHKeyGetByPublicKey(ctx, pkStr)
 		if err == nil {
 			exists = true
-			key.Name = &k.Name
+			key.Name = k.Name
+			key.PublicKey = &k.PublicKey
 		}
 		if err != nil && err != sql.ErrNoRows {
 			return types.SSHKey{}, fmt.Errorf("failed to get ssh key from db: %w", err)
 		}
 	}
 
+	// If key exists in the DB and with the provider, exit early.
 	if exists {
 		providerKeys, err := rt.ListSSHKeys(ctx)
 		if err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys from provider: %w", err)
 		}
 		for _, k := range providerKeys {
-			if *k.Name == *key.Name {
+			if k.Name == key.Name {
 				return key, nil
 			}
 		}
@@ -101,7 +101,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 	if !exists {
 		params := db.SSHKeyAddParams{
 			OwnerID:   userID,
-			Name:      *key.Name,
+			Name:      key.Name,
 			PublicKey: *key.PublicKey,
 		}
 		if err = dbq.SSHKeyAdd(ctx, params); err != nil {
@@ -117,16 +117,19 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		userID := getUserIDFromContext(ctx)
 		project := getProjectFromContext(ctx)
 
-		logger := log.With().
-			Str(ContextKeyUser, userID.String()).
-			Str(ContextKeyProject, project.ID.String()).
-			Logger()
+		ctx = log.With().
+			Stringer(ContextKeyUser, userID).
+			Stringer(ContextKeyProject, project.ID).
+			Logger().
+			WithContext(ctx)
 
-		logger.Info().Msgf("Executing SessionsCreate request")
+		log.Ctx(ctx).
+			Info().Msgf("Executing SessionsCreate request")
 
 		scr := SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
-			logger.Warn().
+			log.Ctx(ctx).
+				Warn().
 				Err(err).
 				Stack().
 				Msg("Failed to read body")
@@ -137,7 +140,8 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		rt, err := rti.FromUser(userID, scr.Runtime)
 		if err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Stack().
 				Msg("Failed to create runtime")
@@ -145,9 +149,15 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKey)
+		ctx = log.With().
+			Stringer(types.RuntimeProviderKey, rt.GetProvider()).
+			Logger().
+			WithContext(ctx)
+
+		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKeyName, scr.SSHPublicKey)
 		if err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Stack().
 				Msg("Failed to setup credentials")
@@ -158,7 +168,8 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		node, err := rt.InitNode(ctx, sshKey)
 		if err != nil {
-			logger.Warn().
+			log.Ctx(ctx).
+				Warn().
 				Err(err).
 				Stack().
 				Msg("Failed to init node")
@@ -168,14 +179,16 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 
 		params := db.SessionCreateParams{
-			NodeID:    node.ID,
-			CreatedBy: userID,
-			ProjectID: project.ID,
-			Runtime:   scr.Runtime.String(),
+			NodeID:     node.ID,
+			CreatedBy:  userID,
+			ProjectID:  project.ID,
+			Runtime:    scr.Runtime.String(),
+			SshKeyName: sshKey.Name,
 		}
 		sessionID, err := dbq.SessionCreate(ctx, params)
 		if err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Msg("Failed to create session")
 
@@ -212,12 +225,14 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		userID := getUserIDFromContext(ctx)
 		project := getProjectFromContext(ctx)
 
-		logger := log.With().
-			Str(ContextKeyUser, userID.String()).
-			Str(ContextKeyProject, project.ID.String()).
-			Logger()
+		ctx = log.With().
+			Stringer(ContextKeyUser, userID).
+			Stringer(ContextKeyProject, project.ID).
+			Logger().
+			WithContext(ctx)
 
-		logger.Info().Msgf("Executing SessionsList request")
+		log.Ctx(ctx).
+			Info().Msgf("Executing SessionsList request")
 		params := db.SessionsGetParams{
 			ProjectID: project.ID,
 			Limit:     100,
@@ -225,7 +240,8 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 		sessions, err := dbq.SessionsGet(ctx, params)
 		if err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Msg("Failed to get sessions")
 
@@ -242,7 +258,7 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 					// The generated go type for SshKeyName is a nullable string because
 					// of the join, but it will never be null since session have a foreign
 					// key constraint on ssh_key_id.
-					Name: &s.SshKeyName.String,
+					Name: s.SshKeyName.String,
 				},
 				Status: dbSessionStatusToAPIStatus(s.Status),
 			}
@@ -259,9 +275,11 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := getUserIDFromContext(ctx)
-		logger := log.With().Str(ContextKeyUser, userID.String()).Logger()
+		ctx = log.With().Stringer(ContextKeyUser, userID).Logger().WithContext(ctx)
 
-		logger.Info().Msgf("Executing SessionsTerminate request for user %q", userID)
+		log.Ctx(ctx).
+			Info().
+			Msgf("Executing SessionsTerminate request for user %q", userID)
 
 		// fetch from url params and try converting to uuid
 		id := chi.URLParam(r, "sessionID")
@@ -285,7 +303,8 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 				})
 				return
 			}
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Msgf("Error fetching session %q", sessionID)
 
@@ -295,7 +314,8 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 
 		rt, err := rti.FromUser(sessionID, types.RuntimeProvider(sess.Runtime))
 		if err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Msg("Failed to create runtime" + sess.Runtime)
 
@@ -303,12 +323,18 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
+		ctx = log.With().
+			Stringer(types.RuntimeProviderKey, rt.GetProvider()).
+			Logger().
+			WithContext(ctx)
+
 		if err = rt.TerminateNode(ctx, sess.NodeID); err != nil {
 			render.Render(w, r, ErrHTTPError(err, "Failed to terminate node"))
 			return
 		}
 		if err = dbq.SessionSetTerminated(ctx, sessionID); err != nil {
-			logger.Error().
+			log.Ctx(ctx).
+				Error().
 				Err(err).
 				Msgf("Failed to set session %q as terminated", sessionID)
 		}

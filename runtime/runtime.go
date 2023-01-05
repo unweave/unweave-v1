@@ -22,8 +22,9 @@ type Session interface {
 	// Otherwise, if the shhKey.PublicKey is not nil, the provider will verify that the
 	// key is valid and return the public key and name in the response.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
+	GetProvider() types.RuntimeProvider
+	InitNode(ctx context.Context, sshKey types.SSHKey) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
-	InitNode(ctx context.Context, sshKey types.SSHKey) (node types.Node, err error)
 	TerminateNode(ctx context.Context, nodeID string) error
 }
