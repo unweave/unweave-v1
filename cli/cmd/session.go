@@ -65,15 +65,10 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 			if e.Code == 503 {
 				var availableInstances []types.NodeType
 				if err = json.Unmarshal([]byte(e.Suggestion), &availableInstances); err == nil {
-					fmt.Println("No available instances. Try a different region or instance type.")
-
 					cols := []ui.Column{
 						{Title: "Name", Width: 25},
 						{Title: "ID", Width: 15},
 						{Title: "Price", Width: 10},
-						{Title: "VCPUs", Width: 10},
-						{Title: "RAM (GB)", Width: 15},
-						{Title: "GPU RAM (GB)", Width: 15},
 						{Title: "Regions", Width: 50},
 					}
 
@@ -83,16 +78,13 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 					for _, instance := range availableInstances {
 						instance := instance
 
-						specID := fmt.Sprintf("%d-%d-%d", instance.Specs.VCPUs, instance.Specs.Memory, instance.Specs.GPUMemory)
+						specID := fmt.Sprintf("%s-%d-%d-%d", instance.ID, instance.Specs.VCPUs, instance.Specs.Memory, instance.Specs.GPUMemory)
 						rowID, ok := idx[specID]
 						if !ok {
 							row := []string{
 								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Name))),
 								fmt.Sprintf("%s", dashIfZeroValue(instance.ID)),
 								fmt.Sprintf("$%2.2f", float32(types.IntInv(instance.Price))/100),
-								fmt.Sprintf("%v", dashIfZeroValue(instance.Specs.VCPUs)),
-								fmt.Sprintf("%v", dashIfZeroValue(instance.Specs.Memory)),
-								fmt.Sprintf("%v", dashIfZeroValue(types.IntInv(instance.Specs.GPUMemory))),
 								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Region))),
 							}
 							rows = append(rows, row)
@@ -100,11 +92,13 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 							continue
 						}
 						row := rows[rowID]
-						if !strings.Contains(row[6], types.StringInv(instance.Region)) {
-							row[6] = fmt.Sprintf("%s, %s", row[6], types.StringInv(instance.Region))
+						ridx := len(cols) - 1
+						if !strings.Contains(row[ridx], types.StringInv(instance.Region)) {
+							row[ridx] = fmt.Sprintf("%s, %s", row[ridx], types.StringInv(instance.Region))
 						}
 					}
 
+					fmt.Println(e.Short())
 					fmt.Println()
 					ui.Table("Available Instances", cols, rows)
 				} else {

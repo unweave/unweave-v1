@@ -216,7 +216,9 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 
 	var availableInstanceTypes []types.NodeType
 	for id, data := range res.JSON200.Data {
+		data := data
 		for _, region := range data.RegionsWithCapacityAvailable {
+			region := region
 			it := types.NodeType{
 				ID:          id,
 				Region:      &region.Name,
@@ -234,6 +236,8 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 			availableInstanceTypes = append(availableInstanceTypes, it)
 		}
 	}
+
+	fmt.Println(availableInstanceTypes)
 	return availableInstanceTypes, nil
 }
 
