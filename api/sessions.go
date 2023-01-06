@@ -126,8 +126,8 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		project := getProjectFromContext(ctx)
 
 		ctx = log.With().
-			Stringer(ContextKeyUser, userID).
-			Stringer(ContextKeyProject, project.ID).
+			Stringer(UserCtxKey, userID).
+			Stringer(ProjectCtxKey, project.ID).
 			Logger().
 			WithContext(ctx)
 
@@ -237,8 +237,8 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		project := getProjectFromContext(ctx)
 
 		ctx = log.With().
-			Stringer(ContextKeyUser, userID).
-			Stringer(ContextKeyProject, project.ID).
+			Stringer(UserCtxKey, userID).
+			Stringer(ProjectCtxKey, project.ID).
 			Logger().
 			WithContext(ctx)
 
@@ -286,7 +286,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := getUserIDFromContext(ctx)
-		ctx = log.With().Stringer(ContextKeyUser, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 
 		log.Ctx(ctx).
 			Info().

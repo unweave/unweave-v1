@@ -18,7 +18,7 @@ func withUserContext(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx,
-			ContextKeyUser,
+			UserCtxKey,
 			uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 		)
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -59,7 +59,7 @@ func withProjectContext(dbq db.Querier) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx = context.WithValue(ctx, ContextKeyProject, project)
+			ctx = context.WithValue(ctx, ProjectCtxKey, project)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

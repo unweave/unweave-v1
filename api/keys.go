@@ -12,12 +12,12 @@ import (
 // either in the middleware or in the handlers. They should not be passed further into
 // the call stack.
 const (
-	ContextKeyUser    = "user"
-	ContextKeyProject = "project"
+	UserCtxKey    = "user"
+	ProjectCtxKey = "project"
 )
 
 func getUserIDFromContext(ctx context.Context) uuid.UUID {
-	uid, ok := ctx.Value(ContextKeyUser).(uuid.UUID)
+	uid, ok := ctx.Value(UserCtxKey).(uuid.UUID)
 	if !ok {
 		// This should never happen at runtime.
 		log.Fatal().Msg("user not found in context")
@@ -26,7 +26,7 @@ func getUserIDFromContext(ctx context.Context) uuid.UUID {
 }
 
 func getProjectFromContext(ctx context.Context) *db.UnweaveProject {
-	project, ok := ctx.Value(ContextKeyProject).(db.UnweaveProject)
+	project, ok := ctx.Value(ProjectCtxKey).(db.UnweaveProject)
 	if !ok {
 		// This should never happen at runtime.
 		log.Fatal().Msg("project not found in context")

@@ -21,7 +21,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		userID := getUserIDFromContext(ctx)
 		provider := chi.URLParam(r, "provider")
 
-		ctx = log.With().Stringer(ContextKeyUser, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
 		rt, err := rti.FromUser(userID, types.RuntimeProvider(provider))
