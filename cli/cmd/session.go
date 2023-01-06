@@ -29,6 +29,11 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
 	nodeID := args[0]
+	var region *string
+	if len(args) > 1 {
+		region = &args[1]
+	}
+
 	uwc := InitUnweaveClient()
 	sshKeyName := types.Stringy("")
 	sshPublicKey := types.Stringy("")
@@ -54,9 +59,11 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	params := api.SessionCreateParams{
 		Runtime:      types.LambdaLabsProvider,
 		NodeTypeID:   nodeID,
+		Region:       region,
 		SSHKeyName:   sshKeyName,
 		SSHPublicKey: sshPublicKey,
 	}
+
 	session, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
 	if err != nil {
 		var e *api.HTTPError
@@ -103,11 +110,11 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 					fmt.Println(uie.Short())
 					fmt.Println()
 					ui.Table("Available Instances", cols, rows)
-				} else {
-					uie := &ui.Error{HTTPError: e}
-					fmt.Println(uie.Verbose())
+					os.Exit(1)
 				}
 			}
+			uie := &ui.Error{HTTPError: e}
+			fmt.Println(uie.Verbose())
 			os.Exit(1)
 		}
 		return err

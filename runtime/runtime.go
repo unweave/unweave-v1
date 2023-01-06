@@ -32,5 +32,7 @@ type Session interface {
 	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
+	// ListNodeTypes returns a list of all node types available on the provider.
+	ListNodeTypes(ctx context.Context) ([]types.NodeType, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 }

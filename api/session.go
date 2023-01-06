@@ -23,7 +23,6 @@ type SessionCreateParams struct {
 	Region       *string               `json:"region,omitempty"`
 	SSHKeyName   *string               `json:"sshKeyName"`
 	SSHPublicKey *string               `json:"sshPublicKey"`
-	Specs        *types.NodeSpecs      `json:"specs,omitempty"`
 }
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
@@ -175,7 +174,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		node, err := rt.InitNode(ctx, sshKey, scr.NodeTypeID, nil)
+		node, err := rt.InitNode(ctx, sshKey, scr.NodeTypeID, scr.Region)
 		if err != nil {
 			log.Ctx(ctx).
 				Warn().

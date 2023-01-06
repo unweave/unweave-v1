@@ -181,7 +181,7 @@ func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	return keys, nil
 }
 
-func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeType, error) {
+func (r *Session) ListNodeTypes(ctx context.Context) ([]types.NodeType, error) {
 	log.Ctx(ctx).Info().Msgf("Listing instance availability")
 
 	res, err := r.client.InstanceTypesWithResponse(ctx)
@@ -226,7 +226,7 @@ func (r *Session) ListInstanceAvailability(ctx context.Context) ([]types.NodeTyp
 }
 
 func (r *Session) finRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
-	availableInstanceTypes, err := r.ListInstanceAvailability(ctx)
+	availableInstanceTypes, err := r.ListNodeTypes(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
 	}
@@ -293,7 +293,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID 
 			msg := strings.ToLower(res.JSON400.Error.Message)
 			if strings.Contains(msg, "not enough capacity") {
 				// Get a list of available instances
-				instances, e := r.ListInstanceAvailability(ctx)
+				instances, e := r.ListNodeTypes(ctx)
 				if e != nil {
 					// Log and continue
 					log.Ctx(ctx).Warn().
@@ -307,10 +307,11 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID 
 				} else {
 					suggestion += string(b)
 				}
+				err := err503(res.JSON400.Error.Message, nil)
+				err.Suggestion = suggestion
+				return types.Node{}, err
 			}
-			e := err503(res.JSON400.Error.Message, nil)
-			e.Suggestion = suggestion
-			return types.Node{}, e
+			return types.Node{}, err400(res.JSON400.Error.Message, nil)
 		}
 
 		return types.Node{}, errUnknown(res.StatusCode(), err)
