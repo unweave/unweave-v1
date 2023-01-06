@@ -23,9 +23,9 @@ func Table(title string, cols []Column, rows []Row) {
 
 	for _, col := range cols {
 		totalWidth += col.Width
-		header += fmt.Sprintf("|%s", center(col.Title, col.Width))
+		header += fmt.Sprintf(" %-*s", -col.Width, col.Title)
 	}
-	header += "|\n"
+	header += "\n"
 	title = center(title, totalWidth)
 	separator := strings.Repeat("-", totalWidth+len(cols)+1) + "\n"
 
@@ -35,7 +35,7 @@ func Table(title string, cols []Column, rows []Row) {
 			if len(row[idx]) > col.Width {
 				row[idx] = row[idx][:col.Width]
 			}
-			body += fmt.Sprintf("%s", center(row[idx], col.Width+1))
+			body += fmt.Sprintf(" %-*s", -col.Width, row[idx])
 		}
 		body += "\n"
 	}

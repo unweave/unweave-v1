@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
@@ -71,41 +70,9 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 			// If error 503, it's mostly likely an out of capacity error. Try and marshal,
 			// the error message into the list of available instances.
 			if e.Code == 503 {
-				var availableInstances []types.NodeType
-				if err = json.Unmarshal([]byte(e.Suggestion), &availableInstances); err == nil {
-					cols := []ui.Column{
-						{Title: "Name", Width: 25},
-						{Title: "ID", Width: 15},
-						{Title: "Price", Width: 10},
-						{Title: "Regions", Width: 50},
-					}
-
-					idx := map[string]int{}
-					var rows []ui.Row
-
-					for _, instance := range availableInstances {
-						instance := instance
-
-						specID := fmt.Sprintf("%s-%d-%d-%d", instance.ID, instance.Specs.VCPUs, instance.Specs.Memory, instance.Specs.GPUMemory)
-						rowID, ok := idx[specID]
-						if !ok {
-							row := ui.Row{
-								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Name))),
-								fmt.Sprintf("%s", dashIfZeroValue(instance.ID)),
-								fmt.Sprintf("$%2.2f", float32(types.IntInv(instance.Price))/100),
-								fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(instance.Region))),
-							}
-							rows = append(rows, row)
-							idx[specID] = len(rows) - 1
-							continue
-						}
-						row := rows[rowID]
-						ridx := len(cols) - 1
-						if !strings.Contains(row[ridx], types.StringInv(instance.Region)) {
-							row[ridx] = fmt.Sprintf("%s, %s", row[ridx], types.StringInv(instance.Region))
-						}
-					}
-
+				var nodeTypes []types.NodeType
+				if err = json.Unmarshal([]byte(e.Suggestion), &nodeTypes); err == nil {
+					cols, rows := nodeTypesToTable(nodeTypes)
 					uie := &ui.Error{HTTPError: e}
 					fmt.Println(uie.Short())
 					fmt.Println()
@@ -139,6 +106,7 @@ func SessionList(cmd *cobra.Command, args []string) error {
 
 	uwc := InitUnweaveClient()
 	listTerminated := config.All
+
 	sessions, err := uwc.Session.List(cmd.Context(), uuid.MustParse(defaultProjectID), listTerminated)
 	if err != nil {
 		var e *api.HTTPError
@@ -150,10 +118,16 @@ func SessionList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println("Sessions:")
-	for _, s := range sessions {
-		fmt.Printf("ID: %s, Status: %s", s.ID, s.Status)
+	cols := []ui.Column{{Title: "ID", Width: 20}, {Title: "Status", Width: 15}}
+	rows := make([]ui.Row, len(sessions))
+
+	for idx, s := range sessions {
+		row := ui.Row{fmt.Sprintf("%s", s.ID), fmt.Sprintf("%s", s.Status)}
+		rows[idx] = row
 	}
+
+	ui.Table("Sessions", cols, rows)
+
 	return nil
 }
 

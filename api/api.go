@@ -48,6 +48,7 @@ func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
 		r.Post("/", SSHKeyAdd(dbq))
 		r.Get("/", SSHKeyList(dbq))
 	})
+	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)
 	if err := http.ListenAndServe(":"+cfg.APIPort, r); err != nil {

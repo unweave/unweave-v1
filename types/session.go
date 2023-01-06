@@ -37,10 +37,9 @@ type NodeSpecs struct {
 
 type NodeType struct {
 	ID          string          `json:"id"`
-	Available   bool            `json:"available"`
 	Name        *string         `json:"name"`
 	Price       *int            `json:"price"`
-	Region      *string         `json:"region"`
+	Regions     []string        `json:"regions"`
 	Description *string         `json:"description"`
 	Provider    RuntimeProvider `json:"provider"`
 	Specs       NodeSpecs       `json:"specs"`

@@ -20,8 +20,9 @@ type Client struct {
 	cfg    *Config
 	client *http.Client
 
-	Session *SessionService
-	SSHKey  *SSHKeyService
+	Provider *ProviderService
+	Session  *SessionService
+	SSHKey   *SSHKeyService
 }
 
 func NewClient(cfg Config) *Client {
@@ -29,6 +30,7 @@ func NewClient(cfg Config) *Client {
 		cfg:    &cfg,
 		client: &http.Client{},
 	}
+	c.Provider = &ProviderService{client: c}
 	c.Session = &SessionService{client: c}
 	c.SSHKey = &SSHKeyService{client: c}
 	return c

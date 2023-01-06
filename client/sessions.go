@@ -46,7 +46,7 @@ func (s *SessionService) Get(ctx context.Context, projectID, sessionID uuid.UUID
 func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerminated bool) ([]types.Session, error) {
 	uri := fmt.Sprintf("projects/%s/sessions", projectID)
 	query := map[string]string{
-		"terminated": fmt.Sprintf("%v", listTerminated),
+		"terminated": fmt.Sprintf("%t", listTerminated),
 	}
 	req, err := s.client.NewAuthorizedRestRequest(Get, uri, query, nil)
 	if err != nil {

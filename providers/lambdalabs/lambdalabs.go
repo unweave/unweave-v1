@@ -199,50 +199,59 @@ func (r *Session) ListNodeTypes(ctx context.Context) ([]types.NodeType, error) {
 		return nil, errUnknown(res.StatusCode(), nil)
 	}
 
-	var availableInstanceTypes []types.NodeType
+	var nodeTypes []types.NodeType
 	for id, data := range res.JSON200.Data {
 		data := data
+
+		it := types.NodeType{
+			ID:          id,
+			Name:        &data.InstanceType.Description,
+			Regions:     []string{},
+			Price:       &data.InstanceType.PriceCentsPerHour,
+			Description: nil,
+			Provider:    types.LambdaLabsProvider,
+			Specs: types.NodeSpecs{
+				VCPUs:     data.InstanceType.Specs.Vcpus,
+				Memory:    data.InstanceType.Specs.MemoryGib,
+				GPUMemory: nil,
+			},
+		}
+
 		for _, region := range data.RegionsWithCapacityAvailable {
 			region := region
-			it := types.NodeType{
-				ID:          id,
-				Region:      &region.Name,
-				Available:   true,
-				Name:        &data.InstanceType.Description,
-				Price:       &data.InstanceType.PriceCentsPerHour,
-				Description: nil,
-				Provider:    types.LambdaLabsProvider,
-				Specs: types.NodeSpecs{
-					VCPUs:     data.InstanceType.Specs.Vcpus,
-					Memory:    data.InstanceType.Specs.MemoryGib,
-					GPUMemory: nil,
-				},
-			}
-			availableInstanceTypes = append(availableInstanceTypes, it)
+			it.Regions = append(it.Regions, region.Name)
 		}
+		nodeTypes = append(nodeTypes, it)
 	}
 
-	return availableInstanceTypes, nil
+	return nodeTypes, nil
 }
 
 func (r *Session) finRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
-	availableInstanceTypes, err := r.ListNodeTypes(ctx)
+	nodeTypes, err := r.ListNodeTypes(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
 	}
 
-	for _, it := range availableInstanceTypes {
-		if it.ID == nodeTypeID {
-			if it.Region == nil {
-				log.Ctx(ctx).
-					Warn().
-					Msgf("Node type %q has no region", nodeTypeID)
+	for _, nt := range nodeTypes {
+		if nt.ID == nodeTypeID {
+			if len(nt.Regions) == 0 {
 				continue
 			}
-			return *it.Region, nil
+			return nt.Regions[0], nil
 		}
 	}
-	return "", err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
+	suggestion := ""
+	b, err := json.Marshal(nodeTypes)
+	if err != nil {
+		log.Ctx(ctx).Warn().Msgf("Failed to marshal available instances to JSON: %v", err)
+	} else {
+		suggestion += string(b)
+	}
+
+	e := err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
+	e.Suggestion = suggestion
+	return "", e
 }
 
 func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
@@ -291,7 +300,7 @@ func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID 
 		if res.JSON400 != nil {
 			suggestion := ""
 			msg := strings.ToLower(res.JSON400.Error.Message)
-			if strings.Contains(msg, "not enough capacity") {
+			if strings.Contains(msg, "available capacity") {
 				// Get a list of available instances
 				instances, e := r.ListNodeTypes(ctx)
 				if e != nil {
