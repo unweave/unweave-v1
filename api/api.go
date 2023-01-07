@@ -8,12 +8,16 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/config"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
 
-func API(cfg config.Config, rti runtime.Initializer, dbq db.Querier) {
+type Config struct {
+	APIPort string    `json:"port" env:"UNWEAVE_API_PORT"`
+	DB      db.Config `json:"db"`
+}
+
+func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()

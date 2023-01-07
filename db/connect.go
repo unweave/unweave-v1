@@ -3,11 +3,17 @@ package db
 import (
 	"database/sql"
 	"fmt"
-
-	"github.com/unweave/unweave/config"
 )
 
-func Connect(cfg config.DBConfig) (*sql.DB, error) {
+type Config struct {
+	Host     string `json:"host" env:"UNWEAVE_DB_HOST"`
+	Port     int    `json:"port" env:"UNWEAVE_DB_PORT"`
+	Name     string `json:"name" env:"UNWEAVE_DB_NAME"`
+	User     string `json:"user" env:"UNWEAVE_DB_USER"`
+	Password string `json:"password" env:"UNWEAVE_DB_PASSWORD"`
+}
+
+func Connect(cfg Config) (*sql.DB, error) {
 	url := fmt.Sprintf(
 		"postgresql://%s:%s@%s:%d/%s",
 		cfg.User,

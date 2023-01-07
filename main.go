@@ -8,16 +8,15 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api"
-	"github.com/unweave/unweave/config"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/pkg/gonfig"
 	"github.com/unweave/unweave/runtime"
 )
 
 func main() {
-	cfg := config.Config{
+	cfg := api.Config{
 		APIPort: "8080",
-		DB:      config.DBConfig{},
+		DB:      db.Config{},
 	}
 	gonfig.GetFromEnvVariables(&cfg)
 
