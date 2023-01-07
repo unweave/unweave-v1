@@ -43,7 +43,7 @@ type SSHKeyAddResponse struct {
 func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
 
 		// Make sure key doesn't already exist in the DB.
 		//  - check by name
@@ -135,7 +135,7 @@ type SSHKeyListResponse struct {
 func SSHKeyList(dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
 
 		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")

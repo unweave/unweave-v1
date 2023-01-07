@@ -18,7 +18,7 @@ type NodeTypesListResponse struct {
 func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
 		provider := chi.URLParam(r, "provider")
 
 		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)

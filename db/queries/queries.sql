@@ -12,13 +12,32 @@ where id = $1;
 insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_keys
-                         where name = @ssh_key_name and owner_id = $2))
+                         where name = @ssh_key_name
+                           and owner_id = $2))
 returning id;
 
 -- name: SessionGet :one
 select *
 from unweave.sessions
 where id = $1;
+
+-- name: SessionAndProjectGet :one
+select s.id,
+       s.node_id,
+       s.created_by,
+       s.created_at,
+       s.ready_at,
+       s.exited_at,
+       s.status,
+       s.runtime,
+       s.ssh_key_id,
+       p.id         as project_id,
+       p.name       as project_name,
+       p.owner_id   as project_owner_id,
+       p.created_at as project_created_at
+from unweave.sessions s
+         join unweave.projects p on p.id = s.project_id
+where s.id = $1;
 
 -- name: SessionsGet :many
 select sessions.id, ssh_keys.name as ssh_key_name, sessions.status

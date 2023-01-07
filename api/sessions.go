@@ -122,8 +122,8 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
-		project := getProjectFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
+		project := GetProjectFromContext(ctx)
 
 		ctx = log.With().
 			Stringer(UserCtxKey, userID).
@@ -233,8 +233,8 @@ type SessionsListResponse struct {
 func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
-		project := getProjectFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
+		project := GetProjectFromContext(ctx)
 
 		ctx = log.With().
 			Stringer(UserCtxKey, userID).
@@ -285,7 +285,7 @@ type SessionTerminateResponse struct {
 func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := getUserIDFromContext(ctx)
+		userID := GetUserIDFromContext(ctx)
 		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 
 		log.Ctx(ctx).

@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -137,11 +138,68 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveS
 	return items, nil
 }
 
+const SessionAndProjectGet = `-- name: SessionAndProjectGet :one
+select s.id,
+       s.node_id,
+       s.created_by,
+       s.created_at,
+       s.ready_at,
+       s.exited_at,
+       s.status,
+       s.runtime,
+       s.ssh_key_id,
+       p.id         as project_id,
+       p.name       as project_name,
+       p.owner_id   as project_owner_id,
+       p.created_at as project_created_at
+from unweave.sessions s
+         join unweave.projects p on p.id = s.project_id
+where s.id = $1
+`
+
+type SessionAndProjectGetRow struct {
+	ID               uuid.UUID            `json:"id"`
+	NodeID           string               `json:"nodeID"`
+	CreatedBy        uuid.UUID            `json:"createdBy"`
+	CreatedAt        time.Time            `json:"createdAt"`
+	ReadyAt          sql.NullTime         `json:"readyAt"`
+	ExitedAt         sql.NullTime         `json:"exitedAt"`
+	Status           UnweaveSessionStatus `json:"status"`
+	Runtime          string               `json:"runtime"`
+	SshKeyID         uuid.UUID            `json:"sshKeyID"`
+	ProjectID        uuid.UUID            `json:"projectID"`
+	ProjectName      string               `json:"projectName"`
+	ProjectOwnerID   uuid.UUID            `json:"projectOwnerID"`
+	ProjectCreatedAt time.Time            `json:"projectCreatedAt"`
+}
+
+func (q *Queries) SessionAndProjectGet(ctx context.Context, id uuid.UUID) (SessionAndProjectGetRow, error) {
+	row := q.db.QueryRowContext(ctx, SessionAndProjectGet, id)
+	var i SessionAndProjectGetRow
+	err := row.Scan(
+		&i.ID,
+		&i.NodeID,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ReadyAt,
+		&i.ExitedAt,
+		&i.Status,
+		&i.Runtime,
+		&i.SshKeyID,
+		&i.ProjectID,
+		&i.ProjectName,
+		&i.ProjectOwnerID,
+		&i.ProjectCreatedAt,
+	)
+	return i, err
+}
+
 const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_keys
-                         where name = $5 and owner_id = $2))
+                         where name = $5
+                           and owner_id = $2))
 returning id
 `
 
