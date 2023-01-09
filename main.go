@@ -9,8 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/pkg/gonfig"
 	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/tools/gonfig"
 )
 
 func main() {

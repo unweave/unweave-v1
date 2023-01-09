@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/pkg/random"
 	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/tools/random"
 	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
 )

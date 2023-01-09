@@ -8,8 +8,8 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/pkg/random"
 	"github.com/unweave/unweave/providers/lambdalabs/client"
+	"github.com/unweave/unweave/tools/random"
 	"github.com/unweave/unweave/types"
 )
 
