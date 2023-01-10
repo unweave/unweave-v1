@@ -43,9 +43,9 @@ services:
       migrate:
         condition: service_completed_successfully
     ports:
-      - "8000:8000"
+      - ${UNWEAVE_API_PORT}:${UNWEAVE_API_PORT}
     expose:
-      - "8000"
+      - ${UNWEAVE_API_PORT}
     environment:
       UNWEAVE_API_PORT: ${UNWEAVE_API_PORT}
       UNWEAVE_DB_USER: ${UNWEAVE_DB_USER}

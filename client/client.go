@@ -88,7 +88,8 @@ func (c *Client) NewAuthorizedRestRequest(rtype RestRequestType, endpoint string
 	}
 
 	if c.cfg.Token == "" {
-		return nil, fmt.Errorf("no token provided")
+		// Let the API server decide what to do with the request.
+		return req, nil
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.cfg.Token)

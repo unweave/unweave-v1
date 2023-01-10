@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/unweave/unweave/pkg/gonfig"
+	"github.com/unweave/unweave/tools/gonfig"
 	"github.com/unweave/unweave/types"
 )
 
@@ -71,7 +71,7 @@ func init() {
 		appURL = "https://app.staging-unweave.io"
 	case "development", "dev":
 		Path = filepath.Join(home, ".unweave/dev-config.json")
-		apiURL = "http://localhost:8000"
+		apiURL = "http://localhost:4000"
 		appURL = "http://localhost:3000"
 	case "production", "prod":
 		Path = filepath.Join(home, ".unweave/config.json")

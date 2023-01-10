@@ -14,10 +14,7 @@ import (
 )
 
 func main() {
-	cfg := api.Config{
-		APIPort: "8080",
-		DB:      db.Config{},
-	}
+	cfg := api.Config{}
 	gonfig.GetFromEnvVariables(&cfg)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
