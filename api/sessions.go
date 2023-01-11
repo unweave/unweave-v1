@@ -146,7 +146,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromUser(userID, scr.Runtime)
+		rt, err := rti.FromUserID(ctx, userID, scr.Runtime)
 		if err != nil {
 			log.Ctx(ctx).
 				Error().
@@ -323,7 +323,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
-		rt, err := rti.FromUser(sessionID, types.RuntimeProvider(sess.Runtime))
+		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Runtime))
 		if err != nil {
 			log.Ctx(ctx).
 				Error().

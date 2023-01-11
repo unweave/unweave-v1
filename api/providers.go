@@ -24,7 +24,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
-		rt, err := rti.FromUser(userID, types.RuntimeProvider(provider))
+		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(provider))
 		if err != nil {
 			render.Render(w, r, ErrHTTPError(err, "Failed to create runtime"))
 			return

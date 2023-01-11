@@ -1,10 +1,10 @@
 package runtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/providers/lambdalabs"
@@ -12,27 +12,22 @@ import (
 )
 
 type Initializer interface {
-	FromUser(userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
-	FromSession(sessionID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
 }
 
 // ConfigFileInitializer is only used in development or if you're self-hosting Unweave.
-type ConfigFileInitializer struct{}
-
-type lambdaLabsRuntimeConfig struct {
-	APIKey string `json:"apiKey"`
+type ConfigFileInitializer struct {
+	Path string
 }
 
 type runtimeConfig struct {
-	LambdaLabs lambdaLabsRuntimeConfig `json:"lambdaLabs"`
+	LambdaLabs struct {
+		APIKey string `json:"apiKey"`
+	} `json:"lambdaLabs"`
 }
 
-func (i *ConfigFileInitializer) FromUser(userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	f, err := os.Open(filepath.Join(home, ".unweave/runtime-config.json"))
+func (i *ConfigFileInitializer) FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
+	f, err := os.Open(i.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +52,4 @@ func (i *ConfigFileInitializer) FromUser(userID uuid.UUID, provider types.Runtim
 		return nil, fmt.Errorf("unweave provider not supported in config file initializer")
 	}
 	return nil, fmt.Errorf("unknown runtime provider %q", provider)
-}
-
-func (i *ConfigFileInitializer) FromSession(sessionID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
-	return nil, nil
 }
