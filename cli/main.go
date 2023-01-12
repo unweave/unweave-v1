@@ -109,26 +109,6 @@ func init() {
 		RunE:  cmd.SSHKeyList,
 	})
 	rootCmd.AddCommand(sshKeyCmd)
-
-	// Auth
-	authCmd := &cobra.Command{
-		Use:   "auth",
-		Short: "Manage authentication tokens: create-user-token|get-user-tokens",
-		Args:  cobra.NoArgs,
-	}
-
-	authCmd.AddCommand(&cobra.Command{
-		Use:   "create-user-token",
-		Short: "Create a new token",
-		RunE:  cmd.CreateUserToken,
-	})
-
-	authCmd.AddCommand(&cobra.Command{
-		Use:   "get-user-tokens",
-		Short: "Get all tokens for the current user",
-		RunE:  cmd.GetUserTokens,
-	})
-	rootCmd.AddCommand(authCmd)
 }
 
 func main() {

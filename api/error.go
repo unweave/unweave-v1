@@ -61,5 +61,6 @@ func ErrInternalServer(err error, msg string) render.Renderer {
 	return &HTTPError{
 		Code:    http.StatusInternalServerError,
 		Message: m,
+		Err:     err,
 	}
 }
