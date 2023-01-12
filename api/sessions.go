@@ -18,7 +18,7 @@ import (
 )
 
 type SessionCreateParams struct {
-	Runtime      types.RuntimeProvider `json:"runtime"`
+	Provider     types.RuntimeProvider `json:"provider"`
 	NodeTypeID   string                `json:"nodeTypeID,omitempty"`
 	Region       *string               `json:"region,omitempty"`
 	SSHKeyName   *string               `json:"sshKeyName"`
@@ -26,17 +26,17 @@ type SessionCreateParams struct {
 }
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
-	if s.Runtime == "" {
+	if s.Provider == "" {
 		return &HTTPError{
 			Code:       400,
 			Message:    "Invalid request body: field 'runtime' is required",
 			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
 		}
 	}
-	if s.Runtime != types.LambdaLabsProvider && s.Runtime != types.UnweaveProvider {
+	if s.Provider != types.LambdaLabsProvider && s.Provider != types.UnweaveProvider {
 		return &HTTPError{
 			Code:       400,
-			Message:    "Invalid runtime provider: " + string(s.Runtime),
+			Message:    "Invalid runtime provider: " + string(s.Provider),
 			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
 		}
 	}
@@ -146,7 +146,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, scr.Runtime)
+		rt, err := rti.FromUserID(ctx, userID, scr.Provider)
 		if err != nil {
 			log.Ctx(ctx).
 				Error().
@@ -190,7 +190,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			NodeID:     node.ID,
 			CreatedBy:  userID,
 			ProjectID:  project.ID,
-			Runtime:    scr.Runtime.String(),
+			Runtime:    scr.Provider.String(),
 			SshKeyName: sshKey.Name,
 		}
 		sessionID, err := dbq.SessionCreate(ctx, params)

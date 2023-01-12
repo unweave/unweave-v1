@@ -56,7 +56,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	params := api.SessionCreateParams{
-		Runtime:      types.LambdaLabsProvider,
+		Provider:     types.LambdaLabsProvider,
 		NodeTypeID:   nodeID,
 		Region:       region,
 		SSHKeyName:   sshKeyName,
