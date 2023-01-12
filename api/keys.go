@@ -46,6 +46,7 @@ func GetProjectFromContext(ctx context.Context) *db.UnweaveProject {
 func SetSessionInContext(ctx context.Context, session db.UnweaveSession) context.Context {
 	return context.WithValue(ctx, SessionCtxKey, session)
 }
+
 func GetSessionFromContext(ctx context.Context) *db.UnweaveSession {
 	session, ok := ctx.Value(SessionCtxKey).(db.UnweaveSession)
 	if !ok {

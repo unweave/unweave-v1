@@ -25,7 +25,7 @@ type SSHKeyAddParams struct {
 func (s *SSHKeyAddParams) Bind(r *http.Request) error {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
 		return &HTTPError{
-			Code:    400,
+			Code:    http.StatusBadRequest,
 			Message: "Invalid SSH public key",
 		}
 	}
@@ -45,41 +45,28 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
-		// Make sure key doesn't already exist in the DB.
-		//  - check by name
-		//  - check by public key
-
 		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
 		params := SSHKeyAddParams{}
 		if err := render.Bind(r, &params); err != nil {
-			log.Ctx(ctx).
-				Warn().
-				Err(err).
-				Stack().
-				Msg("Failed to read body")
-
-			render.Render(w, r, ErrHTTPError(err, "Invalid request body"))
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
 			return
 		}
 
 		if params.Name != nil {
 			k, err := dbq.SSHKeyGetByName(ctx, *params.Name)
 			if err == nil {
-				render.Render(w, r, &HTTPError{
-					Code:    404,
+				render.Render(w, r.WithContext(ctx), &HTTPError{
+					Code:    http.StatusNotFound,
 					Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
 				})
 				return
 			}
 			if err != nil && err != sql.ErrNoRows {
-				log.Ctx(ctx).
-					Error().
-					Err(err).
-					Msg("Failed to get ssh key from db")
-
-				render.Render(w, r, ErrInternalServer(""))
+				err = fmt.Errorf("failed to get ssh key from db: %w", err)
+				render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 				return
 			}
 		} else {
@@ -98,8 +85,8 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 				// We already check the unique constraint on the name column, so this
 				// should only happen if the public key is a duplicate.
 				if e.Code == pgerrcode.UniqueViolation {
-					render.Render(w, r, &HTTPError{
-						Code:    409,
+					render.Render(w, r.WithContext(ctx), &HTTPError{
+						Code:    http.StatusConflict,
 						Message: "Public key already exists",
 						Suggestion: "Public keys in Unweave have to be globally unique. " +
 							"It could be that you added this key earlier or that you " +
@@ -109,12 +96,8 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 					return
 				}
 			}
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msg("Failed to add ssh key to db")
-
-			render.Render(w, r, ErrInternalServer(""))
+			err = fmt.Errorf("failed to add ssh key to db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 		}
 
@@ -142,12 +125,8 @@ func SSHKeyList(dbq db.Querier) http.HandlerFunc {
 
 		keys, err := dbq.SSHKeysGet(ctx, userID)
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msg("Failed to list ssh keys from db")
-
-			render.Render(w, r, ErrInternalServer(""))
+			err = fmt.Errorf("failed to list ssh keys from db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 		}
 

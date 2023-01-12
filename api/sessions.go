@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -131,29 +130,19 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			Logger().
 			WithContext(ctx)
 
-		log.Ctx(ctx).
-			Info().Msgf("Executing SessionsCreate request")
+		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
 		scr := SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
-			log.Ctx(ctx).
-				Warn().
-				Err(err).
-				Stack().
-				Msg("Failed to read body")
-
-			render.Render(w, r, ErrHTTPError(err, "Invalid request body"))
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
 			return
 		}
 
 		rt, err := rti.FromUserID(ctx, userID, scr.Provider)
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Stack().
-				Msg("Failed to create runtime")
-			render.Render(w, r, ErrInternalServer(""))
+			err = fmt.Errorf("failed to create runtime: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 		}
 
@@ -164,25 +153,15 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKeyName, scr.SSHPublicKey)
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Stack().
-				Msg("Failed to setup credentials")
-
-			render.Render(w, r, ErrHTTPError(err, "Failed to setup credentials"))
+			err = fmt.Errorf("failed to setup credentials: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to setup credentials"))
 			return
 		}
 
 		node, err := rt.InitNode(ctx, sshKey, scr.NodeTypeID, scr.Region)
 		if err != nil {
-			log.Ctx(ctx).
-				Warn().
-				Err(err).
-				Stack().
-				Msg("Failed to init node")
-
-			render.Render(w, r, ErrHTTPError(err, "Failed to initialize node"))
+			err = fmt.Errorf("failed to init node: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize node"))
 			return
 		}
 
@@ -195,12 +174,8 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 		sessionID, err := dbq.SessionCreate(ctx, params)
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msg("Failed to create session")
-
-			render.Render(w, r, ErrInternalServer(""))
+			err = fmt.Errorf("failed to create session in db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 
 		}
@@ -242,8 +217,8 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			Logger().
 			WithContext(ctx)
 
-		log.Ctx(ctx).
-			Info().Msgf("Executing SessionsList request")
+		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
+
 		params := db.SessionsGetParams{
 			ProjectID: project.ID,
 			Limit:     100,
@@ -251,12 +226,8 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		}
 		sessions, err := dbq.SessionsGet(ctx, params)
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msg("Failed to get sessions")
-
-			render.Render(w, r, ErrInternalServer(""))
+			err = fmt.Errorf("failed to get sessions from db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 		}
 
@@ -292,45 +263,26 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			Info().
 			Msgf("Executing SessionsTerminate request for user %q", userID)
 
-		// fetch from url params and try converting to uuid
-		id := chi.URLParam(r, "sessionID")
-		sessionID, err := uuid.Parse(id)
-		if err != nil {
-			render.Render(w, r, &HTTPError{
-				Code:       400,
-				Message:    "Invalid session id",
-				Suggestion: "Make sure the session id is a valid UUID",
-			})
-			return
-		}
-
-		sess, err := dbq.SessionGet(ctx, sessionID)
+		session := GetSessionFromContext(ctx)
+		sess, err := dbq.SessionGet(ctx, session.ID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				render.Render(w, r, &HTTPError{
+				render.Render(w, r.WithContext(ctx), &HTTPError{
 					Code:       404,
 					Message:    "Session not found",
 					Suggestion: "Make sure the session id is valid",
 				})
 				return
 			}
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msgf("Error fetching session %q", sessionID)
-
-			render.Render(w, r, ErrInternalServer("Failed to terminate session"))
+			err = fmt.Errorf("failed to fetch session from db %q: %w", session.ID, err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to terminate session"))
 			return
 		}
 
 		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Runtime))
 		if err != nil {
-			log.Ctx(ctx).
-				Error().
-				Err(err).
-				Msg("Failed to create runtime" + sess.Runtime)
-
-			render.Render(w, r, ErrInternalServer("Failed to initialize runtime"))
+			err = fmt.Errorf("failed to create runtime %q: %w", sess.Runtime, err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to initialize runtime"))
 			return
 		}
 
@@ -340,14 +292,14 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			WithContext(ctx)
 
 		if err = rt.TerminateNode(ctx, sess.NodeID); err != nil {
-			render.Render(w, r, ErrHTTPError(err, "Failed to terminate node"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate node"))
 			return
 		}
-		if err = dbq.SessionSetTerminated(ctx, sessionID); err != nil {
+		if err = dbq.SessionSetTerminated(ctx, session.ID); err != nil {
 			log.Ctx(ctx).
 				Error().
 				Err(err).
-				Msgf("Failed to set session %q as terminated", sessionID)
+				Msgf("Failed to set session %q as terminated", session.ID)
 		}
 
 		render.JSON(w, r, &SessionTerminateResponse{Success: true})

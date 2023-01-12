@@ -37,14 +37,19 @@ func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 		},
 	}))
 
-	r.Use(withUserContext) // fakes an authenticated user
+	r.Use(withUserCtx) // fakes an authenticated user
 	r.Route("/projects/{projectID}", func(r chi.Router) {
-		r.Use(withProjectContext(dbq))
+		r.Use(withProjectCtx(dbq))
+
 		r.Route("/sessions", func(r chi.Router) {
 			r.Post("/", SessionsCreate(rti, dbq))
 			r.Get("/", SessionsList(rti, dbq))
-			r.Get("/{sessionID}", SessionsGet(rti))
-			r.Put("/{sessionID}/terminate", SessionsTerminate(rti, dbq))
+
+			r.Group(func(r chi.Router) {
+				r.Use(withSessionCtx(dbq))
+				r.Get("/{sessionID}", SessionsGet(rti))
+				r.Put("/{sessionID}/terminate", SessionsTerminate(rti, dbq))
+			})
 		})
 	})
 
