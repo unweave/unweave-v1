@@ -9,10 +9,10 @@ from unweave.projects
 where id = $1;
 
 -- name: SessionCreate :one
-insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
+insert into unweave.sessions (node_id, created_by, project_id, provider, ssh_key_id)
 values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_keys
-                         where name = @ssh_key_name
+                         from unweave.ssh_keys as ssh_keys
+                         where ssh_keys.name = @ssh_key_name
                            and owner_id = $2))
 returning id;
 
@@ -29,7 +29,7 @@ select s.id,
        s.ready_at,
        s.exited_at,
        s.status,
-       s.runtime,
+       s.provider,
        s.ssh_key_id,
        p.id         as project_id,
        p.name       as project_name,

@@ -2,7 +2,9 @@
 -- +goose StatementBegin
 
 create schema unweave;
+
 grant all on schema unweave to postgres;
+grant all on all tables in schema unweave to postgres;
 
 -- Minimal users table to allow for constraints
 create table unweave.users
@@ -34,6 +36,7 @@ create table unweave.ssh_keys
 create table unweave.sessions
 (
     id         uuid primary key                default gen_random_uuid(),
+    name       text                   not null default '',
     -- node_id is provider specific identifier of the compute resource assigned to this session.
     node_id    text                   not null,
     created_by uuid                   not null references unweave.users (id),
@@ -44,7 +47,7 @@ create table unweave.sessions
     project_id uuid                   not null references unweave.projects (id),
     -- We don't want to constrain this to an enum to allow users to register their own
     -- providers without having to update the database schema.
-    runtime    text                   not null,
+    provider   text                   not null,
     ssh_key_id uuid                   not null references unweave.ssh_keys (id)
 );
 

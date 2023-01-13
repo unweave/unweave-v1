@@ -65,6 +65,7 @@ type UnweaveProject struct {
 
 type UnweaveSession struct {
 	ID        uuid.UUID            `json:"id"`
+	Name      string               `json:"name"`
 	NodeID    string               `json:"nodeID"`
 	CreatedBy uuid.UUID            `json:"createdBy"`
 	CreatedAt time.Time            `json:"createdAt"`
@@ -72,7 +73,7 @@ type UnweaveSession struct {
 	ExitedAt  sql.NullTime         `json:"exitedAt"`
 	Status    UnweaveSessionStatus `json:"status"`
 	ProjectID uuid.UUID            `json:"projectID"`
-	Runtime   string               `json:"runtime"`
+	Provider  string               `json:"provider"`
 	SshKeyID  uuid.UUID            `json:"sshKeyID"`
 }
 

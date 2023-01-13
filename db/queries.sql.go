@@ -146,7 +146,7 @@ select s.id,
        s.ready_at,
        s.exited_at,
        s.status,
-       s.runtime,
+       s.provider,
        s.ssh_key_id,
        p.id         as project_id,
        p.name       as project_name,
@@ -165,7 +165,7 @@ type SessionAndProjectGetRow struct {
 	ReadyAt          sql.NullTime         `json:"readyAt"`
 	ExitedAt         sql.NullTime         `json:"exitedAt"`
 	Status           UnweaveSessionStatus `json:"status"`
-	Runtime          string               `json:"runtime"`
+	Provider         string               `json:"provider"`
 	SshKeyID         uuid.UUID            `json:"sshKeyID"`
 	ProjectID        uuid.UUID            `json:"projectID"`
 	ProjectName      string               `json:"projectName"`
@@ -184,7 +184,7 @@ func (q *Queries) SessionAndProjectGet(ctx context.Context, id uuid.UUID) (Sessi
 		&i.ReadyAt,
 		&i.ExitedAt,
 		&i.Status,
-		&i.Runtime,
+		&i.Provider,
 		&i.SshKeyID,
 		&i.ProjectID,
 		&i.ProjectName,
@@ -195,10 +195,10 @@ func (q *Queries) SessionAndProjectGet(ctx context.Context, id uuid.UUID) (Sessi
 }
 
 const SessionCreate = `-- name: SessionCreate :one
-insert into unweave.sessions (node_id, created_by, project_id, runtime, ssh_key_id)
+insert into unweave.sessions (node_id, created_by, project_id, provider, ssh_key_id)
 values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_keys
-                         where name = $5
+                         from unweave.ssh_keys as ssh_keys
+                         where ssh_keys.name = $5
                            and owner_id = $2))
 returning id
 `
@@ -207,7 +207,7 @@ type SessionCreateParams struct {
 	NodeID     string    `json:"nodeID"`
 	CreatedBy  uuid.UUID `json:"createdBy"`
 	ProjectID  uuid.UUID `json:"projectID"`
-	Runtime    string    `json:"runtime"`
+	Provider   string    `json:"provider"`
 	SshKeyName string    `json:"sshKeyName"`
 }
 
@@ -216,7 +216,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 		arg.NodeID,
 		arg.CreatedBy,
 		arg.ProjectID,
-		arg.Runtime,
+		arg.Provider,
 		arg.SshKeyName,
 	)
 	var id uuid.UUID
@@ -225,7 +225,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, node_id, created_by, created_at, ready_at, exited_at, status, project_id, runtime, ssh_key_id
+select id, name, node_id, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
 from unweave.sessions
 where id = $1
 `
@@ -235,6 +235,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 	var i UnweaveSession
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.NodeID,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -242,7 +243,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.ExitedAt,
 		&i.Status,
 		&i.ProjectID,
-		&i.Runtime,
+		&i.Provider,
 		&i.SshKeyID,
 	)
 	return i, err

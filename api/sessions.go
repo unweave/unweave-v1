@@ -27,14 +27,14 @@ type SessionCreateParams struct {
 func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
 		return &HTTPError{
-			Code:       400,
+			Code:       http.StatusBadRequest,
 			Message:    "Invalid request body: field 'runtime' is required",
 			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
 		}
 	}
 	if s.Provider != types.LambdaLabsProvider && s.Provider != types.UnweaveProvider {
 		return &HTTPError{
-			Code:       400,
+			Code:       http.StatusBadRequest,
 			Message:    "Invalid runtime provider: " + string(s.Provider),
 			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
 		}
@@ -69,7 +69,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*key.PublicKey))
 		if err != nil {
 			return types.SSHKey{}, &HTTPError{
-				Code:    400,
+				Code:    http.StatusBadRequest,
 				Message: "Invalid SSH public key",
 			}
 		}
@@ -169,7 +169,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			NodeID:     node.ID,
 			CreatedBy:  userID,
 			ProjectID:  project.ID,
-			Runtime:    scr.Provider.String(),
+			Provider:   scr.Provider.String(),
 			SshKeyName: sshKey.Name,
 		}
 		sessionID, err := dbq.SessionCreate(ctx, params)
@@ -268,7 +268,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 		if err != nil {
 			if err == sql.ErrNoRows {
 				render.Render(w, r.WithContext(ctx), &HTTPError{
-					Code:       404,
+					Code:       http.StatusNotFound,
 					Message:    "Session not found",
 					Suggestion: "Make sure the session id is valid",
 				})
@@ -279,9 +279,9 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Runtime))
+		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Provider))
 		if err != nil {
-			err = fmt.Errorf("failed to create runtime %q: %w", sess.Runtime, err)
+			err = fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to initialize runtime"))
 			return
 		}
