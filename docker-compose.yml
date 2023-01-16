@@ -1,58 +1,16 @@
 version: '3.9'
 services:
-
-  db:
-    image: postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: ${UNWEAVE_DB_USER}
-      POSTGRES_PASSWORD: ${UNWEAVE_DB_PASSWORD}
-      POSTGRES_DB: ${UNWEAVE_DB_NAME}
-      POSTGRES_HOST: ${UNWEAVE_DB_HOST}
-      POSTGRES_PORT: ${UNWEAVE_DB_PORT}
-    healthcheck:
-      test: pg_isready -U ${UNWEAVE_DB_USER} -d ${UNWEAVE_DB_NAME}
-      interval: 2s
-      timeout: 5s
-      retries: 10
-
-  migrate:
-    image: golang:1.19
-    working_dir: /home/db
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./db/migrations:/home/db/migrations
-      - ./db/seed/:/home/db/seed/
-      - ./db/migrate.sh:/home/db/migrate.sh
-    environment:
-      DATABASE_URL: postgres://${UNWEAVE_DB_USER}:${UNWEAVE_DB_PASSWORD}@db/${UNWEAVE_DB_NAME}?sslmode=disable
-    entrypoint: ["sh", "-c", "./migrate.sh seed"]
-
   api:
     build:
       context: .
       dockerfile: ./Dockerfile
       target: dev
-
-    depends_on:
-      db:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     ports:
       - ${UNWEAVE_API_PORT}:${UNWEAVE_API_PORT}
     expose:
       - ${UNWEAVE_API_PORT}
     environment:
       UNWEAVE_API_PORT: ${UNWEAVE_API_PORT}
-      UNWEAVE_DB_USER: ${UNWEAVE_DB_USER}
-      UNWEAVE_DB_PASSWORD: ${UNWEAVE_DB_PASSWORD}
-      UNWEAVE_DB_NAME: ${UNWEAVE_DB_NAME}
-      UNWEAVE_DB_HOST: db
-      UNWEAVE_DB_PORT: ${UNWEAVE_DB_PORT}
     working_dir: /home/unweave
     volumes:
       - ./:/home/unweave

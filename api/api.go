@@ -8,16 +8,14 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
 
 type Config struct {
-	APIPort string    `json:"port" env:"UNWEAVE_API_PORT"`
-	DB      db.Config `json:"db"`
+	APIPort string `json:"port" env:"UNWEAVE_API_PORT"`
 }
 
-func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
+func API(cfg Config, rti runtime.Initializer, store *Store) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -37,25 +35,20 @@ func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 		},
 	}))
 
-	r.Use(withUserCtx) // fakes an authenticated user
-	r.Route("/projects/{projectID}", func(r chi.Router) {
-		r.Use(withProjectCtx(dbq))
+	r.Route("/sessions", func(r chi.Router) {
+		r.Post("/", SessionsCreate(rti, store))
+		r.Get("/", SessionsList(rti, store))
 
-		r.Route("/sessions", func(r chi.Router) {
-			r.Post("/", SessionsCreate(rti, dbq))
-			r.Get("/", SessionsList(rti, dbq))
-
-			r.Group(func(r chi.Router) {
-				r.Use(withSessionCtx(dbq))
-				r.Get("/{sessionID}", SessionsGet(rti))
-				r.Put("/{sessionID}/terminate", SessionsTerminate(rti, dbq))
-			})
+		r.Group(func(r chi.Router) {
+			r.Use(withSessionCtx(store))
+			r.Get("/{sessionID}", SessionsGet(rti))
+			r.Put("/{sessionID}/terminate", SessionsTerminate(rti, store))
 		})
 	})
 
 	r.Route("/ssh-keys", func(r chi.Router) {
-		r.Post("/", SSHKeyAdd(dbq))
-		r.Get("/", SSHKeyList(dbq))
+		r.Post("/", SSHKeyAdd(store))
+		r.Get("/", SSHKeyList(store))
 	})
 	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 

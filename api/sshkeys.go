@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools/random"
 	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
@@ -40,12 +39,9 @@ type SSHKeyAddResponse struct {
 //
 // This does not add the key to the user's configured providers. That is done lazily
 // when the user first tries to use the key.
-func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
+func SSHKeyAdd(store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
 		params := SSHKeyAddParams{}
@@ -56,7 +52,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		}
 
 		if params.Name != nil {
-			k, err := dbq.SSHKeyGetByName(ctx, *params.Name)
+			k, err := store.SSHKey.GetByName(ctx, *params.Name)
 			if err == nil {
 				render.Render(w, r.WithContext(ctx), &HTTPError{
 					Code:    http.StatusNotFound,
@@ -73,12 +69,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 			params.Name = types.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 		}
 
-		arg := db.SSHKeyAddParams{
-			OwnerID:   userID,
-			Name:      *params.Name,
-			PublicKey: params.PublicKey,
-		}
-		err := dbq.SSHKeyAdd(ctx, arg)
+		err := store.SSHKey.Add(ctx, *params.Name, params.PublicKey)
 		if err != nil {
 			var e *pgconn.PgError
 			if errors.As(err, &e) {
@@ -115,15 +106,13 @@ type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
 }
 
-func SSHKeyList(dbq db.Querier) http.HandlerFunc {
+func SSHKeyList(store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
 
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
 
-		keys, err := dbq.SSHKeysGet(ctx, userID)
+		keys, err := store.SSHKey.List(ctx)
 		if err != nil {
 			err = fmt.Errorf("failed to list ssh keys from db: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))

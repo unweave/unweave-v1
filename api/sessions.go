@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/random"
 	"github.com/unweave/unweave/types"
@@ -42,7 +41,7 @@ func (s *SessionCreateParams) Bind(r *http.Request) error {
 	return nil
 }
 
-func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
+func setupCredentials(ctx context.Context, rt *runtime.Runtime, store *Store, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	exists := false
 	key := types.SSHKey{
 		// This is overridden if the key already exists.
@@ -54,7 +53,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 	}
 
 	if sshKeyName != nil {
-		k, err := dbq.SSHKeyGetByName(ctx, *sshKeyName)
+		k, err := store.SSHKey.GetByName(ctx, *sshKeyName)
 		if err == nil {
 			exists = true
 			key.Name = *sshKeyName
@@ -75,7 +74,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		}
 
 		pkStr := string(ssh.MarshalAuthorizedKey(pk))
-		k, err := dbq.SSHKeyGetByPublicKey(ctx, pkStr)
+		k, err := store.SSHKey.GetByPublicKey(ctx, pkStr)
 		if err == nil {
 			exists = true
 			key.Name = k.Name
@@ -106,30 +105,20 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 	}
 
 	if !exists {
-		params := db.SSHKeyAddParams{
-			OwnerID:   userID,
-			Name:      key.Name,
-			PublicKey: *key.PublicKey,
-		}
-		if err = dbq.SSHKeyAdd(ctx, params); err != nil {
+		if err = store.SSHKey.Add(ctx, key.Name, *key.PublicKey); err != nil {
 			return types.SSHKey{}, fmt.Errorf("failed to add ssh key to db: %w", err)
 		}
 	}
 	return key, nil
 }
 
-func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
+type SessionCreateResponse struct {
+	Session types.Session `json:"session"`
+}
+
+func SessionsCreate(rti runtime.Initializer, store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-		project := GetProjectFromContext(ctx)
-
-		ctx = log.With().
-			Stringer(UserCtxKey, userID).
-			Stringer(ProjectCtxKey, project.ID).
-			Logger().
-			WithContext(ctx)
-
 		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
 		scr := SessionCreateParams{}
@@ -139,7 +128,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, scr.Provider)
+		rt, err := rti.Initialize(ctx, scr.Provider)
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
@@ -151,7 +140,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			Logger().
 			WithContext(ctx)
 
-		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKeyName, scr.SSHPublicKey)
+		sshKey, err := setupCredentials(ctx, rt, store, scr.SSHKeyName, scr.SSHPublicKey)
 		if err != nil {
 			err = fmt.Errorf("failed to setup credentials: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to setup credentials"))
@@ -165,29 +154,20 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		params := db.SessionCreateParams{
-			NodeID:     node.ID,
-			CreatedBy:  userID,
-			ProjectID:  project.ID,
-			Provider:   scr.Provider.String(),
-			SshKeyName: sshKey.Name,
-		}
-		sessionID, err := dbq.SessionCreate(ctx, params)
-		if err != nil {
-			err = fmt.Errorf("failed to create session in db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-			return
-
-		}
-
-		session := &types.Session{
-			ID:         sessionID,
+		session := types.Session{
 			SSHKey:     node.KeyPair,
 			Status:     types.StatusInitializing,
 			NodeTypeID: node.TypeID,
 			Region:     node.Region,
 			Provider:   node.Provider,
 		}
+		sessionID, err := store.Session.Add(ctx, session)
+		if err != nil {
+			err = fmt.Errorf("failed to create session in db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			return
+		}
+		session.ID = sessionID
 
 		// TODO: watch status
 		render.JSON(w, r, session)
@@ -205,26 +185,12 @@ type SessionsListResponse struct {
 	Sessions []types.Session `json:"sessions"`
 }
 
-func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
+func SessionsList(rti runtime.Initializer, store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-		project := GetProjectFromContext(ctx)
-
-		ctx = log.With().
-			Stringer(UserCtxKey, userID).
-			Stringer(ProjectCtxKey, project.ID).
-			Logger().
-			WithContext(ctx)
-
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
-		params := db.SessionsGetParams{
-			ProjectID: project.ID,
-			Limit:     100,
-			Offset:    0,
-		}
-		sessions, err := dbq.SessionsGet(ctx, params)
+		sessions, err := store.Session.List(ctx)
 		if err != nil {
 			err = fmt.Errorf("failed to get sessions from db: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
@@ -237,12 +203,9 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			res[idx] = types.Session{
 				ID: s.ID,
 				SSHKey: types.SSHKey{
-					// The generated go type for SshKeyName is a nullable string because
-					// of the join, but it will never be null since session have a foreign
-					// key constraint on ssh_key_id.
-					Name: s.SshKeyName.String,
+					Name: s.SSHKey.Name,
 				},
-				Status: dbSessionStatusToAPIStatus(s.Status),
+				Status: s.Status,
 			}
 		}
 		render.JSON(w, r, SessionsListResponse{Sessions: res})
@@ -253,18 +216,16 @@ type SessionTerminateResponse struct {
 	Success bool `json:"success"`
 }
 
-func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
+func SessionsTerminate(rti runtime.Initializer, store *Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
 
 		log.Ctx(ctx).
 			Info().
-			Msgf("Executing SessionsTerminate request for user %q", userID)
+			Msgf("Executing SessionsTerminate request")
 
 		session := GetSessionFromContext(ctx)
-		sess, err := dbq.SessionGet(ctx, session.ID)
+		sess, err := store.Session.Get(ctx, session.ID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				render.Render(w, r.WithContext(ctx), &HTTPError{
@@ -279,7 +240,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Provider))
+		rt, err := rti.Initialize(ctx, types.RuntimeProvider(sess.Provider))
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to initialize runtime"))
@@ -295,7 +256,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate node"))
 			return
 		}
-		if err = dbq.SessionSetTerminated(ctx, session.ID); err != nil {
+		if err = store.Session.SetTerminated(ctx, session.ID); err != nil {
 			log.Ctx(ctx).
 				Error().
 				Err(err).

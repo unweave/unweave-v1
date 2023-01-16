@@ -67,6 +67,7 @@ type Session struct {
 	NodeTypeID string          `json:"nodeTypeID"`
 	Region     string          `json:"region"`
 	Provider   RuntimeProvider `json:"provider"`
+	NodeID     string          `json:"-"`
 }
 
 type ExecParams struct {

@@ -10,63 +10,34 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/types"
 )
 
-// withUserCtx is a helper middleware that fakes an authenticated user. It should only
-// be user for development or when self-hosting.
-func withUserCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := log.With().Logger().WithContext(r.Context())
-		ctx = context.WithValue(ctx,
-			UserCtxKey,
-			uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-		)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+// Context Keys should only be used inside the API package while parsing incoming requests
+// either in the middleware or in the handlers. They should not be passed further into
+// the call stack.
+const (
+	UserCtxKey    = "user"
+	ProjectCtxKey = "project"
+	SessionCtxKey = "session"
+)
+
+func SetSessionInContext(ctx context.Context, session types.Session) context.Context {
+	return context.WithValue(ctx, SessionCtxKey, session)
 }
 
-// withProjectCtx is a helper middleware that parsed the project id from the url and
-// verifies it exists in the db.
-func withProjectCtx(dbq db.Querier) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := log.With().Logger().WithContext(r.Context())
-			projectID, err := uuid.Parse(chi.URLParam(r, "projectID"))
-			if err != nil {
-				render.Render(w, r.WithContext(ctx), &HTTPError{
-					Code:       http.StatusBadRequest,
-					Message:    "Invalid project id",
-					Suggestion: "Make sure the project id is a valid UUID",
-				})
-				return
-			}
-
-			project, err := dbq.ProjectGet(ctx, projectID)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					render.Render(w, r.WithContext(ctx), &HTTPError{
-						Code:       http.StatusNotFound,
-						Message:    "Project not found",
-						Suggestion: "Make sure the project id is valid",
-					})
-					return
-				}
-
-				err = fmt.Errorf("failed to fetch project from db %q: %w", projectID, err)
-				render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to terminate session"))
-				return
-			}
-
-			ctx = context.WithValue(ctx, ProjectCtxKey, project)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+func GetSessionFromContext(ctx context.Context) *types.Session {
+	session, ok := ctx.Value(SessionCtxKey).(types.Session)
+	if !ok {
+		// This should never happen at runtime.
+		log.Fatal().Msg("session not found in context")
 	}
+	return &session
 }
 
 // withSessionCtx is a helper middleware that parsed the session id from the url and
 // verifies it exists in the db.
-func withSessionCtx(dbq db.Querier) func(http.Handler) http.Handler {
+func withSessionCtx(store *Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := log.With().Logger().WithContext(r.Context())
@@ -80,7 +51,7 @@ func withSessionCtx(dbq db.Querier) func(http.Handler) http.Handler {
 				return
 			}
 
-			session, err := dbq.SessionGet(ctx, sessionID)
+			session, err := store.Session.Get(ctx, sessionID)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					render.Render(w, r.WithContext(ctx), &HTTPError{

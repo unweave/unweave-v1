@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/types"
 )
 
 type Initializer interface {
-	FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	Initialize(ctx context.Context, provider types.RuntimeProvider) (*Runtime, error)
 }
 
 // ConfigFileInitializer is only used in development or if you're self-hosting Unweave.
@@ -26,7 +25,7 @@ type runtimeConfig struct {
 	} `json:"lambdaLabs"`
 }
 
-func (i *ConfigFileInitializer) FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
+func (i *ConfigFileInitializer) Initialize(ctx context.Context, provider types.RuntimeProvider) (*Runtime, error) {
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return nil, err
