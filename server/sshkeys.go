@@ -1,39 +1,19 @@
-package api
+package server
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/render"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
-	"github.com/unweave/unweave/types"
-	"golang.org/x/crypto/ssh"
 )
-
-type SSHKeyAddParams struct {
-	Name      *string `json:"name"`
-	PublicKey string  `json:"publicKey"`
-}
-
-func (s *SSHKeyAddParams) Bind(r *http.Request) error {
-	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
-		return &HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid SSH public key",
-		}
-	}
-	return nil
-}
-
-type SSHKeyAddResponse struct {
-	Success bool `json:"success"`
-}
 
 // SSHKeyAdd adds an SSH key to the user's account.
 //
@@ -44,17 +24,17 @@ func SSHKeyAdd(store *Store) http.HandlerFunc {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
-		params := SSHKeyAddParams{}
+		params := api.SSHKeyAddRequestParams{}
 		if err := render.Bind(r, &params); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), api.ErrHTTPError(err, "Invalid request body"))
 			return
 		}
 
 		if params.Name != nil {
 			k, err := store.SSHKey.GetByName(ctx, *params.Name)
 			if err == nil {
-				render.Render(w, r.WithContext(ctx), &HTTPError{
+				render.Render(w, r.WithContext(ctx), &api.HTTPError{
 					Code:    http.StatusNotFound,
 					Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
 				})
@@ -62,11 +42,11 @@ func SSHKeyAdd(store *Store) http.HandlerFunc {
 			}
 			if err != nil && err != sql.ErrNoRows {
 				err = fmt.Errorf("failed to get ssh key from db: %w", err)
-				render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+				render.Render(w, r.WithContext(ctx), api.ErrInternalServer(err, ""))
 				return
 			}
 		} else {
-			params.Name = types.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
+			params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 		}
 
 		err := store.SSHKey.Add(ctx, *params.Name, params.PublicKey)
@@ -76,7 +56,7 @@ func SSHKeyAdd(store *Store) http.HandlerFunc {
 				// We already check the unique constraint on the name column, so this
 				// should only happen if the public key is a duplicate.
 				if e.Code == pgerrcode.UniqueViolation {
-					render.Render(w, r.WithContext(ctx), &HTTPError{
+					render.Render(w, r.WithContext(ctx), &api.HTTPError{
 						Code:    http.StatusConflict,
 						Message: "Public key already exists",
 						Suggestion: "Public keys in Unweave have to be globally unique. " +
@@ -88,22 +68,12 @@ func SSHKeyAdd(store *Store) http.HandlerFunc {
 				}
 			}
 			err = fmt.Errorf("failed to add ssh key to db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			render.Render(w, r.WithContext(ctx), api.ErrInternalServer(err, ""))
 			return
 		}
 
-		render.JSON(w, r, &SSHKeyAddResponse{Success: true})
+		render.JSON(w, r, &api.SSHKeyAddResponse{Success: true})
 	}
-}
-
-type SSHKey struct {
-	Name      string    `json:"name"`
-	PublicKey string    `json:"publicKey"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
-type SSHKeyListResponse struct {
-	Keys []SSHKey `json:"keys"`
 }
 
 func SSHKeyList(store *Store) http.HandlerFunc {
@@ -115,15 +85,15 @@ func SSHKeyList(store *Store) http.HandlerFunc {
 		keys, err := store.SSHKey.List(ctx)
 		if err != nil {
 			err = fmt.Errorf("failed to list ssh keys from db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			render.Render(w, r.WithContext(ctx), api.ErrInternalServer(err, ""))
 			return
 		}
 
-		res := SSHKeyListResponse{
-			Keys: make([]SSHKey, len(keys)),
+		res := api.SSHKeyListResponse{
+			Keys: make([]api.SSHKey, len(keys)),
 		}
 		for idx, key := range keys {
-			res.Keys[idx] = SSHKey{
+			res.Keys[idx] = api.SSHKey{
 				Name:      key.Name,
 				PublicKey: key.PublicKey,
 				CreatedAt: key.CreatedAt,

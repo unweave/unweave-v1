@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/api"
 )
 
 type sessionDB struct {
 	mutex    *sync.Mutex
-	sessions map[uuid.UUID]types.Session
+	sessions map[uuid.UUID]api.Session
 }
 
-func (db *sessionDB) Add(ctx context.Context, session types.Session) (sessionID uuid.UUID, err error) {
+func (db *sessionDB) Add(ctx context.Context, session api.Session) (sessionID uuid.UUID, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 	if session.ID == uuid.Nil {
@@ -25,18 +25,18 @@ func (db *sessionDB) Add(ctx context.Context, session types.Session) (sessionID 
 	return sessionID, nil
 }
 
-func (db *sessionDB) Get(ctx context.Context, sessionID uuid.UUID) (session types.Session, err error) {
+func (db *sessionDB) Get(ctx context.Context, sessionID uuid.UUID) (session api.Session, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
 	session, ok := db.sessions[sessionID]
 	if !ok {
-		return types.Session{}, fmt.Errorf("session not found")
+		return api.Session{}, fmt.Errorf("session not found")
 	}
 	return session, nil
 }
 
-func (db *sessionDB) List(ctx context.Context) (sessions []types.Session, err error) {
+func (db *sessionDB) List(ctx context.Context) (sessions []api.Session, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -56,7 +56,7 @@ func (db *sessionDB) SetTerminated(ctx context.Context, sessionID uuid.UUID) (er
 
 type sshKeyDB struct {
 	mutex   *sync.Mutex
-	sshKeys map[uuid.UUID]SSHKey
+	sshKeys map[uuid.UUID]api.SSHKey
 }
 
 func (db *sshKeyDB) Add(ctx context.Context, name string, publicKey string) (err error) {
@@ -64,7 +64,7 @@ func (db *sshKeyDB) Add(ctx context.Context, name string, publicKey string) (err
 	defer db.mutex.Unlock()
 
 	id := uuid.New()
-	db.sshKeys[id] = SSHKey{
+	db.sshKeys[id] = api.SSHKey{
 		Name:      name,
 		PublicKey: publicKey,
 		CreatedAt: time.Now(),
@@ -73,18 +73,18 @@ func (db *sshKeyDB) Add(ctx context.Context, name string, publicKey string) (err
 
 }
 
-func (db *sshKeyDB) Get(ctx context.Context, keyID uuid.UUID) (key SSHKey, err error) {
+func (db *sshKeyDB) Get(ctx context.Context, keyID uuid.UUID) (key api.SSHKey, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
 	key, ok := db.sshKeys[keyID]
 	if !ok {
-		return SSHKey{}, fmt.Errorf("key not found")
+		return api.SSHKey{}, fmt.Errorf("key not found")
 	}
 	return key, nil
 }
 
-func (db *sshKeyDB) GetByName(ctx context.Context, name string) (key SSHKey, err error) {
+func (db *sshKeyDB) GetByName(ctx context.Context, name string) (key api.SSHKey, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -94,10 +94,10 @@ func (db *sshKeyDB) GetByName(ctx context.Context, name string) (key SSHKey, err
 			return key, nil
 		}
 	}
-	return SSHKey{}, fmt.Errorf("key not found")
+	return api.SSHKey{}, fmt.Errorf("key not found")
 }
 
-func (db *sshKeyDB) GetByPublicKey(ctx context.Context, publicKey string) (key SSHKey, err error) {
+func (db *sshKeyDB) GetByPublicKey(ctx context.Context, publicKey string) (key api.SSHKey, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 
@@ -107,11 +107,11 @@ func (db *sshKeyDB) GetByPublicKey(ctx context.Context, publicKey string) (key S
 			return key, nil
 		}
 	}
-	return SSHKey{}, fmt.Errorf("key not found")
+	return api.SSHKey{}, fmt.Errorf("key not found")
 
 }
 
-func (db *sshKeyDB) List(ctx context.Context) (keys []SSHKey, err error) {
+func (db *sshKeyDB) List(ctx context.Context) (keys []api.SSHKey, err error) {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 

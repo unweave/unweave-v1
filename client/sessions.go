@@ -13,7 +13,7 @@ type SessionService struct {
 	client *Client
 }
 
-func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params api.SessionCreateParams) (*types.Session, error) {
+func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params api.SessionCreateRequestParams) (*types.Session, error) {
 	uri := fmt.Sprintf("projects/%s/sessions", projectID)
 	req, err := s.client.NewAuthorizedRestRequest(Post, uri, nil, params)
 	if err != nil {

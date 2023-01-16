@@ -28,7 +28,7 @@ func SSHKeyAdd(cmd *cobra.Command, args []string) error {
 
 	ctx := cmd.Context()
 	uwc := InitUnweaveClient()
-	params := api.SSHKeyAddParams{
+	params := api.SSHKeyAddRequestParams{
 		Name:      &name,
 		PublicKey: string(publicKey),
 	}

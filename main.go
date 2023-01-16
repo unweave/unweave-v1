@@ -8,13 +8,13 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/runtime"
+	server2 "github.com/unweave/unweave/server"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
 func main() {
-	cfg := api.Config{}
+	cfg := server2.Config{}
 	gonfig.GetFromEnvVariables(&cfg)
 
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -32,6 +32,6 @@ func main() {
 	rcp := filepath.Join(home, ".unweave/runtime-config.json")
 	runtimeCfg := &runtime.ConfigFileInitializer{Path: rcp}
 
-	store := api.NewMemDB()
-	api.API(cfg, runtimeCfg, store)
+	store := server2.NewMemDB()
+	server2.Server(cfg, runtimeCfg, store)
 }

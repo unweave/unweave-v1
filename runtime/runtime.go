@@ -4,7 +4,7 @@ package runtime
 import (
 	"context"
 
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/api"
 )
 
 type Runtime struct {
@@ -25,14 +25,14 @@ type Session interface {
 	// This operation must be idempotent. i.e. if the sshKey.Name or sshKey.PublicKey
 	// already exist with the provider, this should be a no-op. In this case, both the
 	// name and public key should match those with the provider.
-	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
-	GetProvider() types.RuntimeProvider
+	AddSSHKey(ctx context.Context, sshKey api.SSHKey) (api.SSHKey, error)
+	GetProvider() api.RuntimeProvider
 	// InitNode initializes a new node on the provider.
 	// It should automatically select the most appropriate region if one is not specified.
-	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
+	InitNode(ctx context.Context, sshKey api.SSHKey, nodeTypeID string, region *string) (node api.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
-	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
+	ListSSHKeys(ctx context.Context) ([]api.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.
-	ListNodeTypes(ctx context.Context) ([]types.NodeType, error)
+	ListNodeTypes(ctx context.Context) ([]api.NodeType, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 }

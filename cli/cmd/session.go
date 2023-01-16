@@ -12,6 +12,7 @@ import (
 	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/cli/config"
 	"github.com/unweave/unweave/cli/ui"
+	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/types"
 )
 
@@ -34,8 +35,8 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	uwc := InitUnweaveClient()
-	sshKeyName := types.Stringy("")
-	sshPublicKey := types.Stringy("")
+	sshKeyName := tools.Stringy("")
+	sshPublicKey := tools.Stringy("")
 
 	if config.SSHKeyName != "" {
 		sshKeyName = &config.SSHKeyName
@@ -55,7 +56,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		// Leave the sshKey fields empty to generate a new key
 	}
 
-	params := api.SessionCreateParams{
+	params := api.SessionCreateRequestParams{
 		Provider:     types.LambdaLabsProvider,
 		NodeTypeID:   nodeID,
 		Region:       region,

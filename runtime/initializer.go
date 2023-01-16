@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/providers/lambdalabs"
-	"github.com/unweave/unweave/types"
 )
 
 type Initializer interface {
-	Initialize(ctx context.Context, provider types.RuntimeProvider) (*Runtime, error)
+	Initialize(ctx context.Context, provider api.RuntimeProvider) (*Runtime, error)
 }
 
 // ConfigFileInitializer is only used in development or if you're self-hosting Unweave.
@@ -25,7 +25,7 @@ type runtimeConfig struct {
 	} `json:"lambdaLabs"`
 }
 
-func (i *ConfigFileInitializer) Initialize(ctx context.Context, provider types.RuntimeProvider) (*Runtime, error) {
+func (i *ConfigFileInitializer) Initialize(ctx context.Context, provider api.RuntimeProvider) (*Runtime, error) {
 	f, err := os.Open(i.Path)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (i *ConfigFileInitializer) Initialize(ctx context.Context, provider types.R
 	}
 
 	switch provider {
-	case types.LambdaLabsProvider:
+	case api.LambdaLabsProvider:
 		if config.LambdaLabs.APIKey == "" {
 			return nil, fmt.Errorf("missing LambdaLabs API key in runtime config file")
 		}
@@ -47,7 +47,7 @@ func (i *ConfigFileInitializer) Initialize(ctx context.Context, provider types.R
 		}
 		return &Runtime{sess}, nil
 
-	case types.UnweaveProvider:
+	case api.UnweaveProvider:
 		return nil, fmt.Errorf("unweave provider not supported in config file initializer")
 	}
 	return nil, fmt.Errorf("unknown runtime provider %q", provider)

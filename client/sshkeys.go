@@ -11,7 +11,7 @@ type SSHKeyService struct {
 	client *Client
 }
 
-func (s *SSHKeyService) Add(ctx context.Context, params api.SSHKeyAddParams) error {
+func (s *SSHKeyService) Add(ctx context.Context, params api.SSHKeyAddRequestParams) error {
 	uri := fmt.Sprintf("ssh-keys")
 	req, err := s.client.NewAuthorizedRestRequest(Post, uri, nil, params)
 	if err != nil {
