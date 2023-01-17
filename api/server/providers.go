@@ -11,10 +11,6 @@ import (
 	"github.com/unweave/unweave/runtime"
 )
 
-type NodeTypesListResponse struct {
-	NodeTypes []types.NodeType `json:"nodeTypes"`
-}
-
 // NodeTypesList returns a list of node types available for the user
 func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +42,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		res := &NodeTypesListResponse{NodeTypes: nodeTypes}
+		res := &types.NodeTypesListResponse{NodeTypes: nodeTypes}
 		render.JSON(w, r, res)
 	}
 }

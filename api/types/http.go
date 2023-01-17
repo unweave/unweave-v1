@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/ssh"
 )
 
 type HTTPError struct {
@@ -35,7 +36,11 @@ func (e *HTTPError) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-type SessionCreateParams struct {
+type NodeTypesListResponse struct {
+	NodeTypes []NodeType `json:"nodeTypes"`
+}
+
+type SessionCreateRequestParams struct {
 	Provider     RuntimeProvider `json:"provider"`
 	NodeTypeID   string          `json:"nodeTypeID,omitempty"`
 	Region       *string         `json:"region,omitempty"`
@@ -43,7 +48,7 @@ type SessionCreateParams struct {
 	SSHPublicKey *string         `json:"sshPublicKey"`
 }
 
-func (s *SessionCreateParams) Bind(r *http.Request) error {
+func (s *SessionCreateRequestParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
 		return &HTTPError{
 			Code:       http.StatusBadRequest,
@@ -67,4 +72,27 @@ type SessionsListResponse struct {
 
 type SessionTerminateResponse struct {
 	Success bool `json:"success"`
+}
+
+type SSHKeyAddParams struct {
+	Name      *string `json:"name"`
+	PublicKey string  `json:"publicKey"`
+}
+
+func (s *SSHKeyAddParams) Bind(r *http.Request) error {
+	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
+		return &HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid SSH public key",
+		}
+	}
+	return nil
+}
+
+type SSHKeyAddResponse struct {
+	Success bool `json:"success"`
+}
+
+type SSHKeyListResponse struct {
+	Keys []SSHKey `json:"keys"`
 }

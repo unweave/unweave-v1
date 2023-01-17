@@ -106,7 +106,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
-		scr := types.SessionCreateParams{}
+		scr := types.SessionCreateRequestParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))

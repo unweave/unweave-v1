@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/render"
 	"github.com/jackc/pgconn"
@@ -15,27 +14,7 @@ import (
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
-	"golang.org/x/crypto/ssh"
 )
-
-type SSHKeyAddParams struct {
-	Name      *string `json:"name"`
-	PublicKey string  `json:"publicKey"`
-}
-
-func (s *SSHKeyAddParams) Bind(r *http.Request) error {
-	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
-		return &types.HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid SSH public key",
-		}
-	}
-	return nil
-}
-
-type SSHKeyAddResponse struct {
-	Success bool `json:"success"`
-}
 
 // SSHKeyAdd adds an SSH key to the user's account.
 //
@@ -49,7 +28,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
-		params := SSHKeyAddParams{}
+		params := types.SSHKeyAddParams{}
 		if err := render.Bind(r, &params); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
@@ -102,18 +81,8 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		render.JSON(w, r, &SSHKeyAddResponse{Success: true})
+		render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
 	}
-}
-
-type SSHKey struct {
-	Name      string    `json:"name"`
-	PublicKey string    `json:"publicKey"`
-	CreatedAt time.Time `json:"createdAt"`
-}
-
-type SSHKeyListResponse struct {
-	Keys []SSHKey `json:"keys"`
 }
 
 func SSHKeyList(dbq db.Querier) http.HandlerFunc {
@@ -131,14 +100,14 @@ func SSHKeyList(dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		res := SSHKeyListResponse{
-			Keys: make([]SSHKey, len(keys)),
+		res := types.SSHKeyListResponse{
+			Keys: make([]types.SSHKey, len(keys)),
 		}
 		for idx, key := range keys {
-			res.Keys[idx] = SSHKey{
+			res.Keys[idx] = types.SSHKey{
 				Name:      key.Name,
-				PublicKey: key.PublicKey,
-				CreatedAt: key.CreatedAt,
+				PublicKey: &key.PublicKey,
+				CreatedAt: &key.CreatedAt,
 			}
 		}
 		render.JSON(w, r, res)

@@ -1,6 +1,10 @@
 package types
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 const (
 	RuntimeProviderKey = "RuntimeProvider"
@@ -55,9 +59,9 @@ type Node struct {
 }
 
 type SSHKey struct {
-	Name       string  `json:"name,omitempty"`
-	PrivateKey *string `json:"privateKey,omitempty"`
-	PublicKey  *string `json:"publicKey,omitempty"`
+	Name      string     `json:"name"`
+	PublicKey *string    `json:"publicKey,omitempty"`
+	CreatedAt *time.Time `json:"createdAt,omitempty"`
 }
 
 type Session struct {
