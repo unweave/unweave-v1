@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
-	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/cli/config"
 	"github.com/unweave/unweave/cli/ui"
@@ -56,7 +55,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		// Leave the sshKey fields empty to generate a new key
 	}
 
-	params := api.SessionCreateParams{
+	params := types.SessionCreateRequestParams{
 		Provider:     types.LambdaLabsProvider,
 		NodeTypeID:   nodeID,
 		Region:       region,
@@ -66,7 +65,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 
 	session, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
 	if err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			// If error 503, it's mostly likely an out of capacity error. Try and marshal,
 			// the error message into the list of available instances.
@@ -110,7 +109,7 @@ func SessionList(cmd *cobra.Command, args []string) error {
 
 	sessions, err := uwc.Session.List(cmd.Context(), uuid.MustParse(defaultProjectID), listTerminated)
 	if err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			uie := &ui.Error{HTTPError: e}
 			fmt.Println(uie.Verbose())
@@ -149,7 +148,7 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 	uwc := InitUnweaveClient()
 	err = uwc.Session.Terminate(cmd.Context(), uuid.MustParse(defaultProjectID), sessionID)
 	if err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			uie := &ui.Error{HTTPError: e}
 			fmt.Println(uie.Verbose())

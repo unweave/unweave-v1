@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/cli/config"
 	"github.com/unweave/unweave/cli/ui"
@@ -49,7 +48,7 @@ func ProviderListNodeTypes(cmd *cobra.Command, args []string) error {
 
 	res, err := uwc.Provider.ListNodeTypes(cmd.Context(), provider, filterAvailable)
 	if err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			uie := &ui.Error{HTTPError: e}
 			fmt.Println(uie.Verbose())

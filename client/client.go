@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/api/types"
 )
 
 type Config struct {
@@ -23,6 +23,9 @@ type Client struct {
 	Provider *ProviderService
 	Session  *SessionService
 	SSHKey   *SSHKeyService
+
+	// Management
+	Account *AccountService
 }
 
 func NewClient(cfg Config) *Client {
@@ -33,6 +36,8 @@ func NewClient(cfg Config) *Client {
 	c.Provider = &ProviderService{client: c}
 	c.Session = &SessionService{client: c}
 	c.SSHKey = &SSHKeyService{client: c}
+	c.Account = &AccountService{client: c}
+
 	return c
 }
 
@@ -115,11 +120,11 @@ func (c *Client) ExecuteRest(ctx context.Context, req *RestRequest, resp interfa
 		return fmt.Errorf("status %s, fail to read response body", res.Status)
 	}
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		var errResp api.HTTPError
+		var errResp types.HTTPError
 		if err = json.NewDecoder(&buf).Decode(&errResp); err != nil {
 			return fmt.Errorf("status %s, fail to decode response body", res.Status)
 		}
-		return &api.HTTPError{
+		return &types.HTTPError{
 			Code:       errResp.Code,
 			Message:    errResp.Message,
 			Suggestion: errResp.Suggestion,

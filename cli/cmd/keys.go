@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/unweave/unweave/api"
-	"github.com/unweave/unweave/api/server"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/cli/ui"
 )
 
@@ -29,13 +28,13 @@ func SSHKeyAdd(cmd *cobra.Command, args []string) error {
 
 	ctx := cmd.Context()
 	uwc := InitUnweaveClient()
-	params := server.SSHKeyAddParams{
+	params := types.SSHKeyAddParams{
 		Name:      &name,
 		PublicKey: string(publicKey),
 	}
 
 	if err = uwc.SSHKey.Add(ctx, params); err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			uie := &ui.Error{HTTPError: e}
 			fmt.Println(uie.Verbose())
@@ -54,7 +53,7 @@ func SSHKeyList(cmd *cobra.Command, args []string) error {
 
 	entries, err := uwc.SSHKey.List(ctx)
 	if err != nil {
-		var e *api.HTTPError
+		var e *types.HTTPError
 		if errors.As(err, &e) {
 			uie := &ui.Error{HTTPError: e}
 			fmt.Println(uie.Verbose())
@@ -71,10 +70,16 @@ func SSHKeyList(cmd *cobra.Command, args []string) error {
 	rows := make([]ui.Row, len(entries))
 
 	for idx, entry := range entries {
+		publicKey := ""
+		if entry.PublicKey != nil && len(*entry.PublicKey) > 50 {
+			publicKey = *entry.PublicKey
+			publicKey = publicKey[len(publicKey)-50:]
+		}
+
 		rows[idx] = ui.Row{
 			fmt.Sprintf("%s", entry.Name),
 			fmt.Sprintf("%s", entry.CreatedAt.Format("2006-01-02 15:04:05")),
-			fmt.Sprintf("%s", entry.PublicKey[len(entry.PublicKey)-50:]),
+			fmt.Sprintf("%s", publicKey),
 		}
 	}
 	ui.Table("SSH Keys", cols, rows)

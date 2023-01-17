@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -21,7 +20,7 @@ func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.Runt
 	if err != nil {
 		return nil, err
 	}
-	res := &server.NodeTypesListResponse{}
+	res := &types.NodeTypesListResponse{}
 	if err = p.client.ExecuteRest(ctx, req, res); err != nil {
 		return nil, err
 	}

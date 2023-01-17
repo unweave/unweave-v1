@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/unweave/unweave/api"
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -13,7 +12,7 @@ type SessionService struct {
 	client *Client
 }
 
-func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params api.SessionCreateParams) (*types.Session, error) {
+func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params types.SessionCreateRequestParams) (*types.Session, error) {
 	uri := fmt.Sprintf("projects/%s/sessions", projectID)
 	req, err := s.client.NewAuthorizedRestRequest(Post, uri, nil, params)
 	if err != nil {
@@ -52,7 +51,7 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerm
 	if err != nil {
 		return nil, err
 	}
-	res := &api.SessionsListResponse{}
+	res := &types.SessionsListResponse{}
 	if err = s.client.ExecuteRest(ctx, req, res); err != nil {
 		return nil, err
 	}
@@ -65,6 +64,6 @@ func (s *SessionService) Terminate(ctx context.Context, projectID, sessionID uui
 	if err != nil {
 		return err
 	}
-	res := &api.SessionTerminateResponse{}
+	res := &types.SessionTerminateResponse{}
 	return s.client.ExecuteRest(ctx, req, res)
 }
