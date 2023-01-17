@@ -1,7 +1,10 @@
+project_name: unweave
+
 before:
   hooks:
     - go mod tidy
     - go generate ./...
+
 builds:
   - id: unweave
     main: ./cli
@@ -12,6 +15,22 @@ builds:
       - linux
       - windows
       - darwin
+
+brews:
+  - tap:
+      owner: unweave
+      name: homebrew-unweave
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@unweave.io
+
+    homepage: "https://unweave.io"
+    description: "ML, without the FML"
+    test: |
+      system "#{bin}/unweave"
+    install: |
+      bin.install "unweave"
+
 archives:
   - replacements:
       darwin: Darwin
@@ -19,13 +38,9 @@ archives:
       windows: Windows
       386: i386
       amd64: x86_64
+
 checksum:
   name_template: 'checksums.txt'
+
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
