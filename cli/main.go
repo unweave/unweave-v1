@@ -37,6 +37,13 @@ func init() {
 		},
 	})
 
+	loginCmd := &cobra.Command{
+		Use:   "login",
+		Short: "Login to Unweave",
+		RunE:  cmd.Login,
+	}
+	rootCmd.AddCommand(loginCmd)
+
 	// Provider commands
 	providerCmd := &cobra.Command{
 		Use:   "provider",

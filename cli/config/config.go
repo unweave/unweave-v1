@@ -45,6 +45,10 @@ func (c *Config) String() string {
 	return string(buf)
 }
 
+func (c *Config) Save() error {
+	return marshalAndWrite(Path, c)
+}
+
 var Path = ""
 var UnweaveConfig = &Config{
 	ApiURL: "https://api.unweave.io",

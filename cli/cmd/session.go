@@ -47,7 +47,7 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		s := string(f)
 		sshPublicKey = &s
 	} else {
-		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key")
+		newKey := ui.Confirm("No SSH key path provided. Do you want to generate a new SSH key", "n")
 		if !newKey {
 			fmt.Println("No SSH key path provided")
 			return nil
@@ -140,7 +140,7 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	confirm := ui.Confirm(fmt.Sprintf("Are you sure you want to terminate session %q", sessionID))
+	confirm := ui.Confirm(fmt.Sprintf("Are you sure you want to terminate session %q", sessionID), "n")
 	if !confirm {
 		return nil
 	}

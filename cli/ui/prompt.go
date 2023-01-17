@@ -6,9 +6,10 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-func Confirm(message string) bool {
+func Confirm(message string, defaultValue string) bool {
 	prompt := promptui.Prompt{
 		Label:     message,
+		Default:   defaultValue,
 		IsConfirm: true,
 	}
 	result, err := prompt.Run()

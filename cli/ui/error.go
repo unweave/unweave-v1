@@ -5,11 +5,11 @@ import (
 
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
-	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/api/types"
 )
 
 type Error struct {
-	*api.HTTPError
+	*types.HTTPError
 }
 
 func (e *Error) Short() string {
