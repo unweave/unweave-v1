@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/cli/ui"
 )
 
@@ -28,7 +29,7 @@ func SSHKeyAdd(cmd *cobra.Command, args []string) error {
 
 	ctx := cmd.Context()
 	uwc := InitUnweaveClient()
-	params := api.SSHKeyAddParams{
+	params := server.SSHKeyAddParams{
 		Name:      &name,
 		PublicKey: string(publicKey),
 	}

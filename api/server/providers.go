@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/types"
 )
 
 type NodeTypesListResponse struct {
@@ -22,11 +22,11 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		userID := GetUserIDFromContext(ctx)
 		provider := types.RuntimeProvider(chi.URLParam(r, "provider"))
 
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
 		if provider != types.LambdaLabsProvider && provider != types.UnweaveProvider {
-			render.Render(w, r.WithContext(ctx), &HTTPError{
+			render.Render(w, r.WithContext(ctx), &types.HTTPError{
 				Code:       http.StatusBadRequest,
 				Message:    "Invalid runtime provider: " + string(provider),
 				Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),

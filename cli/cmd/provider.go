@@ -8,9 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/cli/config"
 	"github.com/unweave/unweave/cli/ui"
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/tools"
 )
 
 func nodeTypesToTable(nodeTypes []types.NodeType) ([]ui.Column, []ui.Row) {
@@ -29,9 +30,9 @@ func nodeTypesToTable(nodeTypes []types.NodeType) ([]ui.Column, []ui.Row) {
 			regions = strings.Join(nodeType.Regions, ", ")
 		}
 		row := ui.Row{
-			fmt.Sprintf("%s", dashIfZeroValue(types.StringInv(nodeType.Name))),
+			fmt.Sprintf("%s", dashIfZeroValue(tools.StringInv(nodeType.Name))),
 			fmt.Sprintf("%s", dashIfZeroValue(nodeType.ID)),
-			fmt.Sprintf("$%2.2f", float32(types.IntInv(nodeType.Price))/100),
+			fmt.Sprintf("$%2.2f", float32(tools.IntInv(nodeType.Price))/100),
 			fmt.Sprintf("%s", regions),
 		}
 		rows = append(rows, row)

@@ -1,4 +1,4 @@
-package types
+package tools
 
 func Inty(i int) *int             { return &i }
 func Booly(b bool) *bool          { return &b }

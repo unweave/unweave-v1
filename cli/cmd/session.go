@@ -10,9 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/api"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/cli/config"
 	"github.com/unweave/unweave/cli/ui"
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/tools"
 )
 
 const defaultProjectID = "00000000-0000-0000-0000-000000000002"
@@ -34,8 +35,8 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	uwc := InitUnweaveClient()
-	sshKeyName := types.Stringy("")
-	sshPublicKey := types.Stringy("")
+	sshKeyName := tools.Stringy("")
+	sshPublicKey := tools.Stringy("")
 
 	if config.SSHKeyName != "" {
 		sshKeyName = &config.SSHKeyName

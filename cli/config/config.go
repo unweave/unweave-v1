@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/tools/gonfig"
-	"github.com/unweave/unweave/types"
 )
 
 type SSKey struct {

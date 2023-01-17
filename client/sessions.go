@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api"
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/api/types"
 )
 
 type SessionService struct {

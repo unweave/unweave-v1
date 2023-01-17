@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"database/sql"
@@ -11,9 +11,10 @@ import (
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
-	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,7 +25,7 @@ type SSHKeyAddParams struct {
 
 func (s *SSHKeyAddParams) Bind(r *http.Request) error {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
-		return &HTTPError{
+		return &types.HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid SSH public key",
 		}
@@ -45,7 +46,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
 		params := SSHKeyAddParams{}
@@ -58,7 +59,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		if params.Name != nil {
 			k, err := dbq.SSHKeyGetByName(ctx, *params.Name)
 			if err == nil {
-				render.Render(w, r.WithContext(ctx), &HTTPError{
+				render.Render(w, r.WithContext(ctx), &types.HTTPError{
 					Code:    http.StatusNotFound,
 					Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
 				})
@@ -70,7 +71,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 				return
 			}
 		} else {
-			params.Name = types.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
+			params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 		}
 
 		arg := db.SSHKeyAddParams{
@@ -85,7 +86,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 				// We already check the unique constraint on the name column, so this
 				// should only happen if the public key is a duplicate.
 				if e.Code == pgerrcode.UniqueViolation {
-					render.Render(w, r.WithContext(ctx), &HTTPError{
+					render.Render(w, r.WithContext(ctx), &types.HTTPError{
 						Code:    http.StatusConflict,
 						Message: "Public key already exists",
 						Suggestion: "Public keys in Unweave have to be globally unique. " +
@@ -120,7 +121,7 @@ func SSHKeyList(dbq db.Querier) http.HandlerFunc {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
 
 		keys, err := dbq.SSHKeysGet(ctx, userID)

@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -9,38 +9,12 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/random"
-	"github.com/unweave/unweave/types"
 	"golang.org/x/crypto/ssh"
 )
-
-type SessionCreateParams struct {
-	Provider     types.RuntimeProvider `json:"provider"`
-	NodeTypeID   string                `json:"nodeTypeID,omitempty"`
-	Region       *string               `json:"region,omitempty"`
-	SSHKeyName   *string               `json:"sshKeyName"`
-	SSHPublicKey *string               `json:"sshPublicKey"`
-}
-
-func (s *SessionCreateParams) Bind(r *http.Request) error {
-	if s.Provider == "" {
-		return &HTTPError{
-			Code:       http.StatusBadRequest,
-			Message:    "Invalid request body: field 'runtime' is required",
-			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
-		}
-	}
-	if s.Provider != types.LambdaLabsProvider && s.Provider != types.UnweaveProvider {
-		return &HTTPError{
-			Code:       http.StatusBadRequest,
-			Message:    "Invalid runtime provider: " + string(s.Provider),
-			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),
-		}
-	}
-	return nil
-}
 
 func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	exists := false
@@ -68,7 +42,7 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 	if !exists && key.PublicKey != nil {
 		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*key.PublicKey))
 		if err != nil {
-			return types.SSHKey{}, &HTTPError{
+			return types.SSHKey{}, &types.HTTPError{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid SSH public key",
 			}
@@ -125,14 +99,14 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		project := GetProjectFromContext(ctx)
 
 		ctx = log.With().
-			Stringer(UserCtxKey, userID).
+			Stringer(UserIDCtxKey, userID).
 			Stringer(ProjectCtxKey, project.ID).
 			Logger().
 			WithContext(ctx)
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
-		scr := SessionCreateParams{}
+		scr := types.SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
@@ -201,10 +175,6 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-type SessionsListResponse struct {
-	Sessions []types.Session `json:"sessions"`
-}
-
 func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -212,7 +182,7 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		project := GetProjectFromContext(ctx)
 
 		ctx = log.With().
-			Stringer(UserCtxKey, userID).
+			Stringer(UserIDCtxKey, userID).
 			Stringer(ProjectCtxKey, project.ID).
 			Logger().
 			WithContext(ctx)
@@ -242,22 +212,18 @@ func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 					// key constraint on ssh_key_id.
 					Name: s.SshKeyName.String,
 				},
-				Status: dbSessionStatusToAPIStatus(s.Status),
+				Status: types.DBSessionStatusToAPIStatus(s.Status),
 			}
 		}
-		render.JSON(w, r, SessionsListResponse{Sessions: res})
+		render.JSON(w, r, types.SessionsListResponse{Sessions: res})
 	}
-}
-
-type SessionTerminateResponse struct {
-	Success bool `json:"success"`
 }
 
 func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
-		ctx = log.With().Stringer(UserCtxKey, userID).Logger().WithContext(ctx)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 
 		log.Ctx(ctx).
 			Info().
@@ -267,7 +233,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 		sess, err := dbq.SessionGet(ctx, session.ID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				render.Render(w, r.WithContext(ctx), &HTTPError{
+				render.Render(w, r.WithContext(ctx), &types.HTTPError{
 					Code:       http.StatusNotFound,
 					Message:    "Session not found",
 					Suggestion: "Make sure the session id is valid",
@@ -302,6 +268,6 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 				Msgf("Failed to set session %q as terminated", session.ID)
 		}
 
-		render.JSON(w, r, &SessionTerminateResponse{Success: true})
+		render.JSON(w, r, &types.SessionTerminateResponse{Success: true})
 	}
 }

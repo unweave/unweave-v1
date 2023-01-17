@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/google/uuid"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/providers/lambdalabs"
-	"github.com/unweave/unweave/types"
 )
 
 type Initializer interface {

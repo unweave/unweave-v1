@@ -4,7 +4,7 @@ package runtime
 import (
 	"context"
 
-	"github.com/unweave/unweave/types"
+	"github.com/unweave/unweave/api/types"
 )
 
 type Runtime struct {
