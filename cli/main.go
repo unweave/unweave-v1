@@ -37,12 +37,20 @@ func init() {
 		},
 	})
 
+	// Auth
 	loginCmd := &cobra.Command{
 		Use:   "login",
 		Short: "Login to Unweave",
 		RunE:  cmd.Login,
 	}
 	rootCmd.AddCommand(loginCmd)
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:    "logout",
+		Short:  "Logout of Unweave",
+		RunE:   cmd.Logout,
+		Hidden: true,
+	})
 
 	// Provider commands
 	providerCmd := &cobra.Command{
@@ -62,7 +70,7 @@ func init() {
 
 	// Session commands
 	sessionCmd := &cobra.Command{
-		Use:   "session",
+		Use:   "sessions",
 		Short: "Manage Unweave sessions: create | ls | terminate",
 		Args:  cobra.NoArgs,
 	}
@@ -99,7 +107,7 @@ func init() {
 
 	// SSH Key commands
 	sshKeyCmd := &cobra.Command{
-		Use:   "ssh-key",
+		Use:   "ssh-keys",
 		Short: "Manage Unweave SSH keys: add | ls",
 		Args:  cobra.NoArgs,
 	}

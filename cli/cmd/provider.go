@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -48,13 +46,7 @@ func ProviderListNodeTypes(cmd *cobra.Command, args []string) error {
 
 	res, err := uwc.Provider.ListNodeTypes(cmd.Context(), provider, filterAvailable)
 	if err != nil {
-		var e *types.HTTPError
-		if errors.As(err, &e) {
-			uie := &ui.Error{HTTPError: e}
-			fmt.Println(uie.Verbose())
-			os.Exit(1)
-		}
-		return err
+		return ui.HandleError(err)
 	}
 
 	cols, rows := nodeTypesToTable(res)

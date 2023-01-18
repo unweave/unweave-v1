@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/muesli/reflow/indent"
 	"github.com/muesli/reflow/wordwrap"
@@ -37,4 +39,19 @@ func (e *Error) Verbose() string {
 	}
 	str := header + indent.String(body, IndentWidth)
 	return str
+}
+
+func HandleError(err error) error {
+	var e *types.HTTPError
+	if errors.As(err, &e) {
+		if e.Code == 401 {
+			fmt.Println("Unauthorized. Please login with `unweave login`")
+			os.Exit(1)
+			return nil
+		}
+		uie := &Error{HTTPError: e}
+		fmt.Println(uie.Verbose())
+		os.Exit(1)
+	}
+	return err
 }
