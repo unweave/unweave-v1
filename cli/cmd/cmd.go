@@ -9,14 +9,14 @@ func InitUnweaveClient() *client.Client {
 	// Get token. Priority: CLI flag > Project Token > User Token
 	// TODO: Implement ProjectToken parsing
 
-	token := config.UnweaveConfig.User.Token
+	token := config.Config.User.Token
 	if config.AuthToken != "" {
 		token = config.AuthToken
 	}
 
 	return client.NewClient(
 		client.Config{
-			ApiURL: config.UnweaveConfig.ApiURL,
+			ApiURL: config.Config.ApiURL,
 			Token:  token,
 		})
 }

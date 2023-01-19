@@ -157,6 +157,6 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ui.Success("Session terminated")
+	ui.Successf("Session terminated")
 	return nil
 }

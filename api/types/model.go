@@ -58,6 +58,11 @@ type Node struct {
 	Provider RuntimeProvider `json:"provider"`
 }
 
+type Project struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
 type SSHKey struct {
 	Name      string     `json:"name"`
 	PublicKey *string    `json:"publicKey,omitempty"`

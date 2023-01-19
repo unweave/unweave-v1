@@ -10,38 +10,58 @@ import (
 	"github.com/unweave/unweave/cli/config"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "unweave <command>",
-	Short: "Create serverless sessions to train your ML models",
-	Example: "unweave session create\n" +
-		"unweave ssh --sync-fs <session-id>\n" +
-		"unweave exec python train.py\n",
-	Args:          cobra.MinimumNArgs(0),
-	SilenceUsage:  false,
-	SilenceErrors: false,
-}
+var (
+	groupDev        = "dev"
+	groupManagement = "management"
+
+	rootCmd = &cobra.Command{
+		Use:   "unweave <command>",
+		Short: "Create serverless sessions to train your ML models",
+		Example: "unweave session create\n" +
+			"unweave ssh --sync-fs <session-id>\n" +
+			"unweave exec python train.py",
+		Args:          cobra.MinimumNArgs(0),
+		SilenceUsage:  false,
+		SilenceErrors: false,
+	}
+)
 
 func init() {
 	rootCmd.Version = ""
 	rootCmd.Flags().BoolP("version", "v", false, "Get the version of current Unweave CLI")
+	rootCmd.AddGroup(&cobra.Group{ID: groupDev, Title: "Dev:"})
+	rootCmd.AddGroup(&cobra.Group{ID: groupManagement, Title: "Account Management:"})
 
 	flags := rootCmd.PersistentFlags()
 	flags.StringVarP(&config.AuthToken, "token", "t", "", "Use a specific token to authenticate - overrides login token")
 	flags.StringVarP(&config.ProjectPath, "path", "p", "", "ProjectPath to an Unweave project to run")
 
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "config",
-		Short: "Show the current config",
+		Use:     "config",
+		Short:   "Show the current config",
+		GroupID: groupDev,
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(config.UnweaveConfig.String())
+			fmt.Println(config.Config.String())
 		},
 	})
 
+	linkCmd := &cobra.Command{
+		Use:     "link",
+		Short:   "Link your local directory to an Unweave project",
+		GroupID: groupManagement,
+		Example: "unweave link project-id",
+		Args:    cobra.ExactArgs(1),
+		RunE:    cmd.Link,
+	}
+	linkCmd.Flags().StringP("path", "p", "", "Path to the project directory")
+	rootCmd.AddCommand(linkCmd)
+
 	// Auth
 	loginCmd := &cobra.Command{
-		Use:   "login",
-		Short: "Login to Unweave",
-		RunE:  cmd.Login,
+		Use:     "login",
+		Short:   "Login to Unweave",
+		GroupID: groupManagement,
+		RunE:    cmd.Login,
 	}
 	rootCmd.AddCommand(loginCmd)
 
@@ -54,9 +74,10 @@ func init() {
 
 	// Provider commands
 	providerCmd := &cobra.Command{
-		Use:   "provider",
-		Short: "Manage providers",
-		Args:  cobra.NoArgs,
+		Use:     "provider",
+		Short:   "Manage providers",
+		GroupID: groupManagement,
+		Args:    cobra.NoArgs,
 	}
 	lsNodeType := &cobra.Command{
 		Use:   "list-node-types <provider>",
@@ -70,9 +91,10 @@ func init() {
 
 	// Session commands
 	sessionCmd := &cobra.Command{
-		Use:   "sessions",
-		Short: "Manage Unweave sessions: create | ls | terminate",
-		Args:  cobra.NoArgs,
+		Use:     "sessions",
+		Short:   "Manage Unweave sessions: create | ls | terminate",
+		GroupID: groupDev,
+		Args:    cobra.NoArgs,
 	}
 
 	createCmd := &cobra.Command{
@@ -107,9 +129,10 @@ func init() {
 
 	// SSH Key commands
 	sshKeyCmd := &cobra.Command{
-		Use:   "ssh-keys",
-		Short: "Manage Unweave SSH keys: add | ls",
-		Args:  cobra.NoArgs,
+		Use:     "ssh-keys",
+		Short:   "Manage Unweave SSH keys: add | ls",
+		GroupID: groupDev,
+		Args:    cobra.NoArgs,
 	}
 	sshKeyCmd.AddCommand(&cobra.Command{
 		Use:   "add <public-key-path> [name]",

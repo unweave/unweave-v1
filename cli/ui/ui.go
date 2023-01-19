@@ -31,9 +31,3 @@ func Result(entries []ResultEntry, indentation uint) {
 	str = indent.String(str, indentation)
 	fmt.Println(str)
 }
-
-// Messages
-
-func Success(message string) {
-	fmt.Println(message)
-}

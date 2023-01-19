@@ -1,9 +1,10 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 func createDir(path string) error {
@@ -15,22 +16,22 @@ func createDir(path string) error {
 	return nil
 }
 
-// readAndUnmarshal reads the config file and unmarshals it into the Config struct
-func readAndUnmarshal(path string, config *Config) error {
+// readAndUnmarshal reads the config file and unmarshals it into the config struct
+func readAndUnmarshal[T any](path string, config *T) error {
 	buf, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(buf, config)
+	return toml.Unmarshal(buf, config)
 }
 
 // marshalAndWrite marshals a RootConfig struct and writes it to disk. It reloads the
 // config variable after writing.
-func marshalAndWrite(path string, config *Config) error {
+func marshalAndWrite[T any](path string, config *T) error {
 	if err := createDir(filepath.Dir(path)); err != nil {
 		return err
 	}
-	buf, err := json.MarshalIndent(config, "", "  ")
+	buf, err := toml.Marshal(config)
 	if err != nil {
 		return err
 	}

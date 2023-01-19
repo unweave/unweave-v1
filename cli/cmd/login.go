@@ -30,7 +30,7 @@ func Login(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	authURL := config.UnweaveConfig.AppURL + "/auth/pair?code=" + code
+	authURL := config.Config.AppURL + "/auth/pair?code=" + code
 	openBrowser := ui.Confirm("Do you want to open the browser to login?", "y")
 
 	var openErr error
@@ -72,11 +72,11 @@ func Login(cmd *cobra.Command, args []string) error {
 		break
 	}
 
-	config.UnweaveConfig.User.Token = token
-	if err := config.UnweaveConfig.Save(); err != nil {
+	config.Config.User.Token = token
+	if err := config.Config.Save(); err != nil {
 		return err
 	}
 
-	fmt.Printf("Logged in as %q", email)
+	ui.Successf("Logged in as %q", email)
 	return nil
 }

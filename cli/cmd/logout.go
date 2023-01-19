@@ -9,8 +9,8 @@ import (
 
 func Logout(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
-	config.UnweaveConfig.User.Token = ""
-	config.UnweaveConfig.Save()
+	config.Config.User.Token = ""
+	config.Config.Save()
 	fmt.Println("Logged out")
 	return nil
 }

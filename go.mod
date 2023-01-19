@@ -14,6 +14,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/muesli/reflow v0.3.0
+	github.com/pelletier/go-toml/v2 v2.0.5
 	github.com/rs/zerolog v1.28.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.6.1

@@ -40,3 +40,11 @@ type PairingTokenExchangeResponse struct {
 	Token string `json:"token"`
 	Email string `json:"email"`
 }
+
+type ProjectListResponse struct {
+	Projects []Project `json:"projects"`
+}
+
+type ProjectGetResponse struct {
+	Project Project `json:"project"`
+}

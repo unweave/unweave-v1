@@ -1,59 +1,49 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/unweave/unweave/api/types"
+	"github.com/pelletier/go-toml/v2"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
-type SSKey struct {
-	types.SSHKey
-	// Path is the path to the SSH key on the local filesystem
-	Path string `json:"path"`
-}
+type (
+	user struct {
+		Token string `toml:"token"`
+	}
 
-type ProjectConfig struct {
-	ID    string `json:"id"`
-	Token string `json:"token"`
-	// SSHKeys holds the names of the configured SSH keys for the project and their path
-	// in the local file system.
-	SSHKeys []types.SSHKey `json:"sshKeys"`
-}
+	config struct {
+		UnwEnv  string  `toml:"unweave_env" env:"UNWEAVE_ENV"`
+		ApiURL  string  `toml:"api_url" env:"UNWEAVE_API_URL"`
+		AppURL  string  `toml:"app_url" env:"UNWEAVE_APP_URL"`
+		User    user    `toml:"user"`
+		Project project `toml:"project"`
+	}
+)
 
-type UserConfig struct {
-	Token string `json:"token"`
-}
-
-type Config struct {
-	UwEnv    string                   `json:"unweaveEnv" env:"UNWEAVE_ENV"`
-	ApiURL   string                   `json:"apiURL" env:"UNWEAVE_API_URL"`
-	AppURL   string                   `json:"appURL" env:"UNWEAVE_APP_URL"`
-	User     UserConfig               `json:"user"`
-	Projects map[string]ProjectConfig `json:"projects"`
-}
-
-func (c *Config) String() string {
-	buf, err := json.MarshalIndent(c, "", "  ")
+func (c *config) String() string {
+	buf, err := toml.Marshal(c)
 	if err != nil {
 		log.Fatal("Failed to marshal config: ", err)
 	}
 	return string(buf)
 }
 
-func (c *Config) Save() error {
-	return marshalAndWrite(Path, c)
+func (c *config) Save() error {
+	return marshalAndWrite(UnweaveConfigPath, c)
 }
 
-var Path = ""
-var UnweaveConfig = &Config{
-	ApiURL: "https://api.unweave.io",
-	AppURL: "https://app.unweave.io",
-}
+var (
+	UnweaveConfigPath = ""
+	ProjectConfigPath = ".unweave/config.toml"
+	Config            = &config{
+		ApiURL: "https://api.unweave.io",
+		AppURL: "https://app.unweave.io",
+	}
+)
 
 func init() {
 	home, err := os.UserHomeDir()
@@ -65,28 +55,28 @@ func init() {
 	if e, ok := os.LookupEnv("UNWEAVE_ENV"); ok {
 		env = e
 	}
-	apiURL := UnweaveConfig.ApiURL
-	appURL := UnweaveConfig.AppURL
+	apiURL := Config.ApiURL
+	appURL := Config.AppURL
 
 	switch env {
 	case "staging", "stg":
-		Path = filepath.Join(home, ".unweave/stg-config.json")
+		UnweaveConfigPath = filepath.Join(home, ".unweave/stg-config.toml")
 		apiURL = "https://api.staging-unweave.io"
 		appURL = "https://app.staging-unweave.io"
 	case "development", "dev":
-		Path = filepath.Join(home, ".unweave/dev-config.json")
+		UnweaveConfigPath = filepath.Join(home, ".unweave/dev-config.toml")
 		apiURL = "http://localhost:4000"
 		appURL = "http://localhost:3000"
 	case "production", "prod":
-		Path = filepath.Join(home, ".unweave/config.json")
+		UnweaveConfigPath = filepath.Join(home, ".unweave/config.toml")
 	default:
 		// If anything else, assume production
 		fmt.Println("Unrecognized environment. Assuming production.")
 	}
 
 	// Load saved config - create the empty config if it doesn't exist
-	if err = readAndUnmarshal(Path, UnweaveConfig); os.IsNotExist(err) {
-		err = marshalAndWrite(Path, UnweaveConfig)
+	if err = readAndUnmarshal(UnweaveConfigPath, Config); os.IsNotExist(err) {
+		err = marshalAndWrite(UnweaveConfigPath, Config)
 		if err != nil {
 			log.Fatal("Failed to create config file: ", err)
 		}
@@ -95,9 +85,9 @@ func init() {
 	}
 
 	// Need to set these after reading the config file so that they can be overridden
-	UnweaveConfig.ApiURL = apiURL
-	UnweaveConfig.AppURL = appURL
+	Config.ApiURL = apiURL
+	Config.AppURL = appURL
 
 	// Override with environment variables
-	gonfig.GetFromEnvVariables(UnweaveConfig)
+	gonfig.GetFromEnvVariables(Config)
 }
