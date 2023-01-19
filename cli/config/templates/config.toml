@@ -2,7 +2,7 @@ project_id = "{{.ProjectID}}"
 
 [provider]
 default = "unweave"
-providers = ["unweave"]
+providers = [{{.Providers}}]
 
 [sessions]
 scp = false

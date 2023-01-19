@@ -24,12 +24,17 @@ func Link(cmd *cobra.Command, args []string) error {
 		return ui.HandleError(err)
 	}
 
-	if _, err = os.Stat(config.ProjectConfigPath); err == nil {
+	account, err := uwc.Account.AccountGet(cmd.Context())
+	if err != nil {
+		return ui.HandleError(err)
+	}
+
+	if config.IsProjectLinked() {
 		ui.Errorf("Project already linked. Delete the '.unweave' directory to unlink.")
 		os.Exit(1)
 	}
 
-	if err = config.WriteProjectConfig(project.ID); err != nil {
+	if err = config.WriteProjectConfig(project.ID, account.Providers); err != nil {
 		ui.Errorf("Failed to write project config: %s", err)
 		os.Exit(1)
 	}

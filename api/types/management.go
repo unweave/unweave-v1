@@ -32,6 +32,22 @@ type AccessTokensDeleteResponse struct {
 	Success bool `json:"success"`
 }
 
+type Account struct {
+	UserID         uuid.UUID `json:"userID"`
+	Email          string    `json:"email"`
+	GithubID       int32     `json:"githubID"`
+	GithubUsername string    `json:"githubUsername"`
+	DateJoined     time.Time `json:"dateJoined"`
+	Credit         string    `json:"credit"`
+	FirstName      string    `json:"firstName"`
+	LastName       string    `json:"lastName"`
+	Providers      []string  `json:"providers"`
+}
+
+type AccountGetResponse struct {
+	Account Account `json:"account"`
+}
+
 type PairingTokenCreateResponse struct {
 	Code string `json:"code"`
 }

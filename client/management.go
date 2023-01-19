@@ -12,6 +12,19 @@ type AccountService struct {
 	client *Client
 }
 
+func (a *AccountService) AccountGet(ctx context.Context) (types.Account, error) {
+	uri := fmt.Sprintf("account")
+	req, err := a.client.NewAuthorizedRestRequest(Get, uri, nil, nil)
+	if err != nil {
+		return types.Account{}, err
+	}
+	res := &types.AccountGetResponse{}
+	if err = a.client.ExecuteRest(ctx, req, res); err != nil {
+		return types.Account{}, err
+	}
+	return res.Account, nil
+}
+
 func (a *AccountService) PairingTokenCreate(ctx context.Context) (code string, err error) {
 	uri := fmt.Sprintf("account/pair")
 	req, err := a.client.NewAuthorizedRestRequest(Post, uri, nil, nil)

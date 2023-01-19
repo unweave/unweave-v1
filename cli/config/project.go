@@ -3,85 +3,42 @@ package config
 import (
 	"bytes"
 	_ "embed"
-	"html/template"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
-	"github.com/pelletier/go-toml/v2"
 )
 
-type (
-	sshkey struct {
-		Path string `toml:"path"`
-		Name string `toml:"name"`
-	}
-
-	lambda struct {
-		ApiKey string `toml:"api_key"`
-	}
-
-	providerSecrets struct {
-		LambdaLabs lambda `toml:"lambda_labs"`
-	}
-
-	secrets struct {
-		Token           string          `toml:"token" env:"UNWEAVE_PROJECT_TOKEN"`
-		SshKeys         []sshkey        `toml:"ssh_keys"`
-		ProviderSecrets providerSecrets `toml:"provider_secrets"`
-	}
-
-	provider struct {
-		DefaultProvider string `toml:"default_provider"`
-	}
-
-	project struct {
-		ID       string   `toml:"project_id"`
-		Env      secrets  `toml:"env"`
-		Provider provider `toml:"provider"`
-	}
-)
-
-var (
-	//go:embed templates/config.toml
-	configEmbed       string
-	configTemplate, _ = template.New("config.toml").Parse(configEmbed)
-
-	//go:embed templates/env.toml
-	envEmbed       string
-	envTemplate, _ = template.New("env.toml").Parse(envEmbed)
-
-	//go:embed templates/gitignore
-	gitignoreEmbed string
-)
-
-func (c *project) String() string {
-	buf, err := toml.Marshal(c)
-	if err != nil {
-		log.Fatal("Failed to marshal config: ", err)
-	}
-	return string(buf)
+func IsProjectLinked() bool {
+	_, err := os.Stat(projectConfigPath)
+	return err == nil
 }
 
-func (c *project) Save() error {
-	return marshalAndWrite(ProjectConfigPath, c)
-}
-
-func WriteProjectConfig(projectID uuid.UUID) error {
+func WriteProjectConfig(projectID uuid.UUID, providers []string) error {
+	fmt.Println(providers)
 	buf := &bytes.Buffer{}
+
+	quotedProviders := make([]string, len(providers))
+	for i, val := range providers {
+		quotedProviders[i] = fmt.Sprintf("\"%s\"", val)
+	}
+
 	vars := struct {
 		ProjectID string
+		Providers string
 	}{
 		ProjectID: projectID.String(),
+		Providers: strings.Join(quotedProviders, " ,"),
 	}
 	if err := configTemplate.Execute(buf, vars); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(ProjectConfigPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(projectConfigPath), 0755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(ProjectConfigPath, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(projectConfigPath, buf.Bytes(), 0644); err != nil {
 		return err
 	}
 	return nil
@@ -92,19 +49,18 @@ func WriteEnvConfig() error {
 	if err := envTemplate.Execute(buf, nil); err != nil {
 		return err
 	}
-	dir := filepath.Dir(ProjectConfigPath)
+	dir := filepath.Dir(envConfigPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	path := filepath.Join(dir, "env.toml")
-	if err := os.WriteFile(path, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(envConfigPath, buf.Bytes(), 0644); err != nil {
 		return err
 	}
 	return nil
 }
 
 func WriteGitignore() error {
-	dir := filepath.Dir(ProjectConfigPath)
+	dir := filepath.Dir(projectConfigPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
