@@ -1,16 +1,29 @@
+# ID of the project to link to in your Unweave account. All commands you run in this
+# directory will be run against this project.
 project_id = "{{.ProjectID}}"
 
-[provider]
-default = "unweave"
-providers = [{{.Providers}}]
+# The default provider to use. You can override this with runtime flags
+default_provider = 'unweave'
+
+# Configure preferences for the Unweave providers you have configured with your project.
+# Currently supported providers: `unweave`, `lambdalabs`.
+[provider.unweave]
+# List of provider specific node types in order of preference. The first node type in the
+# list will be used by default.
+#
+# Eg.
+# If the your list is `node_type = ["a100", "v100"]`, the `a100` node type will be used by
+# defualt. If `a100` is not available, `v100` will be used, until the end of the list. If
+# none of the node types are available, Unweave will return an error.
+node_types = ["a100", "a10"]
+
+{{- range .Providers}}
+
+[provider.{{.Name}}]
+node_types = []
+{{- end }}
 
 [sessions]
 scp = false
 sync = false
 editor = "vscode"
-
-
-
-
-
-

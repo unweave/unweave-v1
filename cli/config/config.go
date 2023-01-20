@@ -45,13 +45,8 @@ func getActiveProjectPath() (string, error) {
 
 func init() {
 	// ----- ProjectConfig -----
-	// Try loading config from the current directory
-	// if not found, try all parent directories
-	// if still not found, init empty struct
-	// override with environment variables
-
-	projectConfig := project{}
-	envConfig := secrets{}
+	envConfig := &secrets{}
+	projectConfig := &project{}
 	projectDir, err := getActiveProjectPath()
 	if err == nil {
 		projectConfigPath = filepath.Join(projectDir, projectConfigPath)
@@ -76,8 +71,8 @@ func init() {
 	if e, ok := os.LookupEnv("UNWEAVE_ENV"); ok {
 		env = e
 	}
-	apiURL := Config.ApiURL
-	appURL := Config.AppURL
+	apiURL := Config.Unweave.ApiURL
+	appURL := Config.Unweave.AppURL
 
 	switch env {
 	case "staging", "stg":
@@ -96,18 +91,18 @@ func init() {
 	}
 
 	// Load saved config - create the empty config if it doesn't exist
-	if err = readAndUnmarshal(unweaveConfigPath, Config); os.IsNotExist(err) {
-		err = marshalAndWrite(unweaveConfigPath, Config)
+	if err = readAndUnmarshal(unweaveConfigPath, Config.Unweave); os.IsNotExist(err) {
+		err = Config.Unweave.Save()
 		if err != nil {
-			log.Fatal("Failed to create config file: ", err)
+			ui.Errorf("Failed to create config file: %v", err)
 		}
 	} else if err != nil {
-		log.Fatal("Failed to read config file: ", err)
+		ui.Errorf("Failed to read config file: %v", err)
 	}
 
 	// Need to set these after reading the config file so that they can be overridden
-	Config.ApiURL = apiURL
-	Config.AppURL = appURL
+	Config.Unweave.ApiURL = apiURL
+	Config.Unweave.AppURL = appURL
 	Config.Project = projectConfig
 
 	// Override with environment variables

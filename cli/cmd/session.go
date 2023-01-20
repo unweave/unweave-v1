@@ -107,7 +107,8 @@ func SessionList(cmd *cobra.Command, args []string) error {
 	uwc := InitUnweaveClient()
 	listTerminated := config.All
 
-	sessions, err := uwc.Session.List(cmd.Context(), uuid.MustParse(defaultProjectID), listTerminated)
+	projectID := config.Config.Project.ID
+	sessions, err := uwc.Session.List(cmd.Context(), projectID, listTerminated)
 	if err != nil {
 		var e *types.HTTPError
 		if errors.As(err, &e) {

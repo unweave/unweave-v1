@@ -3,10 +3,8 @@ package config
 import (
 	"bytes"
 	_ "embed"
-	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -17,21 +15,26 @@ func IsProjectLinked() bool {
 }
 
 func WriteProjectConfig(projectID uuid.UUID, providers []string) error {
-	fmt.Println(providers)
 	buf := &bytes.Buffer{}
-
-	quotedProviders := make([]string, len(providers))
-	for i, val := range providers {
-		quotedProviders[i] = fmt.Sprintf("\"%s\"", val)
-	}
 
 	vars := struct {
 		ProjectID string
-		Providers string
+		Providers []struct {
+			Name string
+		}
 	}{
 		ProjectID: projectID.String(),
-		Providers: strings.Join(quotedProviders, " ,"),
+		Providers: []struct{ Name string }{},
 	}
+
+	for _, p := range providers {
+		// We already have the unweave config in the template.
+		if p == "unweave" {
+			continue
+		}
+		vars.Providers = append(vars.Providers, struct{ Name string }{Name: p})
+	}
+
 	if err := configTemplate.Execute(buf, vars); err != nil {
 		return err
 	}

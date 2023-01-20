@@ -2,10 +2,11 @@ package config
 
 import (
 	_ "embed"
-	"log"
 	"text/template"
 
+	"github.com/google/uuid"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/unweave/unweave/cli/ui"
 )
 
 type (
@@ -33,22 +34,26 @@ type (
 	}
 
 	provider struct {
-		Default string   `toml:"default"`
-		Active  []string `toml:"active"`
+		NodeTypes []string `toml:"node_types"`
 	}
 
 	project struct {
-		ID       string   `toml:"project_id"`
-		Env      secrets  `toml:"env"`
-		Provider provider `toml:"providers"`
+		ID              uuid.UUID           `toml:"project_id"`
+		Env             *secrets            `toml:"env"`
+		Providers       map[string]provider `toml:"provider"`
+		DefaultProvider string              `toml:"default_provider"`
+	}
+
+	unweave struct {
+		UnwEnv string `toml:"unweave_env" env:"UNWEAVE_ENV"`
+		ApiURL string `toml:"api_url" env:"UNWEAVE_API_URL"`
+		AppURL string `toml:"app_url" env:"UNWEAVE_APP_URL"`
+		User   *user  `toml:"user"`
 	}
 
 	config struct {
-		UnwEnv  string  `toml:"unweave_env" env:"UNWEAVE_ENV"`
-		ApiURL  string  `toml:"api_url" env:"UNWEAVE_API_URL"`
-		AppURL  string  `toml:"app_url" env:"UNWEAVE_APP_URL"`
-		User    user    `toml:"user"`
-		Project project `toml:"project"`
+		Unweave *unweave `toml:"unweave"`
+		Project *project `toml:"project"`
 	}
 )
 
@@ -69,27 +74,34 @@ var (
 	envConfigPath     = ".unweave/env.toml"
 
 	Config = &config{
-		ApiURL: "https://api.unweave.io",
-		AppURL: "https://app.unweave.io",
+		Unweave: &unweave{
+			ApiURL: "https://api.unweave.io",
+			AppURL: "https://app.unweave.io",
+			User:   &user{},
+		},
+		Project: &project{
+			Env:       &secrets{},
+			Providers: map[string]provider{},
+		},
 	}
 )
 
 func (c *config) String() string {
 	buf, err := toml.Marshal(c)
 	if err != nil {
-		log.Fatal("Failed to marshal config: ", err)
+		ui.Errorf("Failed to marshal config: ", err)
 	}
 	return string(buf)
 }
 
-func (c *config) Save() error {
+func (c *unweave) Save() error {
 	return marshalAndWrite(unweaveConfigPath, c)
 }
 
 func (c *project) String() string {
 	buf, err := toml.Marshal(c)
 	if err != nil {
-		log.Fatal("Failed to marshal config: ", err)
+		ui.Errorf("Failed to marshal config: ", err)
 	}
 	return string(buf)
 }
