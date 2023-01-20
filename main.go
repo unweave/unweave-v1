@@ -2,7 +2,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -30,14 +29,8 @@ func main() {
 	}
 	dbq := db.New(conn)
 
-	// Creds store
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to get user home directory")
-	}
-
-	rcp := filepath.Join(home, ".unweave/runtime-config.json")
-	runtimeCfg := &runtime.ConfigFileInitializer{Path: rcp}
+	// Initialize unweave from environment variables
+	runtimeCfg := &runtime.EnvInitializer{}
 
 	server.API(cfg, runtimeCfg, dbq)
 }

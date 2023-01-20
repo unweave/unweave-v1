@@ -2,54 +2,52 @@ package runtime
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/providers/lambdalabs"
+	"github.com/unweave/unweave/tools/gonfig"
 )
 
 type Initializer interface {
-	FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	FromAccount(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	FromToken(ctx context.Context, token string, provider types.RuntimeProvider) (*Runtime, error)
 }
 
-// ConfigFileInitializer is only used in development or if you're self-hosting Unweave.
-type ConfigFileInitializer struct {
-	Path string
+// EnvInitializer is only used in development or if you're self-hosting Unweave.
+type EnvInitializer struct{}
+
+type envInitializer struct {
+	LambdaLabsAPIKey string `env:"LAMBDALABS_API_KEY"`
 }
 
-type runtimeConfig struct {
-	LambdaLabs struct {
-		APIKey string `json:"apiKey"`
-	} `json:"lambdaLabs"`
-}
-
-func (i *ConfigFileInitializer) FromUserID(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
-	f, err := os.Open(i.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	var config runtimeConfig
-	if err = json.NewDecoder(f).Decode(&config); err != nil {
-		return nil, err
-	}
+func (i *EnvInitializer) FromAccount(ctx context.Context, userID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error) {
+	var config envInitializer
+	gonfig.GetFromEnvVariables(&config)
 
 	switch provider {
 	case types.LambdaLabsProvider:
-		if config.LambdaLabs.APIKey == "" {
+		if config.LambdaLabsAPIKey == "" {
 			return nil, fmt.Errorf("missing LambdaLabs API key in runtime config file")
 		}
-		sess, err := lambdalabs.NewSessionProvider(config.LambdaLabs.APIKey)
+		return i.FromToken(ctx, config.LambdaLabsAPIKey, provider)
+	case types.UnweaveProvider:
+		return nil, fmt.Errorf("unweave provider not supported in the env initializer")
+	}
+	return nil, fmt.Errorf("unknown runtime provider %q", provider)
+}
+
+func (i *EnvInitializer) FromToken(ctx context.Context, token string, provider types.RuntimeProvider) (*Runtime, error) {
+	switch provider {
+	case types.LambdaLabsProvider:
+		sess, err := lambdalabs.NewSessionProvider(token)
 		if err != nil {
 			return nil, err
 		}
 		return &Runtime{sess}, nil
-
 	case types.UnweaveProvider:
-		return nil, fmt.Errorf("unweave provider not supported in config file initializer")
+		return nil, fmt.Errorf("unweave provider not supported in the env initializer")
 	}
 	return nil, fmt.Errorf("unknown runtime provider %q", provider)
 }

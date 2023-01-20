@@ -108,7 +108,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, scr.Provider)
+		rt, err := rti.FromAccount(ctx, userID, scr.Provider)
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
@@ -232,7 +232,7 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
-		rt, err := rti.FromUserID(ctx, userID, types.RuntimeProvider(sess.Provider))
+		rt, err := rti.FromAccount(ctx, userID, types.RuntimeProvider(sess.Provider))
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to initialize runtime"))
