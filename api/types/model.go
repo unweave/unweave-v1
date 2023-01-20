@@ -27,9 +27,20 @@ func (r RuntimeProvider) String() string {
 }
 
 const (
-	LambdaLabsProvider RuntimeProvider = "LambdaLabs"
-	UnweaveProvider    RuntimeProvider = "Unweave"
+	LambdaLabsProvider RuntimeProvider = "lambdalabs"
+	UnweaveProvider    RuntimeProvider = "unweave"
 )
+
+func (r RuntimeProvider) DisplayName() string {
+	switch r {
+	case LambdaLabsProvider:
+		return "LambdaLabs"
+	case UnweaveProvider:
+		return "Unweave"
+	default:
+		return "Unknown"
+	}
+}
 
 type NodeSpecs struct {
 	VCPUs int `json:"vCPUs"`

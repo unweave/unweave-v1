@@ -26,6 +26,13 @@ func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 		Logger:  &log.Logger,
 		NoColor: true,
 	}))
+	// Initialize contextual logger
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := log.With().Logger().WithContext(r.Context())
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

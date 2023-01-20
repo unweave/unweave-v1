@@ -15,8 +15,6 @@ import (
 	"github.com/unweave/unweave/tools"
 )
 
-const defaultProjectID = "00000000-0000-0000-0000-000000000002"
-
 func dashIfZeroValue(v interface{}) interface{} {
 	if v == reflect.Zero(reflect.TypeOf(v)).Interface() {
 		return "-"
@@ -56,14 +54,15 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 	}
 
 	params := types.SessionCreateRequestParams{
-		Provider:     types.LambdaLabsProvider,
+		Provider:     types.RuntimeProvider(config.Config.Project.DefaultProvider),
 		NodeTypeID:   nodeID,
 		Region:       region,
 		SSHKeyName:   sshKeyName,
 		SSHPublicKey: sshPublicKey,
 	}
 
-	session, err := uwc.Session.Create(cmd.Context(), uuid.MustParse(defaultProjectID), params)
+	projectID := config.Config.Project.ID
+	session, err := uwc.Session.Create(cmd.Context(), projectID, params)
 	if err != nil {
 		var e *types.HTTPError
 		if errors.As(err, &e) {
@@ -147,7 +146,8 @@ func SessionTerminate(cmd *cobra.Command, args []string) error {
 	}
 
 	uwc := InitUnweaveClient()
-	err = uwc.Session.Terminate(cmd.Context(), uuid.MustParse(defaultProjectID), sessionID)
+	projectID := config.Config.Project.ID
+	err = uwc.Session.Terminate(cmd.Context(), projectID, sessionID)
 	if err != nil {
 		var e *types.HTTPError
 		if errors.As(err, &e) {

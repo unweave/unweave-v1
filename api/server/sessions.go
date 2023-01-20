@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
@@ -22,8 +23,8 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		// This is overridden if the key already exists.
 		//
 		// This should most like never collide with an existing key, but it is possible.
-		// In the future, we should check to see if the key already exists before creating
-		// it.
+		// In the future, we should check to see if the key already exists before
+		// creating it.
 		Name: "uw:" + random.GenerateRandomPhrase(4, "-"),
 	}
 
@@ -98,13 +99,7 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 		userID := GetUserIDFromContext(ctx)
 		project := GetProjectFromContext(ctx)
 
-		ctx = log.With().
-			Stringer(UserIDCtxKey, userID).
-			Stringer(ProjectCtxKey, project.ID).
-			Logger().
-			WithContext(ctx)
-
-		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
+		zerolog.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
 		scr := types.SessionCreateRequestParams{}
 		if err := render.Bind(r, &scr); err != nil {
@@ -178,14 +173,7 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 func SessionsList(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
 		project := GetProjectFromContext(ctx)
-
-		ctx = log.With().
-			Stringer(UserIDCtxKey, userID).
-			Stringer(ProjectCtxKey, project.ID).
-			Logger().
-			WithContext(ctx)
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
@@ -223,7 +211,6 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 
 		log.Ctx(ctx).
 			Info().

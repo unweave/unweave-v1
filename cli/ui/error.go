@@ -22,7 +22,7 @@ func (e *Error) Short() string {
 func (e *Error) Verbose() string {
 	header := "API error:\n"
 	if e.Provider != "" {
-		header = fmt.Sprintf("%s API error:\n", e.Provider)
+		header = fmt.Sprintf("%s API error:\n", e.Provider.DisplayName())
 	}
 	body := ""
 	if e.Code != 0 {

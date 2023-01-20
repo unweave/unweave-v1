@@ -66,11 +66,10 @@ func GetSessionFromContext(ctx context.Context) *db.UnweaveSession {
 // be user for development or when self-hosting.
 func withUserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := log.With().Logger().WithContext(r.Context())
-		ctx = context.WithValue(ctx,
-			UserIDCtxKey,
-			uuid.MustParse("00000000-0000-0000-0000-000000000001"),
-		)
+		ctx := r.Context()
+		userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+		ctx = context.WithValue(ctx, UserIDCtxKey, userID)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -80,7 +79,7 @@ func withUserCtx(next http.Handler) http.Handler {
 func withProjectCtx(dbq db.Querier) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := log.With().Logger().WithContext(r.Context())
+			ctx := r.Context()
 			projectID, err := uuid.Parse(chi.URLParam(r, "projectID"))
 			if err != nil {
 				render.Render(w, r.WithContext(ctx), &types.HTTPError{
@@ -109,6 +108,8 @@ func withProjectCtx(dbq db.Querier) func(http.Handler) http.Handler {
 			}
 
 			ctx = context.WithValue(ctx, ProjectCtxKey, project)
+			ctx = log.With().Stringer(ProjectCtxKey, project.ID).Logger().WithContext(ctx)
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -119,7 +120,7 @@ func withProjectCtx(dbq db.Querier) func(http.Handler) http.Handler {
 func withSessionCtx(dbq db.Querier) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := log.With().Logger().WithContext(r.Context())
+			ctx := r.Context()
 			sessionID, err := uuid.Parse(chi.URLParam(r, "sessionID"))
 			if err != nil {
 				render.Render(w, r.WithContext(ctx), &types.HTTPError{
@@ -147,6 +148,7 @@ func withSessionCtx(dbq db.Querier) func(http.Handler) http.Handler {
 			}
 
 			ctx = context.WithValue(ctx, SessionCtxKey, session)
+			ctx = log.With().Stringer(SessionCtxKey, session.ID).Logger().WithContext(ctx)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

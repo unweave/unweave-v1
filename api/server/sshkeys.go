@@ -25,7 +25,6 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
 		params := types.SSHKeyAddParams{}
@@ -90,7 +89,6 @@ func SSHKeyList(dbq db.Querier) http.HandlerFunc {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
 
 		keys, err := dbq.SSHKeysGet(ctx, userID)

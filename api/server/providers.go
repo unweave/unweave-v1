@@ -18,7 +18,6 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		userID := GetUserIDFromContext(ctx)
 		provider := types.RuntimeProvider(chi.URLParam(r, "provider"))
 
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
 		if provider != types.LambdaLabsProvider && provider != types.UnweaveProvider {
