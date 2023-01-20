@@ -19,18 +19,14 @@ type (
 		Name string `toml:"name"`
 	}
 
-	lambda struct {
+	providerSecrets struct {
 		ApiKey string `toml:"api_key"`
 	}
 
-	providerSecrets struct {
-		LambdaLabs lambda `toml:"lambda_labs"`
-	}
-
 	secrets struct {
-		Token           string          `toml:"token" env:"UNWEAVE_PROJECT_TOKEN"`
-		SshKeys         []sshkey        `toml:"ssh_keys"`
-		ProviderSecrets providerSecrets `toml:"provider_secrets"`
+		Token           string                     `toml:"token" env:"UNWEAVE_PROJECT_TOKEN"`
+		SshKeys         []sshkey                   `toml:"ssh_keys"`
+		ProviderSecrets map[string]providerSecrets `toml:"provider_secrets"`
 	}
 
 	provider struct {

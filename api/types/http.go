@@ -41,11 +41,12 @@ type NodeTypesListResponse struct {
 }
 
 type SessionCreateRequestParams struct {
-	Provider     RuntimeProvider `json:"provider"`
-	NodeTypeID   string          `json:"nodeTypeID,omitempty"`
-	Region       *string         `json:"region,omitempty"`
-	SSHKeyName   *string         `json:"sshKeyName"`
-	SSHPublicKey *string         `json:"sshPublicKey"`
+	Provider      RuntimeProvider `json:"provider"`
+	NodeTypeID    string          `json:"nodeTypeID,omitempty"`
+	ProviderToken *string         `json:"providerToken,omitempty"`
+	Region        *string         `json:"region,omitempty"`
+	SSHKeyName    *string         `json:"sshKeyName"`
+	SSHPublicKey  *string         `json:"sshPublicKey"`
 }
 
 func (s *SessionCreateRequestParams) Bind(r *http.Request) error {

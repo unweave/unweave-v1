@@ -25,10 +25,31 @@ func dashIfZeroValue(v interface{}) interface{} {
 func SessionCreate(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
-	nodeID := args[0]
 	var region *string
-	if len(args) > 1 {
-		region = &args[1]
+	var nodeTypeIDs []string
+	var providerToken *string
+
+	provider := config.Config.Project.DefaultProvider
+	if config.Provider != "" {
+		provider = config.Provider
+	}
+
+	if p, ok := config.Config.Project.Providers[provider]; ok {
+		nodeTypeIDs = p.NodeTypes
+	}
+	if len(config.NodeTypeID) != 0 {
+		nodeTypeIDs = []string{config.NodeTypeID}
+	}
+	if config.NodeRegion != "" {
+		region = &config.NodeRegion
+	}
+	if p, ok := config.Config.Project.Env.ProviderSecrets[provider]; ok {
+		providerToken = &p.ApiKey
+	}
+
+	if len(nodeTypeIDs) == 0 {
+		ui.Errorf("No node types specified")
+		return nil
 	}
 
 	uwc := InitUnweaveClient()
@@ -53,21 +74,53 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		// Leave the sshKey fields empty to generate a new key
 	}
 
-	params := types.SessionCreateRequestParams{
-		Provider:     types.RuntimeProvider(config.Config.Project.DefaultProvider),
-		NodeTypeID:   nodeID,
-		Region:       region,
-		SSHKeyName:   sshKeyName,
-		SSHPublicKey: sshPublicKey,
+	var err error
+	var session *types.Session
+
+	for _, nodeTypeID := range nodeTypeIDs {
+		params := types.SessionCreateRequestParams{
+			Provider:      types.RuntimeProvider(config.Config.Project.DefaultProvider),
+			NodeTypeID:    nodeTypeID,
+			ProviderToken: providerToken,
+			Region:        region,
+			SSHKeyName:    sshKeyName,
+			SSHPublicKey:  sshPublicKey,
+		}
+
+		projectID := config.Config.Project.ID
+		session, err = uwc.Session.Create(cmd.Context(), projectID, params)
+		if err == nil {
+			results := []ui.ResultEntry{
+				{Key: "ID", Value: session.ID.String()},
+				{Key: "Type", Value: session.NodeTypeID},
+				{Key: "Region", Value: session.Region},
+				{Key: "Status", Value: fmt.Sprintf("%s", session.Status)},
+				{Key: "SSHKey", Value: fmt.Sprintf("%s", session.SSHKey.Name)},
+			}
+
+			ui.ResultTitle("Session Created:")
+			ui.Result(results, ui.IndentWidth)
+			return nil
+		}
+
+		if err != nil {
+			var e *types.HTTPError
+			if errors.As(err, &e) {
+				// If error 503, it's mostly likely an out of capacity error. Try and marshal,
+				// the error message into the list of available instances.
+				if e.Code == 503 {
+					continue
+				}
+				uie := &ui.Error{HTTPError: e}
+				fmt.Println(uie.Verbose())
+				os.Exit(1)
+			}
+		}
 	}
 
-	projectID := config.Config.Project.ID
-	session, err := uwc.Session.Create(cmd.Context(), projectID, params)
 	if err != nil {
 		var e *types.HTTPError
 		if errors.As(err, &e) {
-			// If error 503, it's mostly likely an out of capacity error. Try and marshal,
-			// the error message into the list of available instances.
 			if e.Code == 503 {
 				var nodeTypes []types.NodeType
 				if err = json.Unmarshal([]byte(e.Suggestion), &nodeTypes); err == nil {
@@ -85,17 +138,6 @@ func SessionCreate(cmd *cobra.Command, args []string) error {
 		}
 		return err
 	}
-
-	results := []ui.ResultEntry{
-		{Key: "ID", Value: session.ID.String()},
-		{Key: "Type", Value: session.NodeTypeID},
-		{Key: "Region", Value: session.Region},
-		{Key: "Status", Value: fmt.Sprintf("%s", session.Status)},
-		{Key: "SSHKey", Value: fmt.Sprintf("%s", session.SSHKey.Name)},
-	}
-
-	ui.ResultTitle("Session Created:")
-	ui.Result(results, ui.IndentWidth)
 
 	return nil
 }

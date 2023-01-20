@@ -26,15 +26,18 @@ func (e *Error) Verbose() string {
 	}
 	body := ""
 	if e.Code != 0 {
-		body += wordwrap.String(fmt.Sprintf("Code: %d", e.Code), MaxOutputLineLength-IndentWidth)
+		s := fmt.Sprintf("Code:       %d", e.Code)
+		body += wordwrap.String(s, MaxOutputLineLength-IndentWidth)
 		body += "\n"
 	}
 	if e.Message != "" {
-		body += wordwrap.String(fmt.Sprintf("Message: %s", e.Message), MaxOutputLineLength-IndentWidth)
+		s := fmt.Sprintf("Message:    %s", e.Message)
+		body += wordwrap.String(s, MaxOutputLineLength-IndentWidth)
 		body += "\n"
 	}
 	if e.Suggestion != "" {
-		body += wordwrap.String(fmt.Sprintf("Suggestion: %s", e.Suggestion), MaxOutputLineLength-IndentWidth)
+		s := fmt.Sprintf("Suggestion: %s", e.Suggestion)
+		body += wordwrap.String(s, MaxOutputLineLength-IndentWidth)
 		body += "\n"
 	}
 	str := header + indent.String(body, IndentWidth)

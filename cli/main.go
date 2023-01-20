@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/unweave/unweave/cli/cmd"
 	"github.com/unweave/unweave/cli/config"
+	"github.com/unweave/unweave/cli/ui"
 )
 
 var (
@@ -98,13 +99,16 @@ func init() {
 	}
 
 	createCmd := &cobra.Command{
-		Use:   "create <node-type-id> [region]",
+		Use:   "create",
 		Short: "Create a new Unweave session.",
 		Long: wordwrap.String("Create a new Unweave session. If no region is provided,"+
-			"the first available one will be selected.", 100),
-		Args: cobra.RangeArgs(1, 2),
+			"the first available one will be selected.", ui.MaxOutputLineLength),
+		Args: cobra.NoArgs,
 		RunE: cmd.SessionCreate,
 	}
+	createCmd.Flags().StringVar(&config.Provider, "provider", "", "Provider to use")
+	createCmd.Flags().StringVar(&config.NodeTypeID, "type", "", "Node type to use, eg. `gpu_1x_a100`")
+	createCmd.Flags().StringVar(&config.NodeRegion, "region", "", "Region to use, eg. `us_west_2`")
 	createCmd.Flags().StringVarP(&config.SSHKeyName, "ssh-key", "k", "", "Name of the SSH key to use for the session")
 	createCmd.Flags().StringVar(&config.SSHKeyPath, "ssh-key-path", "", "Absolute Path to the SSH public key to use")
 	sessionCmd.AddCommand(createCmd)
