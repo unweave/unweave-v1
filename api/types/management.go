@@ -57,6 +57,24 @@ type PairingTokenExchangeResponse struct {
 	Email string `json:"email"`
 }
 
+type ProjectCreateRequestParams struct {
+	Name string `json:"name"`
+}
+
+type ProjectCreateResponse struct {
+	ID uuid.UUID `json:"id"`
+}
+
+func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
+	if p.Name == "" {
+		return &HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Name is required",
+		}
+	}
+	return nil
+}
+
 type ProjectListResponse struct {
 	Projects []Project `json:"projects"`
 }

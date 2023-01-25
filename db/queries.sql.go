@@ -8,31 +8,12 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-const ProjectCreate = `-- name: ProjectCreate :one
-insert into unweave.project (name, owner_id)
-values ($1, $2)
-returning id
-`
-
-type ProjectCreateParams struct {
-	Name    string    `json:"name"`
-	OwnerID uuid.UUID `json:"ownerID"`
-}
-
-func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) (uuid.UUID, error) {
-	row := q.db.QueryRowContext(ctx, ProjectCreate, arg.Name, arg.OwnerID)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
-}
-
 const ProjectGet = `-- name: ProjectGet :one
-select id, name, owner_id, created_at
+select id, name, icon, owner_id, created_at
 from unweave.project
 where id = $1
 `
@@ -43,6 +24,7 @@ func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject,
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.Icon,
 		&i.OwnerID,
 		&i.CreatedAt,
 	)
@@ -136,62 +118,6 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveS
 		return nil, err
 	}
 	return items, nil
-}
-
-const SessionAndProjectGet = `-- name: SessionAndProjectGet :one
-select s.id,
-       s.node_id,
-       s.created_by,
-       s.created_at,
-       s.ready_at,
-       s.exited_at,
-       s.status,
-       s.provider,
-       s.ssh_key_id,
-       p.id         as project_id,
-       p.name       as project_name,
-       p.owner_id   as project_owner_id,
-       p.created_at as project_created_at
-from unweave.session s
-         join unweave.project p on p.id = s.project_id
-where s.id = $1
-`
-
-type SessionAndProjectGetRow struct {
-	ID               uuid.UUID            `json:"id"`
-	NodeID           string               `json:"nodeID"`
-	CreatedBy        uuid.UUID            `json:"createdBy"`
-	CreatedAt        time.Time            `json:"createdAt"`
-	ReadyAt          sql.NullTime         `json:"readyAt"`
-	ExitedAt         sql.NullTime         `json:"exitedAt"`
-	Status           UnweaveSessionStatus `json:"status"`
-	Provider         string               `json:"provider"`
-	SshKeyID         uuid.UUID            `json:"sshKeyID"`
-	ProjectID        uuid.UUID            `json:"projectID"`
-	ProjectName      string               `json:"projectName"`
-	ProjectOwnerID   uuid.UUID            `json:"projectOwnerID"`
-	ProjectCreatedAt time.Time            `json:"projectCreatedAt"`
-}
-
-func (q *Queries) SessionAndProjectGet(ctx context.Context, id uuid.UUID) (SessionAndProjectGetRow, error) {
-	row := q.db.QueryRowContext(ctx, SessionAndProjectGet, id)
-	var i SessionAndProjectGetRow
-	err := row.Scan(
-		&i.ID,
-		&i.NodeID,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.ReadyAt,
-		&i.ExitedAt,
-		&i.Status,
-		&i.Provider,
-		&i.SshKeyID,
-		&i.ProjectID,
-		&i.ProjectName,
-		&i.ProjectOwnerID,
-		&i.ProjectCreatedAt,
-	)
-	return i, err
 }
 
 const SessionCreate = `-- name: SessionCreate :one

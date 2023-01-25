@@ -1,7 +1,3 @@
--- name: ProjectCreate :one
-insert into unweave.project (name, owner_id)
-values ($1, $2)
-returning id;
 
 -- name: ProjectGet :one
 select *
@@ -20,24 +16,6 @@ returning id;
 select *
 from unweave.session
 where id = $1;
-
--- name: SessionAndProjectGet :one
-select s.id,
-       s.node_id,
-       s.created_by,
-       s.created_at,
-       s.ready_at,
-       s.exited_at,
-       s.status,
-       s.provider,
-       s.ssh_key_id,
-       p.id         as project_id,
-       p.name       as project_name,
-       p.owner_id   as project_owner_id,
-       p.created_at as project_created_at
-from unweave.session s
-         join unweave.project p on p.id = s.project_id
-where s.id = $1;
 
 -- name: SessionsGet :many
 select session.id, ssh_key.name as ssh_key_name, session.status

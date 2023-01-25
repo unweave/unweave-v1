@@ -17,6 +17,7 @@ create table unweave.project
 (
     id         uuid primary key                              default gen_random_uuid(),
     name       text                                 not null,
+    icon       text                                 not null default '📦',
     owner_id   uuid references unweave.account (id) not null,
     created_at timestamptz                          not null default now()
 );

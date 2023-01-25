@@ -63,6 +63,7 @@ type UnweaveAccount struct {
 type UnweaveProject struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
+	Icon      string    `json:"icon"`
 	OwnerID   uuid.UUID `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
 }

@@ -18,7 +18,6 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.6.1
-	github.com/unweave/infra/platform v0.0.0-20230120152119-7506532dbc07
 	golang.org/x/crypto v0.1.0
 )
 
@@ -40,6 +39,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.12 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
