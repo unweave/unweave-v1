@@ -14,7 +14,7 @@ import (
 )
 
 const ProjectCreate = `-- name: ProjectCreate :one
-insert into unweave.projects (name, owner_id)
+insert into unweave.project (name, owner_id)
 values ($1, $2)
 returning id
 `
@@ -33,7 +33,7 @@ func (q *Queries) ProjectCreate(ctx context.Context, arg ProjectCreateParams) (u
 
 const ProjectGet = `-- name: ProjectGet :one
 select id, name, owner_id, created_at
-from unweave.projects
+from unweave.project
 where id = $1
 `
 
@@ -50,7 +50,7 @@ func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject,
 }
 
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
-insert INTO unweave.ssh_keys (owner_id, name, public_key)
+insert INTO unweave.ssh_key (owner_id, name, public_key)
 values ($1, $2, $3)
 `
 
@@ -67,7 +67,7 @@ func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
 
 const SSHKeyGetByName = `-- name: SSHKeyGetByName :one
 select id, name, owner_id, created_at, public_key
-from unweave.ssh_keys
+from unweave.ssh_key
 where name = $1
 `
 
@@ -86,7 +86,7 @@ func (q *Queries) SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshK
 
 const SSHKeyGetByPublicKey = `-- name: SSHKeyGetByPublicKey :one
 select id, name, owner_id, created_at, public_key
-from unweave.ssh_keys
+from unweave.ssh_key
 where public_key = $1
 `
 
@@ -105,7 +105,7 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (U
 
 const SSHKeysGet = `-- name: SSHKeysGet :many
 select id, name, owner_id, created_at, public_key
-from unweave.ssh_keys
+from unweave.ssh_key
 where owner_id = $1
 `
 
@@ -152,8 +152,8 @@ select s.id,
        p.name       as project_name,
        p.owner_id   as project_owner_id,
        p.created_at as project_created_at
-from unweave.sessions s
-         join unweave.projects p on p.id = s.project_id
+from unweave.session s
+         join unweave.project p on p.id = s.project_id
 where s.id = $1
 `
 
@@ -195,9 +195,9 @@ func (q *Queries) SessionAndProjectGet(ctx context.Context, id uuid.UUID) (Sessi
 }
 
 const SessionCreate = `-- name: SessionCreate :one
-insert into unweave.sessions (node_id, created_by, project_id, provider, ssh_key_id)
+insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id)
 values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_keys as ssh_keys
+                         from unweave.ssh_key as ssh_keys
                          where ssh_keys.name = $5
                            and owner_id = $2))
 returning id
@@ -226,7 +226,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 
 const SessionGet = `-- name: SessionGet :one
 select id, name, node_id, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
-from unweave.sessions
+from unweave.session
 where id = $1
 `
 
@@ -250,7 +250,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 }
 
 const SessionSetTerminated = `-- name: SessionSetTerminated :exec
-update unweave.sessions
+update unweave.session
 set status = unweave.session_status('terminated')
 where id = $1
 `
@@ -261,12 +261,12 @@ func (q *Queries) SessionSetTerminated(ctx context.Context, id uuid.UUID) error 
 }
 
 const SessionsGet = `-- name: SessionsGet :many
-select sessions.id, ssh_keys.name as ssh_key_name, sessions.status
-from unweave.sessions
-         left join unweave.ssh_keys
-                   on ssh_keys.id = sessions.ssh_key_id
+select session.id, ssh_key.name as ssh_key_name, session.status
+from unweave.session
+         left join unweave.ssh_key
+                   on ssh_key.id = session.ssh_key_id
 where project_id = $1
-order by unweave.sessions.created_at desc
+order by unweave.session.created_at desc
 limit $2 offset $3
 `
 

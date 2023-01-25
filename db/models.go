@@ -56,6 +56,10 @@ func (ns NullUnweaveSessionStatus) Value() (driver.Value, error) {
 	return ns.UnweaveSessionStatus, nil
 }
 
+type UnweaveAccount struct {
+	ID uuid.UUID `json:"id"`
+}
+
 type UnweaveProject struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`
@@ -83,8 +87,4 @@ type UnweaveSshKey struct {
 	OwnerID   uuid.UUID `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
 	PublicKey string    `json:"publicKey"`
-}
-
-type UnweaveUser struct {
-	ID uuid.UUID `json:"id"`
 }

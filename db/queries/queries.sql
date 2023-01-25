@@ -1,24 +1,24 @@
 -- name: ProjectCreate :one
-insert into unweave.projects (name, owner_id)
+insert into unweave.project (name, owner_id)
 values ($1, $2)
 returning id;
 
 -- name: ProjectGet :one
 select *
-from unweave.projects
+from unweave.project
 where id = $1;
 
 -- name: SessionCreate :one
-insert into unweave.sessions (node_id, created_by, project_id, provider, ssh_key_id)
+insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id)
 values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_keys as ssh_keys
+                         from unweave.ssh_key as ssh_keys
                          where ssh_keys.name = @ssh_key_name
                            and owner_id = $2))
 returning id;
 
 -- name: SessionGet :one
 select *
-from unweave.sessions
+from unweave.session
 where id = $1;
 
 -- name: SessionAndProjectGet :one
@@ -35,39 +35,39 @@ select s.id,
        p.name       as project_name,
        p.owner_id   as project_owner_id,
        p.created_at as project_created_at
-from unweave.sessions s
-         join unweave.projects p on p.id = s.project_id
+from unweave.session s
+         join unweave.project p on p.id = s.project_id
 where s.id = $1;
 
 -- name: SessionsGet :many
-select sessions.id, ssh_keys.name as ssh_key_name, sessions.status
-from unweave.sessions
-         left join unweave.ssh_keys
-                   on ssh_keys.id = sessions.ssh_key_id
+select session.id, ssh_key.name as ssh_key_name, session.status
+from unweave.session
+         left join unweave.ssh_key
+                   on ssh_key.id = session.ssh_key_id
 where project_id = $1
-order by unweave.sessions.created_at desc
+order by unweave.session.created_at desc
 limit $2 offset $3;
 
 -- name: SessionSetTerminated :exec
-update unweave.sessions
+update unweave.session
 set status = unweave.session_status('terminated')
 where id = $1;
 
 -- name: SSHKeyAdd :exec
-insert INTO unweave.ssh_keys (owner_id, name, public_key)
+insert INTO unweave.ssh_key (owner_id, name, public_key)
 values ($1, $2, $3);
 
 -- name: SSHKeysGet :many
 select *
-from unweave.ssh_keys
+from unweave.ssh_key
 where owner_id = $1;
 
 -- name: SSHKeyGetByName :one
 select *
-from unweave.ssh_keys
+from unweave.ssh_key
 where name = $1;
 
 -- name: SSHKeyGetByPublicKey :one
 select *
-from unweave.ssh_keys
+from unweave.ssh_key
 where public_key = $1;
