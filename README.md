@@ -3,12 +3,25 @@
 <img width="400" src="https://github.com/unweave/unweave/blob/master/assets/unweave-logomark-light.svg#gh-dark-mode-only">
 </p>
 
----
-
 # Unweave
 
 Unweave is [Supabase](https://supabase.com) for machine learning. It's an open source tool
 for creating and managing development environments for ML projects.
+
+## Features
+
+- SSH into GPU machine across cloud providers
+
+
+## Installation
+
+Homebrew (Mac):
+
+```bash
+brew install unweave/unweave/unweave
+```
+
+## Roadmap
 
 - [ ] Create and manage cloud training environments
   - [ ] Providers
@@ -19,5 +32,4 @@ for creating and managing development environments for ML projects.
     - [ ] [Azure](https://azure.microsoft.com)
 - [ ] Custom Docker images
 - [ ] Storage
-
 
