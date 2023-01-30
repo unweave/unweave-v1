@@ -13,6 +13,8 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/tools"
+	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -34,29 +36,33 @@ func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSH
 }
 
 func fetchCredentials(ctx context.Context, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
+	if sshKeyName == nil && sshPublicKey == nil {
+		return types.SSHKey{}, &types.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Either Key name or Public Key must be provided",
+		}
+	}
+
 	if sshKeyName != nil {
 		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: userID}
 		k, err := dbq.SSHKeyGetByName(ctx, params)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return types.SSHKey{}, &types.Error{
-					Code:    http.StatusNotFound,
-					Message: "SSH key not found",
-				}
-			}
+		if err == nil {
+			return types.SSHKey{
+				Name:      k.Name,
+				PublicKey: &k.PublicKey,
+				CreatedAt: &k.CreatedAt,
+			}, nil
+		}
+		if err != sql.ErrNoRows {
 			return types.SSHKey{}, &types.HTTPError{
 				Code:    http.StatusInternalServerError,
 				Message: "Failed to get SSH key",
 				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
 			}
 		}
-		return types.SSHKey{
-			Name:      k.Name,
-			PublicKey: &k.PublicKey,
-			CreatedAt: &k.CreatedAt,
-		}, nil
 	}
 
+	// Not found by name, try public key
 	if sshPublicKey != nil {
 		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*sshPublicKey))
 		if err != nil {
@@ -69,30 +75,43 @@ func fetchCredentials(ctx context.Context, dbq db.Querier, userID uuid.UUID, ssh
 		pkStr := string(ssh.MarshalAuthorizedKey(pk))
 		params := db.SSHKeyGetByPublicKeyParams{PublicKey: pkStr, OwnerID: userID}
 		k, err := dbq.SSHKeyGetByPublicKey(ctx, params)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				return types.SSHKey{}, &types.Error{
-					Code:    http.StatusNotFound,
-					Message: "SSH key not found",
-				}
-			}
+		if err == nil {
+			return types.SSHKey{
+				Name:      k.Name,
+				PublicKey: &k.PublicKey,
+				CreatedAt: &k.CreatedAt,
+			}, nil
+		}
+		if err != sql.ErrNoRows {
 			return types.SSHKey{}, &types.HTTPError{
 				Code:    http.StatusInternalServerError,
 				Message: "Failed to get SSH key",
 				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
 			}
 		}
-		return types.SSHKey{
-			Name:      k.Name,
-			PublicKey: &k.PublicKey,
-			CreatedAt: &k.CreatedAt,
-		}, nil
 	}
 
-	return types.SSHKey{}, &types.HTTPError{
-		Code:    http.StatusBadRequest,
-		Message: "Missing SSH key name or public key",
+	if sshPublicKey == nil {
+		return types.SSHKey{}, &types.HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "SSH key not found",
+		}
 	}
+	if sshKeyName == nil {
+		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
+	}
+
+	// Key doesn't exist in db, but the user provided a public key, so add it to the db
+	if err := saveSSHKey(ctx, dbq, userID, *sshKeyName, *sshPublicKey); err != nil {
+		return types.SSHKey{}, &types.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to save SSH key",
+		}
+	}
+	return types.SSHKey{
+		Name:      *sshKeyName,
+		PublicKey: sshPublicKey,
+	}, nil
 }
 
 func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {

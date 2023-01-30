@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -11,6 +12,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 	"github.com/rs/zerolog/log"
@@ -67,6 +69,34 @@ func createSSHKeyPair() (string, string, error) {
 	return string(privatePEM), string(publicKey), nil
 }
 
+func saveSSHKey(ctx context.Context, dbq db.Querier, userID uuid.UUID, name, publicKey string) error {
+	arg := db.SSHKeyAddParams{
+		OwnerID:   userID,
+		Name:      name,
+		PublicKey: publicKey,
+	}
+	err := dbq.SSHKeyAdd(ctx, arg)
+	if err != nil {
+		var e *pgconn.PgError
+		if errors.As(err, &e) {
+			// We already check the unique constraint on the name column, so this
+			// should only happen if the public key is a duplicate.
+			if e.Code == pgerrcode.UniqueViolation {
+				return &types.HTTPError{
+					Code:    http.StatusConflict,
+					Message: "Public key already exists",
+					Suggestion: "Public keys in Unweave have to be globally unique. " +
+						"It could be that you added this key earlier or that you " +
+						"added it to another account. If you've already added this " +
+						"key to your account, remove it first.",
+				}
+			}
+		}
+		return fmt.Errorf("failed to add ssh key to db: %w", err)
+	}
+	return nil
+}
+
 // SSHKeyAdd adds an SSH key to the user's account.
 //
 // This does not add the key to the user's configured providers. That is done lazily
@@ -107,34 +137,10 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 			params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 		}
 
-		arg := db.SSHKeyAddParams{
-			OwnerID:   userID,
-			Name:      *params.Name,
-			PublicKey: params.PublicKey,
-		}
-		err := dbq.SSHKeyAdd(ctx, arg)
-		if err != nil {
-			var e *pgconn.PgError
-			if errors.As(err, &e) {
-				// We already check the unique constraint on the name column, so this
-				// should only happen if the public key is a duplicate.
-				if e.Code == pgerrcode.UniqueViolation {
-					render.Render(w, r.WithContext(ctx), &types.HTTPError{
-						Code:    http.StatusConflict,
-						Message: "Public key already exists",
-						Suggestion: "Public keys in Unweave have to be globally unique. " +
-							"It could be that you added this key earlier or that you " +
-							"added it to another account. If you've already added this " +
-							"key to your account, remove it first.",
-					})
-					return
-				}
-			}
-			err = fmt.Errorf("failed to add ssh key to db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+		if err := saveSSHKey(ctx, dbq, userID, *params.Name, params.PublicKey); err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to save SSH key"))
 			return
 		}
-
 		render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
 	}
 }
