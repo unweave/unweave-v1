@@ -43,9 +43,9 @@ where owner_id = $1;
 -- name: SSHKeyGetByName :one
 select *
 from unweave.ssh_key
-where name = $1;
+where name = $1 and owner_id = $2;
 
 -- name: SSHKeyGetByPublicKey :one
 select *
 from unweave.ssh_key
-where public_key = $1;
+where public_key = $1 and owner_id = $2;

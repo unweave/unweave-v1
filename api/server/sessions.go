@@ -13,35 +13,52 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
 )
 
-func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
-	exists := false
-	key := types.SSHKey{
-		// This is overridden if the key already exists.
-		//
-		// This should most like never collide with an existing key, but it is possible.
-		// In the future, we should check to see if the key already exists before
-		// creating it.
-		Name: "uw:" + random.GenerateRandomPhrase(4, "-"),
+func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
+	// Check if it exists with the provider and exit early if it does
+	providerKeys, err := rt.ListSSHKeys(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list ssh keys from provider: %w", err)
 	}
+	for _, k := range providerKeys {
+		if k.Name == key.Name {
+			return nil
+		}
+	}
+	if _, err = rt.AddSSHKey(ctx, key); err != nil {
+		return fmt.Errorf("failed to add ssh key to provider: %w", err)
+	}
+	return nil
+}
 
+func fetchCredentials(ctx context.Context, dbq db.Querier, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	if sshKeyName != nil {
-		k, err := dbq.SSHKeyGetByName(ctx, *sshKeyName)
-		if err == nil {
-			exists = true
-			key.Name = *sshKeyName
-			key.PublicKey = &k.PublicKey
+		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: userID}
+		k, err := dbq.SSHKeyGetByName(ctx, params)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return types.SSHKey{}, &types.Error{
+					Code:    http.StatusNotFound,
+					Message: "SSH key not found",
+				}
+			}
+			return types.SSHKey{}, &types.HTTPError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to get SSH key",
+				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
+			}
 		}
-		if err != nil && err != sql.ErrNoRows {
-			return types.SSHKey{}, fmt.Errorf("failed to get ssh key from db: %w", err)
-		}
+		return types.SSHKey{
+			Name:      k.Name,
+			PublicKey: &k.PublicKey,
+			CreatedAt: &k.CreatedAt,
+		}, nil
 	}
 
-	if !exists && key.PublicKey != nil {
-		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*key.PublicKey))
+	if sshPublicKey != nil {
+		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*sshPublicKey))
 		if err != nil {
 			return types.SSHKey{}, &types.HTTPError{
 				Code:    http.StatusBadRequest,
@@ -50,47 +67,32 @@ func setupCredentials(ctx context.Context, rt *runtime.Runtime, dbq db.Querier, 
 		}
 
 		pkStr := string(ssh.MarshalAuthorizedKey(pk))
-		k, err := dbq.SSHKeyGetByPublicKey(ctx, pkStr)
-		if err == nil {
-			exists = true
-			key.Name = k.Name
-			key.PublicKey = &k.PublicKey
-		}
-		if err != nil && err != sql.ErrNoRows {
-			return types.SSHKey{}, fmt.Errorf("failed to get ssh key from db: %w", err)
-		}
-	}
-
-	if exists {
-		// Key exists in the DB. Check if it exists with the provider and exit early if it
-		// does.
-		providerKeys, err := rt.ListSSHKeys(ctx)
+		params := db.SSHKeyGetByPublicKeyParams{PublicKey: pkStr, OwnerID: userID}
+		k, err := dbq.SSHKeyGetByPublicKey(ctx, params)
 		if err != nil {
-			return types.SSHKey{}, fmt.Errorf("failed to list ssh keys from provider: %w", err)
-		}
-		for _, k := range providerKeys {
-			if k.Name == key.Name {
-				return key, nil
+			if err == sql.ErrNoRows {
+				return types.SSHKey{}, &types.Error{
+					Code:    http.StatusNotFound,
+					Message: "SSH key not found",
+				}
+			}
+			return types.SSHKey{}, &types.HTTPError{
+				Code:    http.StatusInternalServerError,
+				Message: "Failed to get SSH key",
+				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
 			}
 		}
+		return types.SSHKey{
+			Name:      k.Name,
+			PublicKey: &k.PublicKey,
+			CreatedAt: &k.CreatedAt,
+		}, nil
 	}
 
-	key, err := rt.AddSSHKey(ctx, key)
-	if err != nil {
-		return types.SSHKey{}, fmt.Errorf("failed to add ssh key to provider: %w", err)
+	return types.SSHKey{}, &types.HTTPError{
+		Code:    http.StatusBadRequest,
+		Message: "Missing SSH key name or public key",
 	}
-
-	if !exists {
-		params := db.SSHKeyAddParams{
-			OwnerID:   userID,
-			Name:      key.Name,
-			PublicKey: *key.PublicKey,
-		}
-		if err = dbq.SSHKeyAdd(ctx, params); err != nil {
-			return types.SSHKey{}, fmt.Errorf("failed to add ssh key to db: %w", err)
-		}
-	}
-	return key, nil
 }
 
 func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
@@ -120,10 +122,15 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			Logger().
 			WithContext(ctx)
 
-		sshKey, err := setupCredentials(ctx, rt, dbq, userID, scr.SSHKeyName, scr.SSHPublicKey)
+		sshKey, err := fetchCredentials(ctx, dbq, userID, scr.SSHKeyName, scr.SSHPublicKey)
 		if err != nil {
 			err = fmt.Errorf("failed to setup credentials: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to setup credentials"))
+			return
+		}
+		if err = registerCredentials(ctx, rt, sshKey); err != nil {
+			err = fmt.Errorf("failed to register credentials: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to register credentials"))
 			return
 		}
 

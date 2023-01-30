@@ -13,8 +13,8 @@ import (
 type Querier interface {
 	ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
-	SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshKey, error)
-	SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (UnweaveSshKey, error)
+	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
+	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error)
 	SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error)

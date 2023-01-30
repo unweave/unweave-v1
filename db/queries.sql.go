@@ -50,11 +50,16 @@ func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
 const SSHKeyGetByName = `-- name: SSHKeyGetByName :one
 select id, name, owner_id, created_at, public_key
 from unweave.ssh_key
-where name = $1
+where name = $1 and owner_id = $2
 `
 
-func (q *Queries) SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshKey, error) {
-	row := q.db.QueryRowContext(ctx, SSHKeyGetByName, name)
+type SSHKeyGetByNameParams struct {
+	Name    string    `json:"name"`
+	OwnerID uuid.UUID `json:"ownerID"`
+}
+
+func (q *Queries) SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error) {
+	row := q.db.QueryRowContext(ctx, SSHKeyGetByName, arg.Name, arg.OwnerID)
 	var i UnweaveSshKey
 	err := row.Scan(
 		&i.ID,
@@ -69,11 +74,16 @@ func (q *Queries) SSHKeyGetByName(ctx context.Context, name string) (UnweaveSshK
 const SSHKeyGetByPublicKey = `-- name: SSHKeyGetByPublicKey :one
 select id, name, owner_id, created_at, public_key
 from unweave.ssh_key
-where public_key = $1
+where public_key = $1 and owner_id = $2
 `
 
-func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, publicKey string) (UnweaveSshKey, error) {
-	row := q.db.QueryRowContext(ctx, SSHKeyGetByPublicKey, publicKey)
+type SSHKeyGetByPublicKeyParams struct {
+	PublicKey string    `json:"publicKey"`
+	OwnerID   uuid.UUID `json:"ownerID"`
+}
+
+func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error) {
+	row := q.db.QueryRowContext(ctx, SSHKeyGetByPublicKey, arg.PublicKey, arg.OwnerID)
 	var i UnweaveSshKey
 	err := row.Scan(
 		&i.ID,

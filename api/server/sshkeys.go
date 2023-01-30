@@ -35,7 +35,8 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		}
 
 		if params.Name != nil {
-			k, err := dbq.SSHKeyGetByName(ctx, *params.Name)
+			p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: userID}
+			k, err := dbq.SSHKeyGetByName(ctx, p)
 			if err == nil {
 				render.Render(w, r.WithContext(ctx), &types.HTTPError{
 					Code:    http.StatusNotFound,
@@ -49,6 +50,9 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 				return
 			}
 		} else {
+			// This should most like never collide with an existing key, but it is possible.
+			// In the future, we should check to see if the key already exists before
+			// creating it.
 			params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 		}
 
