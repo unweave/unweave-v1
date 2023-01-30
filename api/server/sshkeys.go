@@ -155,7 +155,7 @@ func SSHKeyGenerate(dbq db.Querier) http.HandlerFunc {
 		privateKey, publicKey, err := createSSHKeyPair()
 		if err != nil {
 			err = fmt.Errorf("failed to generate ssh key pair: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, ""))
 			return
 		}
 
