@@ -63,6 +63,7 @@ func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 	r.Route("/ssh-keys", func(r chi.Router) {
 		r.Post("/", SSHKeyAdd(dbq))
 		r.Get("/", SSHKeyList(dbq))
+		r.Post("/generate", SSHKeyGenerate(dbq))
 	})
 	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 

@@ -1,7 +1,11 @@
 package server
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"database/sql"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,7 +18,54 @@ import (
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
+	"golang.org/x/crypto/ssh"
 )
+
+var bitSize = 4096
+
+func generatePrivateKey() (*rsa.PrivateKey, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitSize)
+	if err != nil {
+		return nil, err
+	}
+	err = privateKey.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return privateKey, nil
+}
+
+func encodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
+	der := x509.MarshalPKCS1PrivateKey(privateKey)
+	block := pem.Block{
+		Type:    "RSA PRIVATE KEY",
+		Headers: nil,
+		Bytes:   der,
+	}
+	privatePEM := pem.EncodeToMemory(&block)
+	return privatePEM
+}
+
+func generatePublicKey(privateKey *rsa.PublicKey) ([]byte, error) {
+	publicRsaKey, err := ssh.NewPublicKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	return ssh.MarshalAuthorizedKey(publicRsaKey), nil
+}
+
+func createSSHKeyPair() (string, string, error) {
+	privateKey, err := generatePrivateKey()
+	if err != nil {
+		return "", "", err
+	}
+	privatePEM := encodePrivateKeyToPEM(privateKey)
+	publicKey, err := generatePublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return "", "", err
+	}
+	return string(privatePEM), string(publicKey), nil
+}
 
 // SSHKeyAdd adds an SSH key to the user's account.
 //
@@ -85,6 +136,48 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 		}
 
 		render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
+	}
+}
+
+func SSHKeyGenerate(dbq db.Querier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userID := GetUserIDFromContext(ctx)
+
+		log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
+
+		privateKey, publicKey, err := createSSHKeyPair()
+		if err != nil {
+			err = fmt.Errorf("failed to generate ssh key pair: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			return
+		}
+
+		params := types.SSHKeyGenerateParams{}
+		render.Bind(r, &params)
+
+		name := "uw:" + random.GenerateRandomPhrase(4, "-")
+		if params.Name != nil {
+			name = *params.Name
+		}
+
+		arg := db.SSHKeyAddParams{
+			OwnerID:   userID,
+			Name:      name,
+			PublicKey: publicKey,
+		}
+		if err = dbq.SSHKeyAdd(ctx, arg); err != nil {
+			err = fmt.Errorf("failed to add ssh key to db: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+			return
+		}
+
+		res := types.SSHKeyGenerateResponse{
+			Name:       arg.Name,
+			PublicKey:  publicKey,
+			PrivateKey: privateKey,
+		}
+		render.JSON(w, r, &res)
 	}
 }
 

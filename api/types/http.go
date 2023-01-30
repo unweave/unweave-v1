@@ -94,6 +94,20 @@ type SSHKeyAddResponse struct {
 	Success bool `json:"success"`
 }
 
+type SSHKeyGenerateParams struct {
+	Name *string `json:"name"`
+}
+
+func (s *SSHKeyGenerateParams) Bind(r *http.Request) error {
+	return nil
+}
+
+type SSHKeyGenerateResponse struct {
+	Name       string `json:"name"`
+	PublicKey  string `json:"publicKey"`
+	PrivateKey string `json:"privateKey"`
+}
+
 type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
 }
