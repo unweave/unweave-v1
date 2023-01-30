@@ -35,7 +35,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		nodeTypes, err := rt.ListNodeTypes(ctx)
+		nodeTypes, err := rt.ListNodeTypes(ctx, false)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list node types"))
 			return

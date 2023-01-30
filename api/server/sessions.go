@@ -129,7 +129,14 @@ func SessionsCreate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromAccount(ctx, userID, scr.Provider)
+		var err error
+		var rt *runtime.Runtime
+
+		if scr.ProviderToken != nil {
+			rt, err = rti.FromToken(ctx, *scr.ProviderToken, scr.Provider)
+		} else {
+			rt, err = rti.FromAccount(ctx, userID, scr.Provider)
+		}
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize provider"))

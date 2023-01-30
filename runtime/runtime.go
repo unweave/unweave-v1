@@ -33,6 +33,6 @@ type Session interface {
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.
-	ListNodeTypes(ctx context.Context) ([]types.NodeType, error)
+	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 }
