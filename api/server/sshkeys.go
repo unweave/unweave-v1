@@ -69,13 +69,13 @@ func createSSHKeyPair() (string, string, error) {
 	return string(privatePEM), string(publicKey), nil
 }
 
-func saveSSHKey(ctx context.Context, dbq db.Querier, userID uuid.UUID, name, publicKey string) error {
+func saveSSHKey(ctx context.Context, userID uuid.UUID, name, publicKey string) error {
 	arg := db.SSHKeyAddParams{
 		OwnerID:   userID,
 		Name:      name,
 		PublicKey: publicKey,
 	}
-	err := dbq.SSHKeyAdd(ctx, arg)
+	err := db.Q.SSHKeyAdd(ctx, arg)
 	if err != nil {
 		var e *pgconn.PgError
 		if errors.As(err, &e) {
@@ -101,116 +101,110 @@ func saveSSHKey(ctx context.Context, dbq db.Querier, userID uuid.UUID, name, pub
 //
 // This does not add the key to the user's configured providers. That is done lazily
 // when the user first tries to use the key.
-func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
+func SSHKeyAdd(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := GetUserIDFromContext(ctx)
 
-		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
+	log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
-		params := types.SSHKeyAddRequestParams{}
-		if err := render.Bind(r, &params); err != nil {
-			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
-			return
-		}
-
-		if params.Name != nil {
-			p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: userID}
-			k, err := dbq.SSHKeyGetByName(ctx, p)
-			if err == nil {
-				render.Render(w, r.WithContext(ctx), &types.HTTPError{
-					Code:    http.StatusNotFound,
-					Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
-				})
-				return
-			}
-			if err != nil && err != sql.ErrNoRows {
-				err = fmt.Errorf("failed to get ssh key from db: %w", err)
-				render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-				return
-			}
-		} else {
-			// This should most like never collide with an existing key, but it is possible.
-			// In the future, we should check to see if the key already exists before
-			// creating it.
-			params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
-		}
-
-		if err := saveSSHKey(ctx, dbq, userID, *params.Name, params.PublicKey); err != nil {
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to save SSH key"))
-			return
-		}
-		render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
+	params := types.SSHKeyAddRequestParams{}
+	if err := render.Bind(r, &params); err != nil {
+		err = fmt.Errorf("failed to read body: %w", err)
+		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+		return
 	}
-}
 
-func SSHKeyGenerate(dbq db.Querier) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-
-		log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
-
-		privateKey, publicKey, err := createSSHKeyPair()
-		if err != nil {
-			err = fmt.Errorf("failed to generate ssh key pair: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, ""))
+	if params.Name != nil {
+		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: userID}
+		k, err := db.Q.SSHKeyGetByName(ctx, p)
+		if err == nil {
+			render.Render(w, r.WithContext(ctx), &types.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
+			})
 			return
 		}
-
-		params := types.SSHKeyGenerateRequestParams{}
-		render.Bind(r, &params)
-
-		name := "uw:" + random.GenerateRandomPhrase(4, "-")
-		if params.Name != nil {
-			name = *params.Name
-		}
-
-		arg := db.SSHKeyAddParams{
-			OwnerID:   userID,
-			Name:      name,
-			PublicKey: publicKey,
-		}
-		if err = dbq.SSHKeyAdd(ctx, arg); err != nil {
-			err = fmt.Errorf("failed to add ssh key to db: %w", err)
+		if err != nil && err != sql.ErrNoRows {
+			err = fmt.Errorf("failed to get ssh key from db: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
 			return
 		}
-
-		res := types.SSHKeyGenerateResponse{
-			Name:       arg.Name,
-			PublicKey:  publicKey,
-			PrivateKey: privateKey,
-		}
-		render.JSON(w, r, &res)
+	} else {
+		// This should most like never collide with an existing key, but it is possible.
+		// In the future, we should check to see if the key already exists before
+		// creating it.
+		params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 	}
+
+	if err := saveSSHKey(ctx, userID, *params.Name, params.PublicKey); err != nil {
+		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to save SSH key"))
+		return
+	}
+	render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
 }
 
-func SSHKeyList(dbq db.Querier) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
+func SSHKeyGenerate(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := GetUserIDFromContext(ctx)
 
-		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
+	log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
 
-		keys, err := dbq.SSHKeysGet(ctx, userID)
-		if err != nil {
-			err = fmt.Errorf("failed to list ssh keys from db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-			return
-		}
-
-		res := types.SSHKeyListResponse{
-			Keys: make([]types.SSHKey, len(keys)),
-		}
-		for idx, key := range keys {
-			res.Keys[idx] = types.SSHKey{
-				Name:      key.Name,
-				PublicKey: &key.PublicKey,
-				CreatedAt: &key.CreatedAt,
-			}
-		}
-		render.JSON(w, r, res)
+	privateKey, publicKey, err := createSSHKeyPair()
+	if err != nil {
+		err = fmt.Errorf("failed to generate ssh key pair: %w", err)
+		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, ""))
+		return
 	}
+
+	params := types.SSHKeyGenerateRequestParams{}
+	render.Bind(r, &params)
+
+	name := "uw:" + random.GenerateRandomPhrase(4, "-")
+	if params.Name != nil {
+		name = *params.Name
+	}
+
+	arg := db.SSHKeyAddParams{
+		OwnerID:   userID,
+		Name:      name,
+		PublicKey: publicKey,
+	}
+	if err = db.Q.SSHKeyAdd(ctx, arg); err != nil {
+		err = fmt.Errorf("failed to add ssh key to db: %w", err)
+		render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+		return
+	}
+
+	res := types.SSHKeyGenerateResponse{
+		Name:       arg.Name,
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
+	}
+	render.JSON(w, r, &res)
+}
+
+func SSHKeyList(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := GetUserIDFromContext(ctx)
+
+	log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
+
+	keys, err := db.Q.SSHKeysGet(ctx, userID)
+	if err != nil {
+		err = fmt.Errorf("failed to list ssh keys from db: %w", err)
+		render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
+		return
+	}
+
+	res := types.SSHKeyListResponse{
+		Keys: make([]types.SSHKey, len(keys)),
+	}
+	for idx, key := range keys {
+		res.Keys[idx] = types.SSHKey{
+			Name:      key.Name,
+			PublicKey: &key.PublicKey,
+			CreatedAt: &key.CreatedAt,
+		}
+	}
+	render.JSON(w, r, res)
 }

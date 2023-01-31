@@ -17,7 +17,7 @@ type Config struct {
 	DB      db.Config `json:"db"`
 }
 
-func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
+func API(cfg Config, rti runtime.Initializer) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -46,24 +46,24 @@ func API(cfg Config, rti runtime.Initializer, dbq db.Querier) {
 
 	r.Use(withUserCtx) // fakes an authenticated user
 	r.Route("/projects/{projectID}", func(r chi.Router) {
-		r.Use(withProjectCtx(dbq))
+		r.Use(withProjectCtx)
 
 		r.Route("/sessions", func(r chi.Router) {
-			r.Post("/", SessionsCreate(rti, dbq))
-			r.Get("/", SessionsList(rti, dbq))
+			r.Post("/", SessionsCreate(rti))
+			r.Get("/", SessionsList)
 
 			r.Group(func(r chi.Router) {
-				r.Use(withSessionCtx(dbq))
+				r.Use(withSessionCtx)
 				r.Get("/{sessionID}", SessionsGet(rti))
-				r.Put("/{sessionID}/terminate", SessionsTerminate(rti, dbq))
+				r.Put("/{sessionID}/terminate", SessionsTerminate(rti))
 			})
 		})
 	})
 
 	r.Route("/ssh-keys", func(r chi.Router) {
-		r.Post("/", SSHKeyAdd(dbq))
-		r.Get("/", SSHKeyList(dbq))
-		r.Post("/generate", SSHKeyGenerate(dbq))
+		r.Post("/", SSHKeyAdd)
+		r.Get("/", SSHKeyList)
+		r.Post("/generate", SSHKeyGenerate)
 	})
 	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 

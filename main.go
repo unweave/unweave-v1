@@ -27,10 +27,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to connect to database")
 	}
-	dbq := db.New(conn)
+	db.Q = db.New(conn)
 
 	// Initialize unweave from environment variables
 	runtimeCfg := &runtime.EnvInitializer{}
 
-	server.API(cfg, runtimeCfg, dbq)
+	server.API(cfg, runtimeCfg)
 }

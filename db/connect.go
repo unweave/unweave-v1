@@ -5,6 +5,9 @@ import (
 	"fmt"
 )
 
+// Q is a querier for the global database connection
+var Q Querier
+
 type Config struct {
 	Host     string `json:"host" env:"UNWEAVE_DB_HOST"`
 	Port     int    `json:"port" env:"UNWEAVE_DB_PORT"`
