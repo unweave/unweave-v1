@@ -71,16 +71,24 @@ type SessionsListResponse struct {
 	Sessions []Session `json:"sessions"`
 }
 
+type SessionTerminateRequestParams struct {
+	ProviderToken *string `json:"providerToken,omitempty"`
+}
+
+func (s *SessionTerminateRequestParams) Bind(r *http.Request) error {
+	return nil
+}
+
 type SessionTerminateResponse struct {
 	Success bool `json:"success"`
 }
 
-type SSHKeyAddParams struct {
+type SSHKeyAddRequestParams struct {
 	Name      *string `json:"name"`
 	PublicKey string  `json:"publicKey"`
 }
 
-func (s *SSHKeyAddParams) Bind(r *http.Request) error {
+func (s *SSHKeyAddRequestParams) Bind(r *http.Request) error {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
 		return &HTTPError{
 			Code:    http.StatusBadRequest,
@@ -94,11 +102,11 @@ type SSHKeyAddResponse struct {
 	Success bool `json:"success"`
 }
 
-type SSHKeyGenerateParams struct {
+type SSHKeyGenerateRequestParams struct {
 	Name *string `json:"name"`
 }
 
-func (s *SSHKeyGenerateParams) Bind(r *http.Request) error {
+func (s *SSHKeyGenerateRequestParams) Bind(r *http.Request) error {
 	return nil
 }
 

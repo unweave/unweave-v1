@@ -265,9 +265,19 @@ func SessionsTerminate(rti runtime.Initializer, dbq db.Querier) http.HandlerFunc
 			return
 		}
 
-		rt, err := rti.FromAccount(ctx, userID, types.RuntimeProvider(sess.Provider))
+		provider := types.RuntimeProvider(sess.Provider)
+		str := types.SessionTerminateRequestParams{}
+		render.Bind(r, &str)
+
+		var rt *runtime.Runtime
+
+		if str.ProviderToken != nil {
+			rt, err = rti.FromToken(ctx, *str.ProviderToken, provider)
+		} else {
+			rt, err = rti.FromAccount(ctx, userID, provider)
+		}
 		if err != nil {
-			err = fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
+			err = fmt.Errorf("failed to create runtime %q: %w", provider, err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize runtime"))
 			return
 		}

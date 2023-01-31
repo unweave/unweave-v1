@@ -108,7 +108,7 @@ func SSHKeyAdd(dbq db.Querier) http.HandlerFunc {
 
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
 
-		params := types.SSHKeyAddParams{}
+		params := types.SSHKeyAddRequestParams{}
 		if err := render.Bind(r, &params); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
@@ -159,7 +159,7 @@ func SSHKeyGenerate(dbq db.Querier) http.HandlerFunc {
 			return
 		}
 
-		params := types.SSHKeyGenerateParams{}
+		params := types.SSHKeyGenerateRequestParams{}
 		render.Bind(r, &params)
 
 		name := "uw:" + random.GenerateRandomPhrase(4, "-")
