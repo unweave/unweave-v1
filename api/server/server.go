@@ -90,7 +90,7 @@ func API(cfg Config, rti runtime.Initializer) {
 
 		r.Route("/sessions", func(r chi.Router) {
 			r.Post("/", SessionsCreate(rti))
-			r.Get("/", SessionsList)
+			r.Get("/", SessionsList(rti))
 
 			r.Group(func(r chi.Router) {
 				r.Use(withSessionCtx)

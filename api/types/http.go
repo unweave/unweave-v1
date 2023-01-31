@@ -40,7 +40,7 @@ type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`
 }
 
-type SessionCreateRequestParams struct {
+type SessionCreateParams struct {
 	Provider      RuntimeProvider `json:"provider"`
 	NodeTypeID    string          `json:"nodeTypeID,omitempty"`
 	ProviderToken *string         `json:"providerToken,omitempty"`
@@ -49,7 +49,7 @@ type SessionCreateRequestParams struct {
 	SSHPublicKey  *string         `json:"sshPublicKey"`
 }
 
-func (s *SessionCreateRequestParams) Bind(r *http.Request) error {
+func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
 		return &HTTPError{
 			Code:       http.StatusBadRequest,
@@ -65,6 +65,10 @@ func (s *SessionCreateRequestParams) Bind(r *http.Request) error {
 		}
 	}
 	return nil
+}
+
+type SessionGetResponse struct {
+	Session Session `json:"session"`
 }
 
 type SessionsListResponse struct {
