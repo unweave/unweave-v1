@@ -4,6 +4,7 @@ package runtime
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -35,4 +36,8 @@ type Session interface {
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	TerminateNode(ctx context.Context, nodeID string) error
+}
+
+type Initializer interface {
+	Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider, token *string) (*Runtime, error)
 }

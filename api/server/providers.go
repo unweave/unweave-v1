@@ -29,7 +29,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		rt, err := rti.FromAccount(ctx, userID, provider)
+		rt, err := rti.Initialize(ctx, userID, provider, nil)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create runtime"))
 			return

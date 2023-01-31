@@ -6,6 +6,9 @@ import (
 )
 
 // Q is a querier for the global database connection
+//
+// This needs to be initialized when the db connection is first established. It is then
+// safe to use across go routines.
 var Q Querier
 
 type Config struct {

@@ -129,14 +129,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		var err error
-		var rt *runtime.Runtime
-
-		if scr.ProviderToken != nil {
-			rt, err = rti.FromToken(ctx, *scr.ProviderToken, scr.Provider)
-		} else {
-			rt, err = rti.FromAccount(ctx, userID, scr.Provider)
-		}
+		rt, err := rti.Initialize(ctx, userID, scr.Provider, scr.ProviderToken)
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize provider"))
@@ -269,11 +262,7 @@ func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 
 		var rt *runtime.Runtime
 
-		if str.ProviderToken != nil {
-			rt, err = rti.FromToken(ctx, *str.ProviderToken, provider)
-		} else {
-			rt, err = rti.FromAccount(ctx, userID, provider)
-		}
+		rt, err = rti.Initialize(ctx, userID, provider, str.ProviderToken)
 		if err != nil {
 			err = fmt.Errorf("failed to create runtime %q: %w", provider, err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize runtime"))
