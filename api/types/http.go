@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -52,19 +51,36 @@ type SessionCreateParams struct {
 func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
 		return &HTTPError{
-			Code:       http.StatusBadRequest,
-			Message:    "Invalid request body: field 'runtime' is required",
-			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", LambdaLabsProvider, UnweaveProvider),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: field 'provider' is required",
 		}
 	}
-	if s.Provider != LambdaLabsProvider && s.Provider != UnweaveProvider {
+	if s.SSHPublicKey == nil && s.SSHKeyName == nil {
 		return &HTTPError{
-			Code:       http.StatusBadRequest,
-			Message:    "Invalid runtime provider: " + string(s.Provider),
-			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", LambdaLabsProvider, UnweaveProvider),
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: either 'sshKeyName' or 'sshPublicKey' is required",
 		}
 	}
 	return nil
+}
+
+type ProviderConnectParams struct {
+	Provider      RuntimeProvider `json:"provider"`
+	ProviderToken string          `json:"providerToken,omitempty"`
+}
+
+func (p *ProviderConnectParams) Bind(r *http.Request) error {
+	if p.Provider == "" {
+		return &HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: field 'provider' is required",
+		}
+	}
+	return nil
+}
+
+type ProvidersListResponse struct {
+	Providers []RuntimeProvider `json:"providers"`
 }
 
 type SessionGetResponse struct {

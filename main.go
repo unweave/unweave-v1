@@ -9,7 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
@@ -30,7 +29,7 @@ func main() {
 	db.Q = db.New(conn)
 
 	// Initialize unweave from environment variables
-	runtimeCfg := &runtime.EnvInitializer{}
+	runtimeCfg := &EnvInitializer{}
 
 	server.API(cfg, runtimeCfg)
 }

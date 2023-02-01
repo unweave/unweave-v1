@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/runtime"
@@ -40,7 +39,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		zerolog.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
+		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
 		scr := types.SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
