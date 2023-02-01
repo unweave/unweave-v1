@@ -87,12 +87,12 @@ type SessionTerminateResponse struct {
 	Success bool `json:"success"`
 }
 
-type SSHKeyAddRequestParams struct {
+type SSHKeyAddParams struct {
 	Name      *string `json:"name"`
 	PublicKey string  `json:"publicKey"`
 }
 
-func (s *SSHKeyAddRequestParams) Bind(r *http.Request) error {
+func (s *SSHKeyAddParams) Bind(r *http.Request) error {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
 		return &HTTPError{
 			Code:    http.StatusBadRequest,
@@ -106,11 +106,11 @@ type SSHKeyAddResponse struct {
 	Success bool `json:"success"`
 }
 
-type SSHKeyGenerateRequestParams struct {
+type SSHKeyGenerateParams struct {
 	Name *string `json:"name"`
 }
 
-func (s *SSHKeyGenerateRequestParams) Bind(r *http.Request) error {
+func (s *SSHKeyGenerateParams) Bind(r *http.Request) error {
 	return nil
 }
 

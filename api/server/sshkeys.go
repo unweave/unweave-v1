@@ -11,11 +11,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools"
@@ -97,37 +95,22 @@ func saveSSHKey(ctx context.Context, userID uuid.UUID, name, publicKey string) e
 	return nil
 }
 
-// SSHKeyAdd adds an SSH key to the user's account.
-//
-// This does not add the key to the user's configured providers. That is done lazily
-// when the user first tries to use the key.
-func SSHKeyAdd(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := GetUserIDFromContext(ctx)
+type SSHKeyService struct {
+	srv *Service
+}
 
-	log.Ctx(ctx).Info().Msgf("Executing SSHKeyAdd request")
-
-	params := types.SSHKeyAddRequestParams{}
-	if err := render.Bind(r, &params); err != nil {
-		err = fmt.Errorf("failed to read body: %w", err)
-		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
-		return
-	}
-
+func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) error {
 	if params.Name != nil {
-		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: userID}
+		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: s.srv.cid}
 		k, err := db.Q.SSHKeyGetByName(ctx, p)
 		if err == nil {
-			render.Render(w, r.WithContext(ctx), &types.HTTPError{
-				Code:    http.StatusNotFound,
+			return &types.HTTPError{
+				Code:    http.StatusConflict,
 				Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
-			})
-			return
+			}
 		}
 		if err != nil && err != sql.ErrNoRows {
-			err = fmt.Errorf("failed to get ssh key from db: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-			return
+			return fmt.Errorf("failed to get ssh key from db: %w", err)
 		}
 	} else {
 		// This should most like never collide with an existing key, but it is possible.
@@ -136,75 +119,49 @@ func SSHKeyAdd(w http.ResponseWriter, r *http.Request) {
 		params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 	}
 
-	if err := saveSSHKey(ctx, userID, *params.Name, params.PublicKey); err != nil {
-		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to save SSH key"))
-		return
+	if err := saveSSHKey(ctx, s.srv.cid, *params.Name, params.PublicKey); err != nil {
+		return fmt.Errorf("failed to save ssh key: %w", err)
 	}
-	render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
+	return nil
 }
 
-func SSHKeyGenerate(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := GetUserIDFromContext(ctx)
-
-	log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
-
+func (s *SSHKeyService) Generate(ctx context.Context, params types.SSHKeyGenerateParams) (name string, prv string, pub string, err error) {
 	privateKey, publicKey, err := createSSHKeyPair()
 	if err != nil {
-		err = fmt.Errorf("failed to generate ssh key pair: %w", err)
-		render.Render(w, r.WithContext(ctx), ErrHTTPError(err, ""))
-		return
+		return "", "", "", fmt.Errorf("failed to generate ssh key pair: %w", err)
 	}
 
-	params := types.SSHKeyGenerateRequestParams{}
-	render.Bind(r, &params)
-
-	name := "uw:" + random.GenerateRandomPhrase(4, "-")
+	name = "uw:" + random.GenerateRandomPhrase(4, "-")
 	if params.Name != nil {
 		name = *params.Name
 	}
 
 	arg := db.SSHKeyAddParams{
-		OwnerID:   userID,
+		OwnerID:   s.srv.cid,
 		Name:      name,
 		PublicKey: publicKey,
 	}
 	if err = db.Q.SSHKeyAdd(ctx, arg); err != nil {
-		err = fmt.Errorf("failed to add ssh key to db: %w", err)
-		render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-		return
+		return "", "", "", fmt.Errorf("failed to add ssh key to db: %w", err)
 	}
-
-	res := types.SSHKeyGenerateResponse{
-		Name:       arg.Name,
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-	}
-	render.JSON(w, r, &res)
+	return name, privateKey, publicKey, nil
 }
 
-func SSHKeyList(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userID := GetUserIDFromContext(ctx)
-
-	log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
-
-	keys, err := db.Q.SSHKeysGet(ctx, userID)
+func (s *SSHKeyService) List(ctx context.Context) ([]types.SSHKey, error) {
+	keys, err := db.Q.SSHKeysGet(ctx, s.srv.cid)
 	if err != nil {
-		err = fmt.Errorf("failed to list ssh keys from db: %w", err)
-		render.Render(w, r.WithContext(ctx), ErrInternalServer(err, ""))
-		return
+		return nil, fmt.Errorf("failed to list ssh keys from db: %w", err)
 	}
 
-	res := types.SSHKeyListResponse{
-		Keys: make([]types.SSHKey, len(keys)),
-	}
+	res := make([]types.SSHKey, len(keys))
+
 	for idx, key := range keys {
-		res.Keys[idx] = types.SSHKey{
+		key := key
+		res[idx] = types.SSHKey{
 			Name:      key.Name,
 			PublicKey: &key.PublicKey,
 			CreatedAt: &key.CreatedAt,
 		}
 	}
-	render.JSON(w, r, res)
+	return res, nil
 }
