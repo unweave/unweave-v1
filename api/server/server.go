@@ -101,9 +101,9 @@ func API(cfg Config, rti runtime.Initializer) {
 	})
 
 	r.Route("/ssh-keys", func(r chi.Router) {
-		r.Post("/", SSHKeyAdd)
-		r.Get("/", SSHKeyList)
-		r.Post("/generate", SSHKeyGenerate)
+		r.Post("/", SSHKeyAdd(rti))
+		r.Get("/", SSHKeyList(rti))
+		r.Post("/generate", SSHKeyGenerate(rti))
 	})
 	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 

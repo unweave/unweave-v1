@@ -16,13 +16,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-type Service struct {
-	rti     runtime.Initializer
-	cid     uuid.UUID
-	Session *SessionService
-	SSHKey  *SSHKeyService
-}
-
 func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
 	providerKeys, err := rt.ListSSHKeys(ctx)

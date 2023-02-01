@@ -4,12 +4,36 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/runtime"
 )
+
+// Provider
+
+// NodeTypesList returns a list of node types available for the user
+func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		provider := types.RuntimeProvider(chi.URLParam(r, "provider"))
+		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
+
+		userID := GetUserIDFromContext(ctx)
+
+		srv := NewCtxService(rti, userID)
+		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list node types"))
+			return
+		}
+
+		res := &types.NodeTypesListResponse{NodeTypes: nodeTypes}
+		render.JSON(w, r, res)
+	}
+}
 
 // Sessions
 
