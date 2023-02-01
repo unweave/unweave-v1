@@ -36,6 +36,7 @@ type Session interface {
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	TerminateNode(ctx context.Context, nodeID string) error
+	HealthCheck(ctx context.Context) error
 }
 
 type Initializer interface {

@@ -231,7 +231,7 @@ func (r *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]ty
 	return nodeTypes, nil
 }
 
-func (r *Session) finRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
+func (r *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
 	nodeTypes, err := r.ListNodeTypes(ctx, true)
 	if err != nil {
 		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
@@ -258,13 +258,19 @@ func (r *Session) finRegionForNode(ctx context.Context, nodeTypeID string) (stri
 	return "", e
 }
 
+func (r *Session) HealthCheck(ctx context.Context) error {
+	log.Ctx(ctx).Info().Msg("Executing health check")
+	_, err := r.ListNodeTypes(ctx, false)
+	return err
+}
+
 func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
 	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
 
 	if region == nil {
 		var err error
 		var nr string
-		nr, err = r.finRegionForNode(ctx, nodeTypeID)
+		nr, err = r.findRegionForNode(ctx, nodeTypeID)
 		if err != nil {
 			return types.Node{}, err
 		}
