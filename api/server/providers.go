@@ -14,7 +14,7 @@ type ProviderService struct {
 
 func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.RuntimeProvider) ([]types.NodeType, error) {
 	if provider != types.LambdaLabsProvider && provider != types.UnweaveProvider {
-		return nil, &types.HTTPError{
+		return nil, &types.Error{
 			Code:       http.StatusBadRequest,
 			Message:    "Invalid runtime provider: " + string(provider),
 			Suggestion: fmt.Sprintf("Use %q or %q as the runtime provider", types.LambdaLabsProvider, types.UnweaveProvider),

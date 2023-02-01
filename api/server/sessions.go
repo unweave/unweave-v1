@@ -35,7 +35,7 @@ func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSH
 
 func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	if sshKeyName == nil && sshPublicKey == nil {
-		return types.SSHKey{}, &types.HTTPError{
+		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "Either Key name or Public Key must be provided",
 		}
@@ -52,7 +52,7 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 			}, nil
 		}
 		if err != sql.ErrNoRows {
-			return types.SSHKey{}, &types.HTTPError{
+			return types.SSHKey{}, &types.Error{
 				Code:    http.StatusInternalServerError,
 				Message: "Failed to get SSH key",
 				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
@@ -64,7 +64,7 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 	if sshPublicKey != nil {
 		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*sshPublicKey))
 		if err != nil {
-			return types.SSHKey{}, &types.HTTPError{
+			return types.SSHKey{}, &types.Error{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid SSH public key",
 			}
@@ -81,7 +81,7 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 			}, nil
 		}
 		if err != sql.ErrNoRows {
-			return types.SSHKey{}, &types.HTTPError{
+			return types.SSHKey{}, &types.Error{
 				Code:    http.StatusInternalServerError,
 				Message: "Failed to get SSH key",
 				Err:     fmt.Errorf("failed to get ssh key from db: %w", err),
@@ -90,7 +90,7 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 	}
 
 	if sshPublicKey == nil {
-		return types.SSHKey{}, &types.HTTPError{
+		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "SSH key not found",
 		}
@@ -101,7 +101,7 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 
 	// Key doesn't exist in db, but the user provided a public key, so add it to the db
 	if err := saveSSHKey(ctx, userID, *sshKeyName, *sshPublicKey); err != nil {
-		return types.SSHKey{}, &types.HTTPError{
+		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to save SSH key",
 		}
@@ -169,7 +169,7 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, &types.HTTPError{
+			return nil, &types.Error{
 				Code:    http.StatusNotFound,
 				Message: "Session not found",
 			}
@@ -226,7 +226,7 @@ func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID, pro
 	sess, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return &types.HTTPError{
+			return &types.Error{
 				Code:       http.StatusNotFound,
 				Message:    "Session not found",
 				Suggestion: "Make sure the session id is valid",

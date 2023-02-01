@@ -80,7 +80,7 @@ func saveSSHKey(ctx context.Context, userID uuid.UUID, name, publicKey string) e
 			// We already check the unique constraint on the name column, so this
 			// should only happen if the public key is a duplicate.
 			if e.Code == pgerrcode.UniqueViolation {
-				return &types.HTTPError{
+				return &types.Error{
 					Code:    http.StatusConflict,
 					Message: "Public key already exists",
 					Suggestion: "Public keys in Unweave have to be globally unique. " +
@@ -104,7 +104,7 @@ func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) e
 		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: s.srv.cid}
 		k, err := db.Q.SSHKeyGetByName(ctx, p)
 		if err == nil {
-			return &types.HTTPError{
+			return &types.Error{
 				Code:    http.StatusConflict,
 				Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
 			}

@@ -11,8 +11,8 @@ import (
 type HTTPError struct {
 	Code       int             `json:"code"`
 	Message    string          `json:"message"`
-	Suggestion string          `json:"suggestion"`
-	Provider   RuntimeProvider `json:"provider"`
+	Suggestion string          `json:"suggestion,omitempty"`
+	Provider   RuntimeProvider `json:"provider,omitempty"`
 	Err        error           `json:"-"`
 }
 
