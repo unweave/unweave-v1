@@ -43,6 +43,7 @@ create table unweave.session
     name       text                   not null default '',
     -- node_id is provider specific identifier of the compute resource assigned to this session.
     node_id    text                   not null,
+    region     text                   not null,
     created_by uuid                   not null references unweave.account (id),
     created_at timestamptz            not null default now(),
     ready_at   timestamptz,

@@ -72,6 +72,7 @@ type UnweaveSession struct {
 	ID        uuid.UUID            `json:"id"`
 	Name      string               `json:"name"`
 	NodeID    string               `json:"nodeID"`
+	Region    string               `json:"region"`
 	CreatedBy uuid.UUID            `json:"createdBy"`
 	CreatedAt time.Time            `json:"createdAt"`
 	ReadyAt   sql.NullTime         `json:"readyAt"`

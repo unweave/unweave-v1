@@ -8,9 +8,54 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+const MxSessionGet = `-- name: MxSessionGet :one
+select s.id,
+       s.status,
+       s.node_id,
+       s.provider,
+       s.region,
+       s.created_at,
+       ssh_key.name       as ssh_key_name,
+       ssh_key.public_key,
+       ssh_key.created_at as ssh_key_created_at
+from unweave.session as s
+        join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+where s.id = $1
+`
+
+type MxSessionGetRow struct {
+	ID              uuid.UUID            `json:"id"`
+	Status          UnweaveSessionStatus `json:"status"`
+	NodeID          string               `json:"nodeID"`
+	Provider        string               `json:"provider"`
+	Region          string               `json:"region"`
+	CreatedAt       time.Time            `json:"createdAt"`
+	SshKeyName      string               `json:"sshKeyName"`
+	PublicKey       string               `json:"publicKey"`
+	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
+}
+
+func (q *Queries) MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetRow, error) {
+	row := q.db.QueryRowContext(ctx, MxSessionGet, id)
+	var i MxSessionGetRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.NodeID,
+		&i.Provider,
+		&i.Region,
+		&i.CreatedAt,
+		&i.SshKeyName,
+		&i.PublicKey,
+		&i.SshKeyCreatedAt,
+	)
+	return i, err
+}
 
 const ProjectGet = `-- name: ProjectGet :one
 select id, name, icon, owner_id, created_at
@@ -32,7 +77,7 @@ func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject,
 }
 
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
-insert INTO unweave.ssh_key (owner_id, name, public_key)
+insert into unweave.ssh_key (owner_id, name, public_key)
 values ($1, $2, $3)
 `
 
@@ -50,7 +95,8 @@ func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
 const SSHKeyGetByName = `-- name: SSHKeyGetByName :one
 select id, name, owner_id, created_at, public_key
 from unweave.ssh_key
-where name = $1 and owner_id = $2
+where name = $1
+  and owner_id = $2
 `
 
 type SSHKeyGetByNameParams struct {
@@ -74,7 +120,8 @@ func (q *Queries) SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams
 const SSHKeyGetByPublicKey = `-- name: SSHKeyGetByPublicKey :one
 select id, name, owner_id, created_at, public_key
 from unweave.ssh_key
-where public_key = $1 and owner_id = $2
+where public_key = $1
+  and owner_id = $2
 `
 
 type SSHKeyGetByPublicKeyParams struct {
@@ -161,7 +208,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
 from unweave.session
 where id = $1
 `
@@ -173,6 +220,7 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.ID,
 		&i.Name,
 		&i.NodeID,
+		&i.Region,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ReadyAt,

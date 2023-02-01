@@ -84,6 +84,7 @@ type Session struct {
 	ID         uuid.UUID       `json:"id"`
 	SSHKey     SSHKey          `json:"sshKey"`
 	Status     SessionStatus   `json:"runtimeStatus"`
+	CreatedAt  *time.Time      `json:"createdAt,omitempty"`
 	NodeTypeID string          `json:"nodeTypeID"`
 	Region     string          `json:"region"`
 	Provider   RuntimeProvider `json:"provider"`

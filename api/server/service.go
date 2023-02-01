@@ -177,7 +177,31 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 }
 
 func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.Session, error) {
-	return nil, nil
+	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, &types.HTTPError{
+				Code:    http.StatusNotFound,
+				Message: "Session not found",
+			}
+		}
+		return nil, fmt.Errorf("failed to get session from db: %w", err)
+	}
+
+	session := &types.Session{
+		ID: sessionID,
+		SSHKey: types.SSHKey{
+			Name:      dbs.SshKeyName,
+			PublicKey: &dbs.PublicKey,
+			CreatedAt: &dbs.SshKeyCreatedAt,
+		},
+		Status:     types.SessionStatus(dbs.Status),
+		CreatedAt:  &dbs.CreatedAt,
+		NodeTypeID: dbs.NodeID,
+		Region:     dbs.Region,
+		Provider:   types.RuntimeProvider(dbs.Provider),
+	}
+	return session, nil
 }
 
 func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types.Session, error) {

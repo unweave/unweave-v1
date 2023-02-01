@@ -1,4 +1,3 @@
-
 -- name: ProjectGet :one
 select *
 from unweave.project
@@ -17,6 +16,20 @@ select *
 from unweave.session
 where id = $1;
 
+-- name: MxSessionGet :one
+select s.id,
+       s.status,
+       s.node_id,
+       s.provider,
+       s.region,
+       s.created_at,
+       ssh_key.name       as ssh_key_name,
+       ssh_key.public_key,
+       ssh_key.created_at as ssh_key_created_at
+from unweave.session as s
+        join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+where s.id = $1;
+
 -- name: SessionsGet :many
 select session.id, ssh_key.name as ssh_key_name, session.status
 from unweave.session
@@ -32,7 +45,7 @@ set status = unweave.session_status('terminated')
 where id = $1;
 
 -- name: SSHKeyAdd :exec
-insert INTO unweave.ssh_key (owner_id, name, public_key)
+insert into unweave.ssh_key (owner_id, name, public_key)
 values ($1, $2, $3);
 
 -- name: SSHKeysGet :many
@@ -43,9 +56,11 @@ where owner_id = $1;
 -- name: SSHKeyGetByName :one
 select *
 from unweave.ssh_key
-where name = $1 and owner_id = $2;
+where name = $1
+  and owner_id = $2;
 
 -- name: SSHKeyGetByPublicKey :one
 select *
 from unweave.ssh_key
-where public_key = $1 and owner_id = $2;
+where public_key = $1
+  and owner_id = $2;

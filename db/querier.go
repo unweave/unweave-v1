@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetRow, error)
 	ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
