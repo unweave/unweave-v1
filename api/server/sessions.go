@@ -89,13 +89,14 @@ func fetchCredentials(ctx context.Context, userID uuid.UUID, sshKeyName, sshPubl
 		}
 	}
 
+	// Public key wasn't provided	 and key wasn't found by name
 	if sshPublicKey == nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "SSH key not found",
 		}
 	}
-	if sshKeyName == nil {
+	if sshKeyName == nil || *sshKeyName == "" {
 		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
 	}
 
@@ -145,6 +146,7 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 		CreatedBy:  s.srv.cid,
 		ProjectID:  projectID,
 		Provider:   params.Provider.String(),
+		Region:     node.Region,
 		SshKeyName: sshKey.Name,
 	}
 	sessionID, err := db.Q.SessionCreate(ctx, dbp)

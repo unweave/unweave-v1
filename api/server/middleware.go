@@ -31,7 +31,8 @@ func GetUserIDFromContext(ctx context.Context) uuid.UUID {
 	uid, ok := ctx.Value(UserIDCtxKey).(uuid.UUID)
 	if !ok {
 		// This should never happen at runtime.
-		log.Fatal().Msg("user not found in context")
+		log.Error().Msg("user not found in context")
+		panic("user not found in context")
 	}
 	return uid
 }
@@ -44,7 +45,8 @@ func GetProjectFromContext(ctx context.Context) *db.UnweaveProject {
 	project, ok := ctx.Value(ProjectCtxKey).(db.UnweaveProject)
 	if !ok {
 		// This should never happen at runtime.
-		log.Fatal().Msg("project not found in context")
+		log.Error().Msg("project not found in context")
+		panic("project not found in context")
 	}
 	return &project
 }
@@ -57,7 +59,8 @@ func GetSessionFromContext(ctx context.Context) *db.UnweaveSession {
 	session, ok := ctx.Value(SessionCtxKey).(db.UnweaveSession)
 	if !ok {
 		// This should never happen at runtime.
-		log.Fatal().Msg("session not found in context")
+		log.Error().Msg("session not found in context")
+		panic("session not found in context")
 	}
 	return &session
 }
