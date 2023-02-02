@@ -152,7 +152,6 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 	sessionID, err := db.Q.SessionCreate(ctx, dbp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
-
 	}
 
 	session := &types.Session{
@@ -251,7 +250,11 @@ func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) err
 	if err = rt.TerminateNode(ctx, sess.NodeID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
-	if err = db.Q.SessionSetTerminated(ctx, sessionID); err != nil {
+	params := db.SessionStatusUpdateParams{
+		ID:     sessionID,
+		Status: db.UnweaveSessionStatusTerminated,
+	}
+	if err = db.Q.SessionStatusUpdate(ctx, params); err != nil {
 		log.Ctx(ctx).
 			Error().
 			Err(err).

@@ -235,14 +235,19 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 	return i, err
 }
 
-const SessionSetTerminated = `-- name: SessionSetTerminated :exec
+const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
 update unweave.session
-set status = unweave.session_status('terminated')
+set status = $2
 where id = $1
 `
 
-func (q *Queries) SessionSetTerminated(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, SessionSetTerminated, id)
+type SessionStatusUpdateParams struct {
+	ID     uuid.UUID            `json:"id"`
+	Status UnweaveSessionStatus `json:"status"`
+}
+
+func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, SessionStatusUpdate, arg.ID, arg.Status)
 	return err
 }
 

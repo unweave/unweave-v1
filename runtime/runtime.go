@@ -28,6 +28,7 @@ type Session interface {
 	// name and public key should match those with the provider.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
 	GetProvider() types.RuntimeProvider
+	HealthCheck(ctx context.Context) error
 	// InitNode initializes a new node on the provider.
 	// It should automatically select the most appropriate region if one is not specified.
 	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
@@ -35,8 +36,9 @@ type Session interface {
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
+	// NodeStatus returns the status of the node running a session.
+	NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error)
 	TerminateNode(ctx context.Context, nodeID string) error
-	HealthCheck(ctx context.Context) error
 }
 
 type Initializer interface {

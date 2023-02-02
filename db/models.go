@@ -19,6 +19,7 @@ const (
 	UnweaveSessionStatusInitializing UnweaveSessionStatus = "initializing"
 	UnweaveSessionStatusActive       UnweaveSessionStatus = "active"
 	UnweaveSessionStatusTerminated   UnweaveSessionStatus = "terminated"
+	UnweaveSessionStatusError        UnweaveSessionStatus = "error"
 )
 
 func (e *UnweaveSessionStatus) Scan(src interface{}) error {

@@ -93,16 +93,16 @@ type Session struct {
 	client *client.ClientWithResponses
 }
 
-func (r *Session) GetProvider() types.RuntimeProvider {
+func (s *Session) GetProvider() types.RuntimeProvider {
 	return types.LambdaLabsProvider
 }
 
-func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
+func (s *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error) {
 	if sshKey.Name == "" {
 		return types.SSHKey{}, fmt.Errorf("SSH key name is required")
 	}
 
-	keys, err := r.ListSSHKeys(ctx)
+	keys, err := s.ListSSHKeys(ctx)
 	if err != nil {
 		return types.SSHKey{}, fmt.Errorf("failed to list ssh keys, err: %w", err)
 	}
@@ -129,7 +129,7 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 		Name:      sshKey.Name,
 		PublicKey: sshKey.PublicKey,
 	}
-	res, err := r.client.AddSSHKeyWithResponse(ctx, req)
+	res, err := s.client.AddSSHKeyWithResponse(ctx, req)
 	if err != nil {
 		return types.SSHKey{}, err
 	}
@@ -153,39 +153,129 @@ func (r *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 	}, nil
 }
 
-func (r *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
-	log.Ctx(ctx).Info().Msg("Listing SSH keys")
-
-	res, err := r.client.ListSSHKeysWithResponse(ctx)
+func (s *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
+	nodeTypes, err := s.ListNodeTypes(ctx, true)
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
 	}
 
-	if res.JSON200 == nil {
-		if res.JSON401 != nil {
-			return nil, err401(res.JSON401.Error.Message, nil)
+	for _, nt := range nodeTypes {
+		if nt.ID == nodeTypeID {
+			if len(nt.Regions) == 0 {
+				continue
+			}
+			return nt.Regions[0], nil
 		}
-		if res.JSON403 != nil {
-			return nil, err403(res.JSON403.Error.Message, nil)
-		}
-		return nil, errUnknown(res.StatusCode(), nil)
+	}
+	suggestion := ""
+	b, err := json.Marshal(nodeTypes)
+	if err != nil {
+		log.Ctx(ctx).Warn().Msgf("Failed to marshal available instances to JSON: %v", err)
+	} else {
+		suggestion += string(b)
 	}
 
-	keys := make([]types.SSHKey, len(res.JSON200.Data))
-	for i, k := range res.JSON200.Data {
-		k := k
-		keys[i] = types.SSHKey{
-			Name:      k.Name,
-			PublicKey: &k.PublicKey,
-		}
-	}
-	return keys, nil
+	e := err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
+	e.Suggestion = suggestion
+	return "", e
 }
 
-func (r *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error) {
+func (s *Session) HealthCheck(ctx context.Context) error {
+	log.Ctx(ctx).Info().Msg("Executing health check")
+	_, err := s.ListNodeTypes(ctx, false)
+	return err
+}
+
+func (s *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
+
+	if region == nil {
+		var err error
+		var nr string
+		nr, err = s.findRegionForNode(ctx, nodeTypeID)
+		if err != nil {
+			return types.Node{}, err
+		}
+		region = &nr
+	}
+
+	req := client.LaunchInstanceJSONRequestBody{
+		FileSystemNames:  nil,
+		InstanceTypeName: nodeTypeID,
+		Name:             tools.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
+		Quantity:         tools.Inty(1),
+		RegionName:       *region,
+		SshKeyNames:      []string{sshKey.Name},
+	}
+
+	res, err := s.client.LaunchInstanceWithResponse(ctx, req)
+	if err != nil {
+		return types.Node{}, err
+	}
+	if res.JSON200 == nil {
+		if res.JSON401 != nil {
+			return types.Node{}, err401(res.JSON401.Error.Message, nil)
+		}
+		if res.JSON403 != nil {
+			return types.Node{}, err403(res.JSON403.Error.Message, nil)
+		}
+		if res.JSON500 != nil {
+			return types.Node{}, err500(res.JSON500.Error.Message, nil)
+		}
+		if res.JSON404 != nil {
+			return types.Node{}, err404(res.JSON404.Error.Message, nil)
+		}
+
+		// We get a 400 if the instance type is not available. We check for the available
+		// instances and return them in the error message. Since this is not critical, we
+		// can ignore if there's any errors in the process.
+		if res.JSON400 != nil {
+			suggestion := ""
+			msg := strings.ToLower(res.JSON400.Error.Message)
+			if strings.Contains(msg, "available capacity") {
+				// Get a list of available instances
+				instances, e := s.ListNodeTypes(ctx, true)
+				if e != nil {
+					// Log and continue
+					log.Ctx(ctx).Warn().
+						Msgf("Failed to get a list of available instances: %v", e)
+				}
+
+				b, e := json.MarshalIndent(instances, "", "  ")
+				if e != nil {
+					log.Ctx(ctx).Warn().
+						Msgf("Failed to marshal available instances to JSON: %v", e)
+				} else {
+					suggestion += string(b)
+				}
+				err := err503(res.JSON400.Error.Message, nil)
+				err.Suggestion = suggestion
+				return types.Node{}, err
+			}
+			return types.Node{}, err400(res.JSON400.Error.Message, nil)
+		}
+
+		return types.Node{}, errUnknown(res.StatusCode(), err)
+	}
+
+	if len(res.JSON200.Data.InstanceIds) == 0 {
+		return types.Node{}, fmt.Errorf("failed to launch instance")
+	}
+
+	return types.Node{
+		ID:       res.JSON200.Data.InstanceIds[0],
+		TypeID:   nodeTypeID,
+		Region:   *region,
+		KeyPair:  sshKey,
+		Status:   types.StatusInitializing,
+		Provider: types.LambdaLabsProvider,
+	}, nil
+}
+
+func (s *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error) {
 	log.Ctx(ctx).Info().Msgf("Listing instance availability")
 
-	res, err := r.client.InstanceTypesWithResponse(ctx)
+	res, err := s.client.InstanceTypesWithResponse(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -231,132 +321,78 @@ func (r *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]ty
 	return nodeTypes, nil
 }
 
-func (r *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (string, error) {
-	nodeTypes, err := r.ListNodeTypes(ctx, true)
+func (s *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
+	log.Ctx(ctx).Info().Msg("Listing SSH keys")
+
+	res, err := s.client.ListSSHKeysWithResponse(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to list instance availability, err: %w", err)
+		return nil, err
 	}
 
-	for _, nt := range nodeTypes {
-		if nt.ID == nodeTypeID {
-			if len(nt.Regions) == 0 {
-				continue
-			}
-			return nt.Regions[0], nil
-		}
-	}
-	suggestion := ""
-	b, err := json.Marshal(nodeTypes)
-	if err != nil {
-		log.Ctx(ctx).Warn().Msgf("Failed to marshal available instances to JSON: %v", err)
-	} else {
-		suggestion += string(b)
-	}
-
-	e := err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
-	e.Suggestion = suggestion
-	return "", e
-}
-
-func (r *Session) HealthCheck(ctx context.Context) error {
-	log.Ctx(ctx).Info().Msg("Executing health check")
-	_, err := r.ListNodeTypes(ctx, false)
-	return err
-}
-
-func (r *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
-	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
-
-	if region == nil {
-		var err error
-		var nr string
-		nr, err = r.findRegionForNode(ctx, nodeTypeID)
-		if err != nil {
-			return types.Node{}, err
-		}
-		region = &nr
-	}
-
-	req := client.LaunchInstanceJSONRequestBody{
-		FileSystemNames:  nil,
-		InstanceTypeName: nodeTypeID,
-		Name:             tools.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
-		Quantity:         tools.Inty(1),
-		RegionName:       *region,
-		SshKeyNames:      []string{sshKey.Name},
-	}
-
-	res, err := r.client.LaunchInstanceWithResponse(ctx, req)
-	if err != nil {
-		return types.Node{}, err
-	}
 	if res.JSON200 == nil {
 		if res.JSON401 != nil {
-			return types.Node{}, err401(res.JSON401.Error.Message, nil)
+			return nil, err401(res.JSON401.Error.Message, nil)
 		}
 		if res.JSON403 != nil {
-			return types.Node{}, err403(res.JSON403.Error.Message, nil)
+			return nil, err403(res.JSON403.Error.Message, nil)
 		}
-		if res.JSON500 != nil {
-			return types.Node{}, err500(res.JSON500.Error.Message, nil)
-		}
-		if res.JSON404 != nil {
-			return types.Node{}, err404(res.JSON404.Error.Message, nil)
-		}
-
-		// We get a 400 if the instance type is not available. We check for the available
-		// instances and return them in the error message. Since this is not critical, we
-		// can ignore if there's any errors in the process.
-		if res.JSON400 != nil {
-			suggestion := ""
-			msg := strings.ToLower(res.JSON400.Error.Message)
-			if strings.Contains(msg, "available capacity") {
-				// Get a list of available instances
-				instances, e := r.ListNodeTypes(ctx, true)
-				if e != nil {
-					// Log and continue
-					log.Ctx(ctx).Warn().
-						Msgf("Failed to get a list of available instances: %v", e)
-				}
-
-				b, e := json.MarshalIndent(instances, "", "  ")
-				if e != nil {
-					log.Ctx(ctx).Warn().
-						Msgf("Failed to marshal available instances to JSON: %v", e)
-				} else {
-					suggestion += string(b)
-				}
-				err := err503(res.JSON400.Error.Message, nil)
-				err.Suggestion = suggestion
-				return types.Node{}, err
-			}
-			return types.Node{}, err400(res.JSON400.Error.Message, nil)
-		}
-
-		return types.Node{}, errUnknown(res.StatusCode(), err)
+		return nil, errUnknown(res.StatusCode(), nil)
 	}
 
-	if len(res.JSON200.Data.InstanceIds) == 0 {
-		return types.Node{}, fmt.Errorf("failed to launch instance")
+	keys := make([]types.SSHKey, len(res.JSON200.Data))
+	for i, k := range res.JSON200.Data {
+		k := k
+		keys[i] = types.SSHKey{
+			Name:      k.Name,
+			PublicKey: &k.PublicKey,
+		}
 	}
-
-	return types.Node{
-		ID:       res.JSON200.Data.InstanceIds[0],
-		TypeID:   nodeTypeID,
-		Region:   *region,
-		KeyPair:  sshKey,
-		Status:   types.StatusInitializing,
-		Provider: types.LambdaLabsProvider,
-	}, nil
+	return keys, nil
 }
 
-func (r *Session) TerminateNode(ctx context.Context, nodeID string) error {
+func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error) {
+	log.Ctx(ctx).Info().Msg("Getting node status")
+
+	res, err := s.client.GetInstanceWithResponse(ctx, nodeID)
+	if err != nil {
+		return "", err
+	}
+
+	if res.JSON200 == nil {
+		if res.JSON401 != nil {
+			return "", err401(res.JSON401.Error.Message, nil)
+		}
+		if res.JSON403 != nil {
+			return "", err403(res.JSON403.Error.Message, nil)
+		}
+		if res.JSON404 != nil {
+			return "", err500(res.JSON404.Error.Message, fmt.Errorf("instance not found, %s", res.JSON404.Error.Message))
+		}
+		return "", errUnknown(res.StatusCode(), nil)
+	}
+
+	switch res.JSON200.Data.Status {
+	case client.Active:
+		return types.StatusActive, nil
+	case client.Booting:
+		return types.StatusInitializing, nil
+	case client.Terminated:
+		return types.StatusTerminated, nil
+	case client.Unhealthy:
+		return types.StatusError, nil
+	default:
+		log.Ctx(ctx).Error().Msgf("Unknown lambda status %s", res.JSON200.Data.Status)
+		return "", fmt.Errorf("unknown lambda status %s", res.JSON200.Data.Status)
+	}
+}
+
+func (s *Session) TerminateNode(ctx context.Context, nodeID string) error {
 	log.Ctx(ctx).Info().Msgf("Terminating instance %q", nodeID)
 
 	req := client.TerminateInstanceJSONRequestBody{
 		InstanceIds: []string{nodeID},
 	}
-	res, err := r.client.TerminateInstanceWithResponse(ctx, req)
+	res, err := s.client.TerminateInstanceWithResponse(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -376,7 +412,7 @@ func (r *Session) TerminateNode(ctx context.Context, nodeID string) error {
 		if res.JSON500 != nil {
 			return err500(res.JSON500.Error.Message, nil)
 		}
-		return errUnknown(res.StatusCode(), err)
+		return errUnknown(res.StatusCode(), nil)
 	}
 
 	return nil

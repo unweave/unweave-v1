@@ -20,10 +20,12 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		provider := types.RuntimeProvider(chi.URLParam(r, "provider"))
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
-		userID := GetUserIDFromContext(ctx)
+		filterAvailable := r.URL.Query().Get("available") == "true"
 
+		userID := GetUserIDFromContext(ctx)
 		srv := NewCtxService(rti, userID)
-		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider)
+
+		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider, filterAvailable)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list node types"))
 			return

@@ -19,7 +19,7 @@ type Querier interface {
 	SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error)
 	SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error)
-	SessionSetTerminated(ctx context.Context, id uuid.UUID) error
+	SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error
 	SessionsGet(ctx context.Context, arg SessionsGetParams) ([]SessionsGetRow, error)
 }
 

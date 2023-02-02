@@ -16,6 +16,7 @@ const (
 	StatusInitializing SessionStatus = "initializing"
 	StatusActive       SessionStatus = "active"
 	StatusTerminated   SessionStatus = "terminated"
+	StatusError        SessionStatus = "error"
 )
 
 // RuntimeProvider is the platform that the node is spawned on. This is where the user

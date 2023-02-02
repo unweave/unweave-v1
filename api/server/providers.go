@@ -12,7 +12,7 @@ type ProviderService struct {
 	srv *Service
 }
 
-func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.RuntimeProvider) ([]types.NodeType, error) {
+func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.RuntimeProvider, filterAvailable bool) ([]types.NodeType, error) {
 	if provider != types.LambdaLabsProvider && provider != types.UnweaveProvider {
 		return nil, &types.Error{
 			Code:       http.StatusBadRequest,
@@ -26,7 +26,7 @@ func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.Runt
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}
 
-	nodeTypes, err := rt.ListNodeTypes(ctx, false)
+	nodeTypes, err := rt.ListNodeTypes(ctx, filterAvailable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list node types: %w", err)
 	}

@@ -39,9 +39,9 @@ where project_id = $1
 order by unweave.session.created_at desc
 limit $2 offset $3;
 
--- name: SessionSetTerminated :exec
+-- name: SessionStatusUpdate :exec
 update unweave.session
-set status = unweave.session_status('terminated')
+set status = $2
 where id = $1;
 
 -- name: SSHKeyAdd :exec

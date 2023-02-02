@@ -22,7 +22,7 @@ create table unweave.project
     created_at timestamptz                          not null default now()
 );
 
-create type unweave.session_status as enum ('initializing', 'active', 'terminated');
+create type unweave.session_status as enum ('initializing', 'active', 'terminated', 'error');
 
 
 create table unweave.ssh_key
