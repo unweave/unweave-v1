@@ -53,8 +53,8 @@ type PairingTokenCreateResponse struct {
 }
 
 type PairingTokenExchangeResponse struct {
-	Token string `json:"token"`
-	Email string `json:"email"`
+	Token   string  `json:"token"`
+	Account Account `json:"account"`
 }
 
 type ProjectCreateRequestParams struct {
