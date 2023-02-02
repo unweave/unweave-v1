@@ -14,6 +14,7 @@ import (
 )
 
 const MxSessionGet = `-- name: MxSessionGet :one
+
 select s.id,
        s.status,
        s.node_id,
@@ -24,7 +25,7 @@ select s.id,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
-        join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
 where s.id = $1
 `
 
@@ -40,6 +41,9 @@ type MxSessionGetRow struct {
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
 }
 
+// -----------------------------------------------------------------
+// The queries below return data in the format expected by the API.
+// -----------------------------------------------------------------
 func (q *Queries) MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetRow, error) {
 	row := q.db.QueryRowContext(ctx, MxSessionGet, id)
 	var i MxSessionGetRow
@@ -233,6 +237,48 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.SshKeyID,
 	)
 	return i, err
+}
+
+const SessionGetAllActive = `-- name: SessionGetAllActive :many
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
+from unweave.session
+where status = 'initializing' or status = 'running'
+`
+
+func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error) {
+	rows, err := q.db.QueryContext(ctx, SessionGetAllActive)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveSession
+	for rows.Next() {
+		var i UnweaveSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NodeID,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.Provider,
+			&i.SshKeyID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec

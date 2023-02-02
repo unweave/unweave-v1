@@ -11,6 +11,9 @@ import (
 )
 
 type Querier interface {
+	//-----------------------------------------------------------------
+	// The queries below return data in the format expected by the API.
+	//-----------------------------------------------------------------
 	MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetRow, error)
 	ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
@@ -19,6 +22,7 @@ type Querier interface {
 	SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error)
 	SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error)
+	SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error)
 	SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error
 	SessionsGet(ctx context.Context, arg SessionsGetParams) ([]SessionsGetRow, error)
 }

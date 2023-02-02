@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,6 +16,34 @@ import (
 type Config struct {
 	APIPort string    `json:"port" env:"UNWEAVE_API_PORT"`
 	DB      db.Config `json:"db"`
+}
+
+func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
+	// Re-watch all sessions
+	sessions, err := db.Q.SessionGetAllActive(ctx)
+	if err != nil {
+		return err
+	}
+
+	log.Ctx(ctx).Info().Msgf("Restarting watching %d sessions", len(sessions))
+
+	for _, s := range sessions {
+		sess := s
+		go func() {
+			c := context.Background()
+			c = log.With().
+				Stringer(UserIDCtxKey, sess.CreatedBy).
+				Stringer(ProjectCtxKey, sess.ProjectID).
+				Stringer(SessionCtxKey, sess.ID).
+				Logger().WithContext(c)
+
+			srv := NewCtxService(rti, sess.CreatedBy)
+			if e := srv.Session.Watch(c, sess.ID); e != nil {
+				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
+			}
+		}()
+	}
+	return nil
 }
 
 func API(cfg Config, rti runtime.Initializer) {
@@ -66,6 +95,12 @@ func API(cfg Config, rti runtime.Initializer) {
 		r.Post("/generate", SSHKeyGenerate(rti))
 	})
 	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
+
+	ctx := context.Background()
+	ctx = log.With().Logger().WithContext(ctx)
+	if err := HandleRestart(ctx, rti); err != nil {
+		panic(err)
+	}
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)
 	if err := http.ListenAndServe(":"+cfg.APIPort, r); err != nil {

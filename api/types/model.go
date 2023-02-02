@@ -14,7 +14,7 @@ type SessionStatus string
 
 const (
 	StatusInitializing SessionStatus = "initializing"
-	StatusActive       SessionStatus = "active"
+	StatusRunning      SessionStatus = "running"
 	StatusTerminated   SessionStatus = "terminated"
 	StatusError        SessionStatus = "error"
 )

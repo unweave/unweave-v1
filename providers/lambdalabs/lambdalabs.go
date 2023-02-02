@@ -373,7 +373,7 @@ func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionS
 
 	switch res.JSON200.Data.Status {
 	case client.Active:
-		return types.StatusActive, nil
+		return types.StatusRunning, nil
 	case client.Booting:
 		return types.StatusInitializing, nil
 	case client.Terminated:

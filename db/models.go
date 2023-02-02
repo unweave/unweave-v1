@@ -17,7 +17,7 @@ type UnweaveSessionStatus string
 
 const (
 	UnweaveSessionStatusInitializing UnweaveSessionStatus = "initializing"
-	UnweaveSessionStatusActive       UnweaveSessionStatus = "active"
+	UnweaveSessionStatusRunning      UnweaveSessionStatus = "running"
 	UnweaveSessionStatusTerminated   UnweaveSessionStatus = "terminated"
 	UnweaveSessionStatusError        UnweaveSessionStatus = "error"
 )

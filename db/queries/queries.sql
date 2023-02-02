@@ -16,19 +16,10 @@ select *
 from unweave.session
 where id = $1;
 
--- name: MxSessionGet :one
-select s.id,
-       s.status,
-       s.node_id,
-       s.provider,
-       s.region,
-       s.created_at,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.session as s
-        join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-where s.id = $1;
+-- name: SessionGetAllActive :many
+select *
+from unweave.session
+where status = 'initializing' or status = 'running';
 
 -- name: SessionsGet :many
 select session.id, ssh_key.name as ssh_key_name, session.status
@@ -64,3 +55,22 @@ select *
 from unweave.ssh_key
 where public_key = $1
   and owner_id = $2;
+
+
+-------------------------------------------------------------------
+-- The queries below return data in the format expected by the API.
+-------------------------------------------------------------------
+
+-- name: MxSessionGet :one
+select s.id,
+       s.status,
+       s.node_id,
+       s.provider,
+       s.region,
+       s.created_at,
+       ssh_key.name       as ssh_key_name,
+       ssh_key.public_key,
+       ssh_key.created_at as ssh_key_created_at
+from unweave.session as s
+         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+where s.id = $1;
