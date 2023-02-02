@@ -112,10 +112,7 @@ func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 		session := GetSessionFromContext(ctx)
 		srv := NewCtxService(rti, userID)
 
-		params := types.SessionTerminateRequestParams{}
-		render.Bind(r, &params)
-
-		if err := srv.Session.Terminate(ctx, session.ID, params.ProviderToken); err != nil {
+		if err := srv.Session.Terminate(ctx, session.ID); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate session"))
 			return
 		}

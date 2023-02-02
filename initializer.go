@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
@@ -22,22 +21,15 @@ type providerConfig struct {
 	LambdaLabsAPIKey string `env:"LAMBDALABS_API_KEY"`
 }
 
-func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider, token *string) (*runtime.Runtime, error) {
+func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
 	var cfg providerConfig
 	gonfig.GetFromEnvVariables(&cfg)
 
 	switch provider {
 	case types.LambdaLabsProvider:
-		if cfg.LambdaLabsAPIKey == "" && token == nil {
+		if cfg.LambdaLabsAPIKey == "" {
 			return nil, fmt.Errorf("missing LambdaLabs API key in runtime config file")
 		}
-		if token != nil {
-			log.Ctx(ctx).
-				Info().
-				Msgf("Overriding LambdaLabs API key in env config: using runtime token")
-			cfg.LambdaLabsAPIKey = *token
-		}
-
 		sess, err := lambdalabs.NewSessionProvider(cfg.LambdaLabsAPIKey)
 		if err != nil {
 			return nil, err

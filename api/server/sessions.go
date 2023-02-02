@@ -118,7 +118,7 @@ type SessionService struct {
 }
 
 func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params types.SessionCreateParams) (*types.Session, error) {
-	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, params.Provider, params.ProviderToken)
+	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}
@@ -224,7 +224,7 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types
 	return res, nil
 }
 
-func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID, providerToken *string) error {
+func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) error {
 	sess, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -238,7 +238,7 @@ func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID, pro
 	}
 
 	provider := types.RuntimeProvider(sess.Provider)
-	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, provider, providerToken)
+	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, provider)
 	if err != nil {
 		return fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 	}

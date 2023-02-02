@@ -40,12 +40,11 @@ type NodeTypesListResponse struct {
 }
 
 type SessionCreateParams struct {
-	Provider      RuntimeProvider `json:"provider"`
-	NodeTypeID    string          `json:"nodeTypeID,omitempty"`
-	ProviderToken *string         `json:"providerToken,omitempty"`
-	Region        *string         `json:"region,omitempty"`
-	SSHKeyName    *string         `json:"sshKeyName"`
-	SSHPublicKey  *string         `json:"sshPublicKey"`
+	Provider     RuntimeProvider `json:"provider"`
+	NodeTypeID   string          `json:"nodeTypeID,omitempty"`
+	Region       *string         `json:"region,omitempty"`
+	SSHKeyName   *string         `json:"sshKeyName"`
+	SSHPublicKey *string         `json:"sshPublicKey"`
 }
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
@@ -89,14 +88,6 @@ type SessionGetResponse struct {
 
 type SessionsListResponse struct {
 	Sessions []Session `json:"sessions"`
-}
-
-type SessionTerminateRequestParams struct {
-	ProviderToken *string `json:"providerToken,omitempty"`
-}
-
-func (s *SessionTerminateRequestParams) Bind(r *http.Request) error {
-	return nil
 }
 
 type SessionTerminateResponse struct {

@@ -21,7 +21,7 @@ func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.Runt
 		}
 	}
 
-	rt, err := p.srv.rti.Initialize(ctx, p.srv.cid, provider, nil)
+	rt, err := p.srv.rti.Initialize(ctx, p.srv.cid, provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}

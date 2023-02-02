@@ -40,5 +40,5 @@ type Session interface {
 }
 
 type Initializer interface {
-	Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider, token *string) (*Runtime, error)
+	Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
 }
