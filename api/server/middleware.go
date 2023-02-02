@@ -18,9 +18,10 @@ import (
 // either in the middleware or in the handlers. They should not be passed further into
 // the call stack.
 const (
-	UserIDCtxKey  = "user"
-	ProjectCtxKey = "project"
-	SessionCtxKey = "session"
+	UserIDCtxKey        = "userID"
+	ProjectCtxKey       = "project"
+	SessionCtxKey       = "session"
+	SessionStatusCtxKey = "sessionStatus"
 )
 
 func SetUserIDInContext(ctx context.Context, uid uuid.UUID) context.Context {

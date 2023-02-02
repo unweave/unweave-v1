@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -60,7 +61,19 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		// TODO: watch status
+		go func() {
+			c := context.Background()
+			c = log.With().
+				Stringer(UserIDCtxKey, userID).
+				Stringer(ProjectCtxKey, project.ID).
+				Stringer(SessionCtxKey, session.ID).
+				Logger().WithContext(c)
+
+			if e := srv.Session.Watch(c, session.ID); e != nil {
+				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
+			}
+		}()
+
 		render.JSON(w, r, session)
 	}
 }

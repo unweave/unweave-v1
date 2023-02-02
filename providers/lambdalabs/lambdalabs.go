@@ -113,17 +113,17 @@ func (s *Session) AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSH
 			if sshKey.PublicKey != nil && *sshKey.PublicKey != *k.PublicKey {
 				return types.SSHKey{}, err400("SSH key with the same name already exists with a different public key", nil)
 			}
-			log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
+			log.Ctx(ctx).Debug().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
 			return k, nil
 		}
 		if sshKey.PublicKey != nil && *k.PublicKey == *sshKey.PublicKey {
-			log.Ctx(ctx).Info().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
+			log.Ctx(ctx).Debug().Msgf("SSH Key %q already exists, using existing key", sshKey.Name)
 			return k, nil
 		}
 	}
 	// Key doesn't exist, create a new one
 
-	log.Ctx(ctx).Info().Msgf("Generating new SSH key %q", sshKey.Name)
+	log.Ctx(ctx).Debug().Msgf("Generating new SSH key %q", sshKey.Name)
 
 	req := client.AddSSHKeyJSONRequestBody{
 		Name:      sshKey.Name,
@@ -181,13 +181,13 @@ func (s *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (str
 }
 
 func (s *Session) HealthCheck(ctx context.Context) error {
-	log.Ctx(ctx).Info().Msg("Executing health check")
+	log.Ctx(ctx).Debug().Msg("Executing health check")
 	_, err := s.ListNodeTypes(ctx, false)
 	return err
 }
 
 func (s *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
-	log.Ctx(ctx).Info().Msgf("Launching instance with SSH key %q", sshKey.Name)
+	log.Ctx(ctx).Debug().Msgf("Launching instance with SSH key %q", sshKey.Name)
 
 	if region == nil {
 		var err error
@@ -273,7 +273,7 @@ func (s *Session) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID 
 }
 
 func (s *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error) {
-	log.Ctx(ctx).Info().Msgf("Listing instance availability")
+	log.Ctx(ctx).Debug().Msgf("Listing instance availability")
 
 	res, err := s.client.InstanceTypesWithResponse(ctx)
 	if err != nil {
@@ -322,7 +322,7 @@ func (s *Session) ListNodeTypes(ctx context.Context, filterAvailable bool) ([]ty
 }
 
 func (s *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
-	log.Ctx(ctx).Info().Msg("Listing SSH keys")
+	log.Ctx(ctx).Debug().Msg("Listing SSH keys")
 
 	res, err := s.client.ListSSHKeysWithResponse(ctx)
 	if err != nil {
@@ -351,7 +351,7 @@ func (s *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 }
 
 func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error) {
-	log.Ctx(ctx).Info().Msg("Getting node status")
+	log.Ctx(ctx).Debug().Msg("Getting node status")
 
 	res, err := s.client.GetInstanceWithResponse(ctx, nodeID)
 	if err != nil {
@@ -387,7 +387,7 @@ func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionS
 }
 
 func (s *Session) TerminateNode(ctx context.Context, nodeID string) error {
-	log.Ctx(ctx).Info().Msgf("Terminating instance %q", nodeID)
+	log.Ctx(ctx).Debug().Msgf("Terminating instance %q", nodeID)
 
 	req := client.TerminateInstanceJSONRequestBody{
 		InstanceIds: []string{nodeID},

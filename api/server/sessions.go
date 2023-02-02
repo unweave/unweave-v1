@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -221,6 +222,88 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types
 		}
 	}
 	return res, nil
+}
+
+func watch(ctx context.Context, rt *runtime.Runtime, nodeID string, currentStatus types.SessionStatus) (<-chan types.SessionStatus, <-chan error) {
+	statusch, errch := make(chan types.SessionStatus), make(chan error)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				status, e := rt.NodeStatus(ctx, nodeID)
+				if e != nil {
+					errch <- fmt.Errorf("failed to get node state: %w", e)
+				}
+				if status == currentStatus {
+					continue
+				}
+				currentStatus = status
+				statusch <- status
+			}
+		}
+	}()
+
+	return statusch, errch
+}
+
+func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
+	session, err := db.Q.SessionGet(ctx, sessionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Session not found",
+			}
+		}
+		return fmt.Errorf("failed to get session from db: %w", err)
+	}
+
+	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, types.RuntimeProvider(session.Provider))
+	if err != nil {
+		return fmt.Errorf("failed to initialize runtime: %w", err)
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	statusch, errch := watch(ctx, rt, session.NodeID, types.SessionStatus(session.Status))
+
+	log.Ctx(ctx).Info().Msgf("Starting to watch session %s", sessionID)
+
+	go func() {
+		defer cancel()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case status := <-statusch:
+				log.Ctx(ctx).
+					Info().
+					Str(SessionStatusCtxKey, string(status)).
+					Msg("session status changed")
+
+				params := db.SessionStatusUpdateParams{
+					ID:     sessionID,
+					Status: db.UnweaveSessionStatus(status),
+				}
+				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
+					log.Ctx(ctx).Error().Err(e).Msg("failed to update session status")
+					return
+				}
+				if status == types.StatusTerminated {
+					return
+				}
+			case e := <-errch:
+				log.Ctx(ctx).Error().Err(e).Msg("failed to watch session")
+				return
+			}
+		}
+	}()
+
+	return nil
 }
 
 func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) error {
