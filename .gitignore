@@ -19,3 +19,4 @@
 tmp
 dist/
 .unweave
+.vercel
