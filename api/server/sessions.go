@@ -148,6 +148,7 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 		ProjectID:  projectID,
 		Provider:   params.Provider.String(),
 		Region:     node.Region,
+		Name:       random.GenerateRandomPhrase(4, "-"),
 		SshKeyName: sshKey.Name,
 	}
 	sessionID, err := db.Q.SessionCreate(ctx, dbp)

@@ -4,11 +4,11 @@ from unweave.project
 where id = $1;
 
 -- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id, region)
+insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id, region, name)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
                          where ssh_keys.name = @ssh_key_name
-                           and owner_id = $2), $5)
+                           and owner_id = $2), $5, $6)
 returning id;
 
 -- name: SessionGet :one
