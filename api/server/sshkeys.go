@@ -67,9 +67,9 @@ func createSSHKeyPair() (string, string, error) {
 	return string(privatePEM), string(publicKey), nil
 }
 
-func saveSSHKey(ctx context.Context, userID uuid.UUID, name, publicKey string) error {
+func saveSSHKey(ctx context.Context, accountID uuid.UUID, name, publicKey string) error {
 	arg := db.SSHKeyAddParams{
-		OwnerID:   userID,
+		OwnerID:   accountID,
 		Name:      name,
 		PublicKey: publicKey,
 	}

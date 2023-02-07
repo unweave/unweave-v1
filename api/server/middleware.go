@@ -18,62 +18,62 @@ import (
 // either in the middleware or in the handlers. They should not be passed further into
 // the call stack.
 const (
-	UserIDCtxKey        = "userID"
-	ProjectCtxKey       = "project"
-	SessionCtxKey       = "session"
+	AccountIDCtxKey     = "accountID"
+	ProjectIDCtxKey     = "project"
+	SessionIDCtxKey     = "session"
 	SessionStatusCtxKey = "sessionStatus"
 )
 
-func SetUserIDInContext(ctx context.Context, uid uuid.UUID) context.Context {
-	return context.WithValue(ctx, UserIDCtxKey, uid)
+func SetAccountIDInContext(ctx context.Context, uid uuid.UUID) context.Context {
+	return context.WithValue(ctx, AccountIDCtxKey, uid)
 }
 
-func GetUserIDFromContext(ctx context.Context) uuid.UUID {
-	uid, ok := ctx.Value(UserIDCtxKey).(uuid.UUID)
+func GetAccountIDFromContext(ctx context.Context) uuid.UUID {
+	uid, ok := ctx.Value(AccountIDCtxKey).(uuid.UUID)
 	if !ok {
 		// This should never happen at runtime.
-		log.Error().Msg("user not found in context")
-		panic("user not found in context")
+		log.Error().Msg("account not found in context")
+		panic("account not found in context")
 	}
 	return uid
 }
 
-func SetProjectInContext(ctx context.Context, project db.UnweaveProject) context.Context {
-	return context.WithValue(ctx, ProjectCtxKey, project)
+func SetProjectIDInContext(ctx context.Context, projectID uuid.UUID) context.Context {
+	return context.WithValue(ctx, ProjectIDCtxKey, projectID)
 }
 
-func GetProjectFromContext(ctx context.Context) *db.UnweaveProject {
-	project, ok := ctx.Value(ProjectCtxKey).(db.UnweaveProject)
+func GetProjectIDFromContext(ctx context.Context) uuid.UUID {
+	projectID, ok := ctx.Value(ProjectIDCtxKey).(uuid.UUID)
 	if !ok {
 		// This should never happen at runtime.
 		log.Error().Msg("project not found in context")
 		panic("project not found in context")
 	}
-	return &project
+	return projectID
 }
 
-func SetSessionInContext(ctx context.Context, session db.UnweaveSession) context.Context {
-	return context.WithValue(ctx, SessionCtxKey, session)
+func SetSessionIDInContext(ctx context.Context, sessionID uuid.UUID) context.Context {
+	return context.WithValue(ctx, SessionIDCtxKey, sessionID)
 }
 
-func GetSessionFromContext(ctx context.Context) *db.UnweaveSession {
-	session, ok := ctx.Value(SessionCtxKey).(db.UnweaveSession)
+func GetSessionIDFromContext(ctx context.Context) uuid.UUID {
+	sessionID, ok := ctx.Value(SessionIDCtxKey).(uuid.UUID)
 	if !ok {
 		// This should never happen at runtime.
 		log.Error().Msg("session not found in context")
 		panic("session not found in context")
 	}
-	return &session
+	return sessionID
 }
 
-// withUserCtx is a helper middleware that fakes an authenticated user. It should only
+// withAccountCtx is a helper middleware that fakes an authenticated account. It should only
 // be user for development or when self-hosting.
-func withUserCtx(next http.Handler) http.Handler {
+func withAccountCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-		ctx = context.WithValue(ctx, UserIDCtxKey, userID)
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
+		accountID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+		ctx = context.WithValue(ctx, AccountIDCtxKey, accountID)
+		ctx = log.With().Stringer(AccountIDCtxKey, accountID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -110,8 +110,8 @@ func withProjectCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, ProjectCtxKey, project)
-		ctx = log.With().Stringer(ProjectCtxKey, project.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, ProjectIDCtxKey, project)
+		ctx = log.With().Stringer(ProjectIDCtxKey, project.ID).Logger().WithContext(ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -148,8 +148,8 @@ func withSessionCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, SessionCtxKey, session)
-		ctx = log.With().Stringer(SessionCtxKey, session.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, SessionIDCtxKey, session)
+		ctx = log.With().Stringer(SessionIDCtxKey, session.ID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

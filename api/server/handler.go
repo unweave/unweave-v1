@@ -23,8 +23,8 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 
 		filterAvailable := r.URL.Query().Get("available") == "true"
 
-		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
 		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider, filterAvailable)
 		if err != nil {
@@ -51,11 +51,11 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		userID := GetUserIDFromContext(ctx)
-		project := GetProjectFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		projectID := GetProjectIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
-		session, err := srv.Session.Create(ctx, project.ID, scr)
+		session, err := srv.Session.Create(ctx, projectID, scr)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create session"))
 			return
@@ -64,9 +64,9 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Stringer(UserIDCtxKey, userID).
-				Stringer(ProjectCtxKey, project.ID).
-				Stringer(SessionCtxKey, session.ID).
+				Stringer(AccountIDCtxKey, accountID).
+				Stringer(ProjectIDCtxKey, projectID).
+				Stringer(SessionIDCtxKey, session.ID).
 				Logger().WithContext(c)
 
 			if e := srv.Session.Watch(c, session.ID); e != nil {
@@ -83,11 +83,11 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing SessionsGet request")
 
-		userID := GetUserIDFromContext(ctx)
-		sess := GetSessionFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		sessionID := GetSessionIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
-		session, err := srv.Session.Get(ctx, sess.ID)
+		session, err := srv.Session.Get(ctx, sessionID)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get session"))
 			return
@@ -100,13 +100,13 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
-		project := GetProjectFromContext(ctx)
+		accountID := GetAccountIDFromContext(ctx)
+		projectID := GetProjectIDFromContext(ctx)
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
-		srv := NewCtxService(rti, userID)
-		sessions, err := srv.Session.List(ctx, project.ID)
+		srv := NewCtxService(rti, accountID)
+		sessions, err := srv.Session.List(ctx, projectID)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list sessions"))
 			return
@@ -118,16 +118,16 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := GetUserIDFromContext(ctx)
+		accountID := GetAccountIDFromContext(ctx)
 
 		log.Ctx(ctx).
 			Info().
-			Msgf("Executing SessionsTerminate request for user %q", userID)
+			Msgf("Executing SessionsTerminate request")
 
-		session := GetSessionFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		sessionID := GetSessionIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
-		if err := srv.Session.Terminate(ctx, session.ID); err != nil {
+		if err := srv.Session.Terminate(ctx, sessionID); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate session"))
 			return
 		}
@@ -153,8 +153,8 @@ func SSHKeyAdd(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
 		if err := srv.SSHKey.Add(ctx, params); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to add SSH key"))
@@ -172,8 +172,8 @@ func SSHKeyGenerate(rti runtime.Initializer) http.HandlerFunc {
 		params := types.SSHKeyGenerateParams{}
 		render.Bind(r, &params)
 
-		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
 		name, prv, pub, err := srv.SSHKey.Generate(ctx, params)
 		if err != nil {
@@ -195,8 +195,8 @@ func SSHKeyList(rti runtime.Initializer) http.HandlerFunc {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
 
-		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
 
 		keys, err := srv.SSHKey.List(ctx)
 		if err != nil {

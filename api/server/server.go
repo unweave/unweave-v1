@@ -32,9 +32,9 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Stringer(UserIDCtxKey, sess.CreatedBy).
-				Stringer(ProjectCtxKey, sess.ProjectID).
-				Stringer(SessionCtxKey, sess.ID).
+				Stringer(AccountIDCtxKey, sess.CreatedBy).
+				Stringer(ProjectIDCtxKey, sess.ProjectID).
+				Stringer(SessionIDCtxKey, sess.ID).
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, sess.CreatedBy)
@@ -73,7 +73,7 @@ func API(cfg Config, rti runtime.Initializer) {
 		},
 	}))
 
-	r.Use(withUserCtx) // fakes an authenticated user
+	r.Use(withAccountCtx) // fakes an authenticated user
 	r.Route("/projects/{projectID}", func(r chi.Router) {
 		r.Use(withProjectCtx)
 
