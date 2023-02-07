@@ -4,9 +4,16 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
+
+type NoOpLogHook struct{}
+
+func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
+
+var NewErrLogHook = func() zerolog.Hook { return NoOpLogHook{} }
 
 type HTTPError struct {
 	Code       int             `json:"code"`
@@ -26,11 +33,15 @@ func (e *HTTPError) Error() string {
 func (e *HTTPError) Render(w http.ResponseWriter, r *http.Request) error {
 	// Depending on whether it is Unweave's fault or the user's fault, log the error
 	// appropriately.
+	hook := log.Hook(NewErrLogHook())
 	if e.Code == http.StatusInternalServerError {
 		log.Ctx(r.Context()).Error().Err(e.Err).Stack().Msg(e.Message)
+		hook.Error().Err(e.Err).Stack().Msg(e.Message)
 	} else {
 		log.Ctx(r.Context()).Warn().Err(e.Err).Stack().Msg(e.Message)
+		hook.Warn().Err(e.Err).Stack().Msg(e.Message)
 	}
+
 	render.Status(r, e.Code)
 	return nil
 }
