@@ -7,13 +7,10 @@ import (
 	"crypto/x509"
 	"database/sql"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools"
@@ -75,21 +72,6 @@ func saveSSHKey(ctx context.Context, accountID uuid.UUID, name, publicKey string
 	}
 	err := db.Q.SSHKeyAdd(ctx, arg)
 	if err != nil {
-		var e *pgconn.PgError
-		if errors.As(err, &e) {
-			// We already check the unique constraint on the name column, so this
-			// should only happen if the public key is a duplicate.
-			if e.Code == pgerrcode.UniqueViolation {
-				return &types.Error{
-					Code:    http.StatusConflict,
-					Message: "Public key already exists",
-					Suggestion: "Public keys in Unweave have to be globally unique. " +
-						"It could be that you added this key earlier or that you " +
-						"added it to another account. If you've already added this " +
-						"key to your account, remove it first.",
-				}
-			}
-		}
 		return fmt.Errorf("failed to add ssh key to db: %w", err)
 	}
 	return nil
@@ -104,6 +86,10 @@ func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) e
 		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: s.srv.cid}
 		k, err := db.Q.SSHKeyGetByName(ctx, p)
 		if err == nil {
+			// Check if it is the same key. If yes, then this is a no-op.
+			if k.PublicKey == params.PublicKey {
+				return nil
+			}
 			return &types.Error{
 				Code:    http.StatusConflict,
 				Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),

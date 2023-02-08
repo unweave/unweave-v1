@@ -31,7 +31,7 @@ create table unweave.ssh_key
     name       text        not null,
     owner_id   uuid        not null references unweave.account (id),
     created_at timestamptz not null default now(),
-    public_key text        not null unique,
+    public_key text        not null,
 
     unique (name, owner_id)
 );
