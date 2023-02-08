@@ -196,7 +196,7 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 	return session, nil
 }
 
-func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types.Session, error) {
+func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerminated bool) ([]types.Session, error) {
 	params := db.SessionsGetParams{
 		ProjectID: projectID,
 		Limit:     100,
@@ -208,10 +208,13 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types
 		return nil, err
 	}
 
-	res := make([]types.Session, len(sessions))
-	for idx, s := range sessions {
+	var res []types.Session
+	for _, s := range sessions {
 		s := s
-		res[idx] = types.Session{
+		if !listTerminated && s.Status == db.UnweaveSessionStatusTerminated {
+			continue
+		}
+		sess := types.Session{
 			ID: s.ID,
 			SSHKey: types.SSHKey{
 				// The generated go type for SshKeyName is a nullable string because
@@ -221,6 +224,7 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID) ([]types
 			},
 			Status: types.DBSessionStatusToAPIStatus(s.Status),
 		}
+		res = append(res, sess)
 	}
 	return res, nil
 }

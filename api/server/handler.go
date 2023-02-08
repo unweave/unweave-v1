@@ -102,11 +102,12 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 		ctx := r.Context()
 		accountID := GetAccountIDFromContext(ctx)
 		projectID := GetProjectIDFromContext(ctx)
+		listTerminated := r.URL.Query().Get("terminated") == "true"
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
 		srv := NewCtxService(rti, accountID)
-		sessions, err := srv.Session.List(ctx, projectID)
+		sessions, err := srv.Session.List(ctx, projectID, listTerminated)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list sessions"))
 			return
