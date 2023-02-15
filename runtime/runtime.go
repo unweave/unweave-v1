@@ -27,10 +27,17 @@ type Session interface {
 	// already exist with the provider, this should be a no-op. In this case, both the
 	// name and public key should match those with the provider.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
+	// GetProvider returns the provider.
 	GetProvider() types.RuntimeProvider
+	// HealthCheck performs a health check on the provider.
 	HealthCheck(ctx context.Context) error
 	// InitNode initializes a new node on the provider.
+	//
 	// It should automatically select the most appropriate region if one is not specified.
+	// The implementation should choose the level of abstraction this method is
+	// implemented at. For example, it could be implemented at a VM level for a bare-metal
+	// provider, at a container level, batch job level, etc. In each case, the node must
+	// be accessible via SSH.
 	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
@@ -39,6 +46,8 @@ type Session interface {
 	// NodeStatus returns the status of the node running a session.
 	NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error)
 	TerminateNode(ctx context.Context, nodeID string) error
+	// Watch watches the status of the node running a session.
+	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
 }
 
 type Initializer interface {

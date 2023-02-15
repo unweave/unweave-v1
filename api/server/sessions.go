@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -229,33 +228,6 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerm
 	return res, nil
 }
 
-func watch(ctx context.Context, rt *runtime.Runtime, nodeID string, currentStatus types.SessionStatus) (<-chan types.SessionStatus, <-chan error) {
-	statusch, errch := make(chan types.SessionStatus), make(chan error)
-
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				status, e := rt.NodeStatus(ctx, nodeID)
-				if e != nil {
-					errch <- fmt.Errorf("failed to get node state: %w", e)
-				}
-				if status == currentStatus {
-					continue
-				}
-				currentStatus = status
-				statusch <- status
-			}
-		}
-	}()
-
-	return statusch, errch
-}
-
 func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 	session, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
@@ -274,7 +246,7 @@ func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	statusch, errch := watch(ctx, rt, session.NodeID, types.SessionStatus(session.Status))
+	statusch, errch := rt.Watch(ctx, session.NodeID)
 
 	log.Ctx(ctx).Info().Msgf("Starting to watch session %s", sessionID)
 

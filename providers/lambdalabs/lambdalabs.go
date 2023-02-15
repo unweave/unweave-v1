@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
@@ -351,7 +352,7 @@ func (s *Session) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 }
 
 func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error) {
-	log.Ctx(ctx).Debug().Msg("Getting node status")
+	log.Ctx(ctx).Debug().Msgf("Getting node status for node %q", nodeID)
 
 	res, err := s.client.GetInstanceWithResponse(ctx, nodeID)
 	if err != nil {
@@ -387,7 +388,7 @@ func (s *Session) NodeStatus(ctx context.Context, nodeID string) (types.SessionS
 }
 
 func (s *Session) TerminateNode(ctx context.Context, nodeID string) error {
-	log.Ctx(ctx).Debug().Msgf("Terminating instance %q", nodeID)
+	log.Ctx(ctx).Debug().Msgf("Terminating node %q", nodeID)
 
 	req := client.TerminateInstanceJSONRequestBody{
 		InstanceIds: []string{nodeID},
@@ -416,6 +417,36 @@ func (s *Session) TerminateNode(ctx context.Context, nodeID string) error {
 	}
 
 	return nil
+}
+
+func (s *Session) Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error) {
+	log.Ctx(ctx).Debug().Msgf("Watching node %q", nodeID)
+
+	currentStatus := types.StatusInitializing
+	statusch, errch := make(chan types.SessionStatus), make(chan error)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				status, e := s.NodeStatus(ctx, nodeID)
+				if e != nil {
+					errch <- fmt.Errorf("failed to get node state: %w", e)
+				}
+				if status == currentStatus {
+					continue
+				}
+				currentStatus = status
+				statusch <- status
+			}
+		}
+	}()
+
+	return statusch, errch
 }
 
 func NewSessionProvider(apiKey string) (*Session, error) {
