@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +22,7 @@ select s.id,
        s.provider,
        s.region,
        s.created_at,
+       s.connection_info,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -36,6 +38,7 @@ type MxSessionGetRow struct {
 	Provider        string               `json:"provider"`
 	Region          string               `json:"region"`
 	CreatedAt       time.Time            `json:"createdAt"`
+	ConnectionInfo  json.RawMessage      `json:"connectionInfo"`
 	SshKeyName      string               `json:"sshKeyName"`
 	PublicKey       string               `json:"publicKey"`
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
@@ -54,11 +57,75 @@ func (q *Queries) MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetR
 		&i.Provider,
 		&i.Region,
 		&i.CreatedAt,
+		&i.ConnectionInfo,
 		&i.SshKeyName,
 		&i.PublicKey,
 		&i.SshKeyCreatedAt,
 	)
 	return i, err
+}
+
+const MxSessionsGet = `-- name: MxSessionsGet :many
+select s.id,
+       s.status,
+       s.node_id,
+       s.provider,
+       s.region,
+       s.created_at,
+       s.connection_info,
+       ssh_key.name       as ssh_key_name,
+       ssh_key.public_key,
+       ssh_key.created_at as ssh_key_created_at
+from unweave.session as s
+         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+where s.project_id = $1
+`
+
+type MxSessionsGetRow struct {
+	ID              uuid.UUID            `json:"id"`
+	Status          UnweaveSessionStatus `json:"status"`
+	NodeID          string               `json:"nodeID"`
+	Provider        string               `json:"provider"`
+	Region          string               `json:"region"`
+	CreatedAt       time.Time            `json:"createdAt"`
+	ConnectionInfo  json.RawMessage      `json:"connectionInfo"`
+	SshKeyName      string               `json:"sshKeyName"`
+	PublicKey       string               `json:"publicKey"`
+	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
+}
+
+func (q *Queries) MxSessionsGet(ctx context.Context, projectID uuid.UUID) ([]MxSessionsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, MxSessionsGet, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MxSessionsGetRow
+	for rows.Next() {
+		var i MxSessionsGetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.NodeID,
+			&i.Provider,
+			&i.Region,
+			&i.CreatedAt,
+			&i.ConnectionInfo,
+			&i.SshKeyName,
+			&i.PublicKey,
+			&i.SshKeyCreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const ProjectGet = `-- name: ProjectGet :one
@@ -182,22 +249,24 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveS
 }
 
 const SessionCreate = `-- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id, region, name)
+insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id,
+                             region, name, connection_info)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $7
-                           and owner_id = $2), $5, $6)
+                         where ssh_keys.name = $8
+                           and owner_id = $2), $5, $6, $7)
 returning id
 `
 
 type SessionCreateParams struct {
-	NodeID     string    `json:"nodeID"`
-	CreatedBy  uuid.UUID `json:"createdBy"`
-	ProjectID  uuid.UUID `json:"projectID"`
-	Provider   string    `json:"provider"`
-	Region     string    `json:"region"`
-	Name       string    `json:"name"`
-	SshKeyName string    `json:"sshKeyName"`
+	NodeID         string          `json:"nodeID"`
+	CreatedBy      uuid.UUID       `json:"createdBy"`
+	ProjectID      uuid.UUID       `json:"projectID"`
+	Provider       string          `json:"provider"`
+	Region         string          `json:"region"`
+	Name           string          `json:"name"`
+	ConnectionInfo json.RawMessage `json:"connectionInfo"`
+	SshKeyName     string          `json:"sshKeyName"`
 }
 
 func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error) {
@@ -208,6 +277,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 		arg.Provider,
 		arg.Region,
 		arg.Name,
+		arg.ConnectionInfo,
 		arg.SshKeyName,
 	)
 	var id uuid.UUID
@@ -216,7 +286,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error
 from unweave.session
 where id = $1
 `
@@ -237,14 +307,17 @@ func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession,
 		&i.ProjectID,
 		&i.Provider,
 		&i.SshKeyID,
+		&i.ConnectionInfo,
+		&i.Error,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error
 from unweave.session
-where status = 'initializing' or status = 'running'
+where status = 'initializing'
+   or status = 'running'
 `
 
 func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error) {
@@ -269,6 +342,8 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.ProjectID,
 			&i.Provider,
 			&i.SshKeyID,
+			&i.ConnectionInfo,
+			&i.Error,
 		); err != nil {
 			return nil, err
 		}
@@ -281,6 +356,23 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 		return nil, err
 	}
 	return items, nil
+}
+
+const SessionSetError = `-- name: SessionSetError :exec
+update unweave.session
+set status = 'error'::unweave.session_status,
+    error  = $2
+where id = $1
+`
+
+type SessionSetErrorParams struct {
+	ID    uuid.UUID      `json:"id"`
+	Error sql.NullString `json:"error"`
+}
+
+func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams) error {
+	_, err := q.db.ExecContext(ctx, SessionSetError, arg.ID, arg.Error)
+	return err
 }
 
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
@@ -296,6 +388,22 @@ type SessionStatusUpdateParams struct {
 
 func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error {
 	_, err := q.db.ExecContext(ctx, SessionStatusUpdate, arg.ID, arg.Status)
+	return err
+}
+
+const SessionUpdateConnectionInfo = `-- name: SessionUpdateConnectionInfo :exec
+update unweave.session
+set connection_info = $2
+where id = $1
+`
+
+type SessionUpdateConnectionInfoParams struct {
+	ID             uuid.UUID       `json:"id"`
+	ConnectionInfo json.RawMessage `json:"connectionInfo"`
+}
+
+func (q *Queries) SessionUpdateConnectionInfo(ctx context.Context, arg SessionUpdateConnectionInfoParams) error {
+	_, err := q.db.ExecContext(ctx, SessionUpdateConnectionInfo, arg.ID, arg.ConnectionInfo)
 	return err
 }
 

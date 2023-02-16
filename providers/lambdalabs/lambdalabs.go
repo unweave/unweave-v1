@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -179,6 +180,44 @@ func (s *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (str
 	e := err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
 	e.Suggestion = suggestion
 	return "", e
+}
+
+func (s *Session) GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error) {
+	log.Ctx(ctx).Debug().Msgf("Getting connection info for node %q", nodeID)
+
+	instance, err := s.client.GetInstanceWithResponse(ctx, nodeID)
+	if err != nil {
+		return types.ConnectionInfo{}, &types.Error{
+			Code:     http.StatusInternalServerError,
+			Message:  "Failed to make request to LambdaLabs API",
+			Provider: types.LambdaLabsProvider,
+			Err:      fmt.Errorf("failed to get instance, err: %w", err),
+		}
+	}
+
+	if instance.JSON200 == nil {
+		err = fmt.Errorf("failed to get instance")
+		if instance.JSON401 != nil {
+			return types.ConnectionInfo{}, err401(instance.JSON401.Error.Message, err)
+		}
+		if instance.JSON403 != nil {
+			return types.ConnectionInfo{}, err403(instance.JSON403.Error.Message, err)
+		}
+		if instance.JSON404 != nil {
+			return types.ConnectionInfo{}, err404(instance.JSON404.Error.Message, err)
+		}
+		return types.ConnectionInfo{}, errUnknown(instance.StatusCode(), err)
+	}
+
+	if instance.JSON200.Data.Status != client.Active {
+		return types.ConnectionInfo{}, nil
+	}
+
+	return types.ConnectionInfo{
+		Host: *instance.JSON200.Data.Ip,
+		Port: 22,
+		User: "ubuntu",
+	}, nil
 }
 
 func (s *Session) HealthCheck(ctx context.Context) error {

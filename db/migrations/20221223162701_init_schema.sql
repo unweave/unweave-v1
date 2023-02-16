@@ -39,21 +39,23 @@ create table unweave.ssh_key
 
 create table unweave.session
 (
-    id         uuid primary key                default gen_random_uuid(),
-    name       text                   not null default '',
+    id              uuid primary key                default gen_random_uuid(),
+    name            text                   not null default '',
     -- node_id is provider specific identifier of the compute resource assigned to this session.
-    node_id    text                   not null,
-    region     text                   not null,
-    created_by uuid                   not null references unweave.account (id),
-    created_at timestamptz            not null default now(),
-    ready_at   timestamptz,
-    exited_at  timestamptz,
-    status     unweave.session_status not null default 'initializing',
-    project_id uuid                   not null references unweave.project (id),
+    node_id         text                   not null,
+    region          text                   not null,
+    created_by      uuid                   not null references unweave.account (id),
+    created_at      timestamptz            not null default now(),
+    ready_at        timestamptz,
+    exited_at       timestamptz,
+    status          unweave.session_status not null default 'initializing',
+    project_id      uuid                   not null references unweave.project (id),
     -- We don't want to constrain this to an enum to allow users to register their own
     -- providers without having to update the database schema.
-    provider   text                   not null,
-    ssh_key_id uuid                   not null references unweave.ssh_key (id)
+    provider        text                   not null,
+    ssh_key_id      uuid                   not null references unweave.ssh_key (id),
+    connection_info jsonb                  not null default '{}',
+    error           text
 );
 
 

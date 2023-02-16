@@ -3,8 +3,10 @@ package server
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
@@ -15,6 +17,28 @@ import (
 	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
 )
+
+type ConnectionInfoV1 struct {
+	Version int    `json:"version"`
+	Host    string `json:"host"`
+	Port    int    `json:"port"`
+	User    string `json:"user"`
+}
+
+func handleSessionError(ctx context.Context, sessionID uuid.UUID, err error, msg string) {
+	log.Ctx(ctx).Error().Err(err).Msg(msg)
+
+	params := db.SessionSetErrorParams{
+		ID: sessionID,
+		Error: sql.NullString{
+			String: msg,
+			Valid:  true,
+		},
+	}
+	if err = db.Q.SessionSetError(ctx, params); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msg("Failed to set session error")
+	}
+}
 
 func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
@@ -113,6 +137,26 @@ func fetchCredentials(ctx context.Context, accountID uuid.UUID, sshKeyName, sshP
 	}, nil
 }
 
+func updateConnectionInfo(ctx context.Context, rt runtime.Session, nodeID string, sessionID uuid.UUID) error {
+	connInfo, err := rt.GetConnectionInfo(ctx, nodeID)
+	if err != nil {
+		return fmt.Errorf("failed to get connection info: %w", err)
+	}
+
+	connInfoJSON, err := json.Marshal(connInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal connection info: %w", err)
+	}
+	params := db.SessionUpdateConnectionInfoParams{
+		ID:             sessionID,
+		ConnectionInfo: connInfoJSON,
+	}
+	if e := db.Q.SessionUpdateConnectionInfo(ctx, params); e != nil {
+		return fmt.Errorf("failed to update connection info: %w", e)
+	}
+	return nil
+}
+
 type SessionService struct {
 	srv *Service
 }
@@ -141,24 +185,33 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 		return nil, fmt.Errorf("failed to init node: %w", err)
 	}
 
+	connInfo, err := json.Marshal(ConnectionInfoV1{Version: 1})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
+	}
+
 	dbp := db.SessionCreateParams{
-		NodeID:     node.ID,
-		CreatedBy:  s.srv.cid,
-		ProjectID:  projectID,
-		Provider:   params.Provider.String(),
-		Region:     node.Region,
-		Name:       random.GenerateRandomPhrase(4, "-"),
-		SshKeyName: sshKey.Name,
+		NodeID:         node.ID,
+		CreatedBy:      s.srv.cid,
+		ProjectID:      projectID,
+		Provider:       params.Provider.String(),
+		Region:         node.Region,
+		Name:           random.GenerateRandomPhrase(4, "-"),
+		ConnectionInfo: connInfo,
+		SshKeyName:     sshKey.Name,
 	}
 	sessionID, err := db.Q.SessionCreate(ctx, dbp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
 
+	createdAt := time.Now()
 	session := &types.Session{
 		ID:         sessionID,
 		SSHKey:     node.KeyPair,
+		Connection: nil,
 		Status:     types.StatusInitializing,
+		CreatedAt:  &createdAt,
 		NodeTypeID: node.TypeID,
 		Region:     node.Region,
 		Provider:   node.Provider,
@@ -179,12 +232,22 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 		return nil, fmt.Errorf("failed to get session from db: %w", err)
 	}
 
+	connInfo := &ConnectionInfoV1{}
+	if err := json.Unmarshal(dbs.ConnectionInfo, connInfo); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
+	}
+
 	session := &types.Session{
 		ID: sessionID,
 		SSHKey: types.SSHKey{
 			Name:      dbs.SshKeyName,
 			PublicKey: &dbs.PublicKey,
 			CreatedAt: &dbs.SshKeyCreatedAt,
+		},
+		Connection: &types.ConnectionInfo{
+			Host: connInfo.Host,
+			Port: connInfo.Port,
+			User: connInfo.User,
 		},
 		Status:     types.SessionStatus(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
@@ -196,34 +259,42 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 }
 
 func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerminated bool) ([]types.Session, error) {
-	params := db.SessionsGetParams{
-		ProjectID: projectID,
-		Limit:     100,
-		Offset:    0,
-	}
-	sessions, err := db.Q.SessionsGet(ctx, params)
+	sessions, err := db.Q.MxSessionsGet(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to get sessions from db: %w", err)
 		return nil, err
 	}
 
 	var res []types.Session
+
 	for _, s := range sessions {
 		s := s
 		if !listTerminated && s.Status == db.UnweaveSessionStatusTerminated {
 			continue
 		}
-		sess := types.Session{
+		connInfo := &ConnectionInfoV1{}
+		if err := json.Unmarshal(s.ConnectionInfo, connInfo); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
+		}
+		session := types.Session{
 			ID: s.ID,
 			SSHKey: types.SSHKey{
-				// The generated go type for SshKeyName is a nullable string because
-				// of the join, but it will never be null since session have a foreign
-				// key constraint on ssh_key_id.
-				Name: s.SshKeyName.String,
+				Name:      s.SshKeyName,
+				PublicKey: &s.PublicKey,
+				CreatedAt: &s.SshKeyCreatedAt,
 			},
-			Status: types.DBSessionStatusToAPIStatus(s.Status),
+			Connection: &types.ConnectionInfo{
+				Host: connInfo.Host,
+				Port: connInfo.Port,
+				User: connInfo.User,
+			},
+			Status:     types.SessionStatus(s.Status),
+			CreatedAt:  &s.CreatedAt,
+			NodeTypeID: s.NodeID,
+			Region:     s.Region,
+			Provider:   types.RuntimeProvider(s.Provider),
 		}
-		res = append(res, sess)
+		res = append(res, session)
 	}
 	return res, nil
 }
@@ -261,6 +332,14 @@ func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 					Info().
 					Str(SessionStatusCtxKey, string(status)).
 					Msg("session status changed")
+
+				if status == types.StatusRunning {
+					if e := updateConnectionInfo(ctx, rt, session.NodeID, sessionID); e != nil {
+						handleSessionError(ctx, sessionID, e, "Failed to update connection info")
+						// TODO: we should perhaps do some retries here
+						return
+					}
+				}
 
 				params := db.SessionStatusUpdateParams{
 					ID:     sessionID,

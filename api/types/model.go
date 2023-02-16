@@ -81,9 +81,16 @@ type SSHKey struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 }
 
+type ConnectionInfo struct {
+	Host string `json:"host"`
+	Port int    `json:"port"`
+	User string `json:"user"`
+}
+
 type Session struct {
 	ID         uuid.UUID       `json:"id"`
 	SSHKey     SSHKey          `json:"sshKey"`
+	Connection *ConnectionInfo `json:"connection,omitempty"`
 	Status     SessionStatus   `json:"runtimeStatus"`
 	CreatedAt  *time.Time      `json:"createdAt,omitempty"`
 	NodeTypeID string          `json:"nodeTypeID"`

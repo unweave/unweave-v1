@@ -29,6 +29,8 @@ type Session interface {
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
 	// GetProvider returns the provider.
 	GetProvider() types.RuntimeProvider
+	// GetConnectionInfo returns the connection information for the node running a session.
+	GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error)
 	// HealthCheck performs a health check on the provider.
 	HealthCheck(ctx context.Context) error
 	// InitNode initializes a new node on the provider.

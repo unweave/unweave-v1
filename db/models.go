@@ -7,6 +7,7 @@ package db
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -70,18 +71,20 @@ type UnweaveProject struct {
 }
 
 type UnweaveSession struct {
-	ID        uuid.UUID            `json:"id"`
-	Name      string               `json:"name"`
-	NodeID    string               `json:"nodeID"`
-	Region    string               `json:"region"`
-	CreatedBy uuid.UUID            `json:"createdBy"`
-	CreatedAt time.Time            `json:"createdAt"`
-	ReadyAt   sql.NullTime         `json:"readyAt"`
-	ExitedAt  sql.NullTime         `json:"exitedAt"`
-	Status    UnweaveSessionStatus `json:"status"`
-	ProjectID uuid.UUID            `json:"projectID"`
-	Provider  string               `json:"provider"`
-	SshKeyID  uuid.UUID            `json:"sshKeyID"`
+	ID             uuid.UUID            `json:"id"`
+	Name           string               `json:"name"`
+	NodeID         string               `json:"nodeID"`
+	Region         string               `json:"region"`
+	CreatedBy      uuid.UUID            `json:"createdBy"`
+	CreatedAt      time.Time            `json:"createdAt"`
+	ReadyAt        sql.NullTime         `json:"readyAt"`
+	ExitedAt       sql.NullTime         `json:"exitedAt"`
+	Status         UnweaveSessionStatus `json:"status"`
+	ProjectID      uuid.UUID            `json:"projectID"`
+	Provider       string               `json:"provider"`
+	SshKeyID       uuid.UUID            `json:"sshKeyID"`
+	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
+	Error          sql.NullString       `json:"error"`
 }
 
 type UnweaveSshKey struct {
