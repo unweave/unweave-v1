@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -335,6 +336,9 @@ func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 
 				if status == types.StatusRunning {
 					if e := updateConnectionInfo(ctx, rt, session.NodeID, sessionID); e != nil {
+						// We mark the error in the DB but don't terminate the node. This
+						// is left to the user to do manually. Perhaps this should be
+						// changed in the future but for now, it might help debugging.
 						handleSessionError(ctx, sessionID, e, "Failed to update connection info")
 						// TODO: we should perhaps do some retries here
 						return
@@ -353,7 +357,19 @@ func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 					return
 				}
 			case e := <-errch:
-				log.Ctx(ctx).Error().Err(e).Msg("failed to watch session")
+				log.Ctx(ctx).Error().Err(e).Msg("Error while watching session")
+
+				// This means we failed to watch the session. This should ideally never
+				// happen. Since we don't know the cause of this error, let's play it safe
+				// and terminate the node. This will mean the user will lose their work
+				// but the alternative is to have a runaway node that drains all their credit.
+				var err *types.Error
+				if errors.As(e, &err) {
+					handleSessionError(ctx, sessionID, e, err.Message)
+				}
+				if err := s.Terminate(ctx, sessionID); err != nil {
+					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate session on failure to watch")
+				}
 				return
 			}
 		}
