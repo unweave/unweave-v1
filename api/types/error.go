@@ -1,5 +1,12 @@
 package types
 
+import (
+	"net/http"
+
+	"github.com/go-chi/render"
+	"github.com/rs/zerolog/log"
+)
+
 // Error
 //
 // Errors returned by the API should be as descriptive as possible and directly renderable
@@ -37,16 +44,32 @@ package types
 type Error struct {
 	Code       int             `json:"code"`
 	Message    string          `json:"message"`
-	Suggestion string          `json:"suggestion"`
-	Provider   RuntimeProvider `json:"provider"`
-	Err        error           `json:"error"`
+	Suggestion string          `json:"suggestion,omitempty"`
+	Provider   RuntimeProvider `json:"provider,omitempty"`
+	Err        error           `json:"-"`
 }
 
 func (e *Error) Error() string {
 	if e.Err != nil {
 		return e.Err.Error()
 	}
-	return ""
+	return e.Message
+}
+
+func (e *Error) Render(w http.ResponseWriter, r *http.Request) error {
+	// Depending on whether it is Unweave's fault or the user's fault, log the error
+	// appropriately.
+	hook := log.Hook(NewErrLogHook())
+	if e.Code == http.StatusInternalServerError {
+		log.Ctx(r.Context()).Error().Err(e.Err).Stack().Msg(e.Message)
+		hook.Error().Err(e.Err).Stack().Msg(e.Message)
+	} else {
+		log.Ctx(r.Context()).Warn().Err(e.Err).Stack().Msg(e.Message)
+		hook.Warn().Err(e.Err).Stack().Msg(e.Message)
+	}
+
+	render.Status(r, e.Code)
+	return nil
 }
 
 type UwError interface {

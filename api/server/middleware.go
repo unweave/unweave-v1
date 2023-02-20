@@ -85,7 +85,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		projectID, err := uuid.Parse(chi.URLParam(r, "projectID"))
 		if err != nil {
-			render.Render(w, r.WithContext(ctx), &types.HTTPError{
+			render.Render(w, r.WithContext(ctx), &types.Error{
 				Code:       http.StatusBadRequest,
 				Message:    "Invalid project id",
 				Suggestion: "Make sure the project id is a valid UUID",
@@ -96,7 +96,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 		project, err := db.Q.ProjectGet(ctx, projectID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				render.Render(w, r.WithContext(ctx), &types.HTTPError{
+				render.Render(w, r.WithContext(ctx), &types.Error{
 					Code:       http.StatusNotFound,
 					Message:    "Project not found",
 					Suggestion: "Make sure the project id is valid",
@@ -124,7 +124,7 @@ func withSessionCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		sessionID, err := uuid.Parse(chi.URLParam(r, "sessionID"))
 		if err != nil {
-			render.Render(w, r.WithContext(ctx), &types.HTTPError{
+			render.Render(w, r.WithContext(ctx), &types.Error{
 				Code:       http.StatusBadRequest,
 				Message:    "Invalid session id",
 				Suggestion: "Make sure the session id is a valid UUID",
@@ -135,7 +135,7 @@ func withSessionCtx(next http.Handler) http.Handler {
 		session, err := db.Q.SessionGet(ctx, sessionID)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				render.Render(w, r.WithContext(ctx), &types.HTTPError{
+				render.Render(w, r.WithContext(ctx), &types.Error{
 					Code:       http.StatusNotFound,
 					Message:    "Session not found",
 					Suggestion: "Make sure the session id is valid",

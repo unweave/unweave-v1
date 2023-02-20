@@ -3,9 +3,7 @@ package types
 import (
 	"net/http"
 
-	"github.com/go-chi/render"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -14,37 +12,6 @@ type NoOpLogHook struct{}
 func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
 
 var NewErrLogHook = func() zerolog.Hook { return NoOpLogHook{} }
-
-type HTTPError struct {
-	Code       int             `json:"code"`
-	Message    string          `json:"message"`
-	Suggestion string          `json:"suggestion,omitempty"`
-	Provider   RuntimeProvider `json:"provider,omitempty"`
-	Err        error           `json:"-"`
-}
-
-func (e *HTTPError) Error() string {
-	if e.Err != nil {
-		return e.Err.Error()
-	}
-	return e.Message
-}
-
-func (e *HTTPError) Render(w http.ResponseWriter, r *http.Request) error {
-	// Depending on whether it is Unweave's fault or the user's fault, log the error
-	// appropriately.
-	hook := log.Hook(NewErrLogHook())
-	if e.Code == http.StatusInternalServerError {
-		log.Ctx(r.Context()).Error().Err(e.Err).Stack().Msg(e.Message)
-		hook.Error().Err(e.Err).Stack().Msg(e.Message)
-	} else {
-		log.Ctx(r.Context()).Warn().Err(e.Err).Stack().Msg(e.Message)
-		hook.Warn().Err(e.Err).Stack().Msg(e.Message)
-	}
-
-	render.Status(r, e.Code)
-	return nil
-}
 
 type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`
@@ -60,13 +27,13 @@ type SessionCreateParams struct {
 
 func (s *SessionCreateParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body: field 'provider' is required",
 		}
 	}
 	if s.SSHPublicKey == nil && s.SSHKeyName == nil {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body: either 'sshKeyName' or 'sshPublicKey' is required",
 		}
@@ -81,7 +48,7 @@ type ProviderConnectParams struct {
 
 func (p *ProviderConnectParams) Bind(r *http.Request) error {
 	if p.Provider == "" {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body: field 'provider' is required",
 		}
@@ -112,7 +79,7 @@ type SSHKeyAddParams struct {
 
 func (s *SSHKeyAddParams) Bind(r *http.Request) error {
 	if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(s.PublicKey)); err != nil {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid SSH public key",
 		}

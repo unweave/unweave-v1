@@ -14,12 +14,12 @@ func ErrHTTPError(err error, fallbackMessage string) render.Renderer {
 	}
 	var e *types.Error
 	if errors.As(err, &e) {
-		return &types.HTTPError{
+		return &types.Error{
 			Code:       e.Code,
 			Message:    e.Message,
 			Provider:   e.Provider,
 			Suggestion: e.Suggestion,
-			Err:        e.Err,
+			Err:        err,
 		}
 	}
 	return ErrInternalServer(err, fallbackMessage)
@@ -30,7 +30,7 @@ func ErrInternalServer(err error, msg string) render.Renderer {
 	if msg != "" {
 		m = msg
 	}
-	return &types.HTTPError{
+	return &types.Error{
 		Code:    http.StatusInternalServerError,
 		Message: m,
 		Err:     err,

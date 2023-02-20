@@ -13,7 +13,7 @@ type AccessTokenCreateParams struct {
 
 func (p *AccessTokenCreateParams) Bind(r *http.Request) error {
 	if p.Name == "" {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Name is required",
 		}
@@ -67,7 +67,7 @@ type ProjectCreateResponse struct {
 
 func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
 	if p.Name == "" {
-		return &HTTPError{
+		return &Error{
 			Code:    http.StatusBadRequest,
 			Message: "Name is required",
 		}
