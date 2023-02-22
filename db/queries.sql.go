@@ -164,7 +164,7 @@ func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
 }
 
 const SSHKeyGetByName = `-- name: SSHKeyGetByName :one
-select id, name, owner_id, created_at, public_key
+select id, name, owner_id, created_at, public_key, is_active
 from unweave.ssh_key
 where name = $1
   and owner_id = $2
@@ -184,12 +184,13 @@ func (q *Queries) SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.PublicKey,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const SSHKeyGetByPublicKey = `-- name: SSHKeyGetByPublicKey :one
-select id, name, owner_id, created_at, public_key
+select id, name, owner_id, created_at, public_key, is_active
 from unweave.ssh_key
 where public_key = $1
   and owner_id = $2
@@ -209,12 +210,13 @@ func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPubli
 		&i.OwnerID,
 		&i.CreatedAt,
 		&i.PublicKey,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const SSHKeysGet = `-- name: SSHKeysGet :many
-select id, name, owner_id, created_at, public_key
+select id, name, owner_id, created_at, public_key, is_active
 from unweave.ssh_key
 where owner_id = $1
 `
@@ -234,6 +236,7 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveS
 			&i.OwnerID,
 			&i.CreatedAt,
 			&i.PublicKey,
+			&i.IsActive,
 		); err != nil {
 			return nil, err
 		}

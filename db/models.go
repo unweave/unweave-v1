@@ -93,4 +93,5 @@ type UnweaveSshKey struct {
 	OwnerID   uuid.UUID `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
 	PublicKey string    `json:"publicKey"`
+	IsActive  bool      `json:"isActive"`
 }
