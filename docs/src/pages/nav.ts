@@ -9,17 +9,10 @@ export const NavigationMap = [
     {
         title: 'Develop',
         links: [
+            { title: 'Providers', href: '/docs/providers' },
             { title: 'Projects', href: '/docs/projects' },
             { title: 'Sessions', href: '/docs/sessions' },
-            { title: 'SSH', href: '/docs/ssh' },
-        ],
-    },
-    {
-        title: 'Providers',
-        links: [
-            { title: 'Unweave', href: '/docs/provider-unweave' },
-            { title: 'LambdaLabs', href: '/docs/provider-lambdalabs' },
-            { title: 'Linode (beta)', href: '/docs/provider-linode' },
+            { title: 'Dockerfile (beta)', href: '/docs/dockerfile' },
         ],
     },
     {

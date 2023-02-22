@@ -48,7 +48,7 @@ function Header({ navigation }) {
       </div>
       <div className="relative flex flex-grow basis-0 items-center">
         <Link
-          href="/"
+          href="https://unweave.io"
           aria-label="Home page"
           className="flex items-center justify-center"
         >
@@ -64,7 +64,7 @@ function Header({ navigation }) {
       <div className="-my-5 mr-6 sm:mr-8 md:mr-0">{/* <Search /> */}</div>
       <div className="relative flex basis-0 justify-end gap-6 sm:gap-8 md:flex-grow">
         <ThemeSelector className="relative z-10" />
-        <Link href="https://github.com/unweave/" className="group" aria-label="GitHub">
+        <Link href="https://github.com/unweave/unweave" className="group" aria-label="GitHub">
           <GitHubIcon className="h-6 w-6 fill-slate-400 group-hover:fill-slate-500 dark:group-hover:fill-slate-300" />
         </Link>
       </div>

@@ -80,7 +80,7 @@ This will initialize an `unweave` folder with a `config.toml` file. You can add 
 provider and session preferences here.
 
 ```bash
-unweave init <project-id>
+unweave link <project-id>
 ```
 
 

@@ -6,9 +6,6 @@ const nextConfig = {
   pageExtensions: ['js', 'jsx', 'md'],
   experimental: {
     newNextLinkBehavior: true,
-    images: {
-      allowFutureImage: true,
-    },
   },
 }
 
