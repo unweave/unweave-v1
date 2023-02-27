@@ -2,8 +2,7 @@
 <img align="right" src="https://unweave.io/favicon.svg" height="150px" style="margin: 2rem 1rem" alt="Unweave logo">
 
 Unweave is [Supabase](https://supabase.com) for machine learning. It's an open source tool
-for creating and managing development environments for ML projects.
-
+for creating and managing development environments for ML projects. Read the  [docs](https://docs.unweave.io) to see how it works.
 ### Features
 
 - Setup and SSH into dev environments on cloud VMs with single command
@@ -15,10 +14,10 @@ for creating and managing development environments for ML projects.
 
 ### Why?
 
-While there's great dev tools for normal software development, machine learning often doesn't
-get the same amount of love. Although there's a lot of great open-source tools for ML,
-they often require a lot of setup and configuration. You shouldn't have to manually configure
-VPCs and IAM policies just for some extra compute crunch.
+Machine learning has seen incredible growth over the last few years. Unfortunately, 
+tooling for ML hasn't caught up yet. Although there are a lot of great open-source tools 
+for ML, they often require endless YAML-file tweaking to setup and configure. You shouldn't
+have to manually configure VPCs and IAM policies just for some extra compute crunch.
 
 The goal of Unweave is use the best in class open-source tools and make them "just work" for
 the entire ML lifecycle.
@@ -54,33 +53,41 @@ unweave login
 
 **Create a new session:**
 
-VM instances in Unweave are called sessions. You can start a new session on a supported 
-cloud provider by using the --provider flag. The default provider is Unweave.
+VM instances in Unweave are called Sessions. You can start a new Session on a supported 
+cloud provider by using the `--provider` flag. The default provider is Unweave.
 
 ```bash
-unweave session create --provider lambdalabs
+unweave session create --project <project-id> --provider lambdalabs --type gpu_1x_a10
 ```
 
-You can then ssh into the session using the unweave ssh command:
+You can then ssh into the Session you create as usual. You can find the host by running 
+`unweave session ls`.
+
 ```bash
-unweave ssh <session-id>
+ssh ubuntu@<host>
 ```
 
-**One shot ssh:**
+[//]: # ()
+[//]: # (**One shot ssh:**)
 
-You can also combine the create and ssh steps into a single command:
-```bash
-unweave ssh --create --provider lambdalabs
-```
+[//]: # ()
+[//]: # (You can also combine the create and ssh steps into a single command:)
+
+[//]: # (```bash)
+
+[//]: # (unweave ssh --create --provider lambdalabs)
+
+[//]: # (```)
 
 **Linking a project:**
 
-You can avoid manually add the provider flags each time by linking to an Unweave project. 
+You can avoid manually adding the provider and project flags each time by linking to an Unweave project. 
 This will initialize an `unweave` folder with a `config.toml` file. You can add you default
 provider and session preferences here.
 
 ```bash
 unweave link <project-id>
+unweave session create
 ```
 
 
@@ -116,10 +123,9 @@ SSH and Git.
 - [ ] VMs for ML dev environments
   - [ ] Providers
     - [x] [LambdaLabs](https://lambdalabs.com)
-    - [x] [Unweave](https://unweave.io) _(beta)_
-    - [x] [Linode](https://linode.com) _(beta)_
+    - [x] [Unweave](https://unweave.io)
+    - [x] [GCP](https://cloud.google.com) _(private beta)_
     - [ ] [DigitalOcean](https://digitalocean.com)
-    - [ ] [GCP](https://cloud.google.com)
     - [ ] [AWS](https://aws.amazon.com)
     - [ ] [Azure](https://azure.microsoft.com)
     - [ ] Localhost

@@ -19,6 +19,10 @@ To create a new session from the CLI, run:
 unweave session create --project <project-id> --provider <provider> --type <node-type>
 ```
 
+This will prompt you for an SSH public key to use for the session. You can either choose to use 
+your existing `id_rsa.pub` key or create a new `.pem` key. Check the [SSH](#ssh-keys) section 
+for more details.
+
 Or, if you have a project linked to your local directory, you can skip the flags. Unweave will
 automatically use the defaults configured in the `config.toml` file.
 
@@ -26,6 +30,25 @@ automatically use the defaults configured in the `config.toml` file.
 unweave session create
 ```
 
+## SSH Keys
+
+You need to provide an SSH public key when you create a Session on Unweave. You can add 
+an existing key to your Unweave account by running:
+
+```bash
+# Name is optional. 
+unweave ssh-key add <path-to-public-key> [name]
+```
+
+You can also generate a new SSH key pair by running:
+
+```bash
+unweave ssh-key generate [name]
+```
+
+When you create a new session, you must provide the key either by name (if you've added it to
+your account) or by the path to the public key on your local machine. Unweave will 
+automatically provision the key on each provider before spinning up the Session.
 
 ## Node Types
 
