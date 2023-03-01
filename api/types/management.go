@@ -2,10 +2,13 @@ package types
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+const projectNameRegex = `^[\w.-]+$`
 
 type AccessTokenCreateParams struct {
 	Name string `json:"name"`
@@ -22,7 +25,7 @@ func (p *AccessTokenCreateParams) Bind(r *http.Request) error {
 }
 
 type AccessTokenCreateResponse struct {
-	ID        uuid.UUID `json:"id"`
+	ID        string    `json:"id"`
 	Token     string    `json:"token"`
 	Name      string    `json:"name"`
 	ExpiresAt time.Time `json:"expiresAt"`
@@ -62,7 +65,7 @@ type ProjectCreateRequestParams struct {
 }
 
 type ProjectCreateResponse struct {
-	ID uuid.UUID `json:"id"`
+	ID string `json:"id"`
 }
 
 func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
@@ -72,6 +75,15 @@ func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
 			Message: "Name is required",
 		}
 	}
+
+	regex := regexp.MustCompile(projectNameRegex)
+	if !regex.MatchString(p.Name) {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Name can only contain alphanumeric characters, underscores, dashes, and periods",
+		}
+	}
+
 	return nil
 }
 

@@ -65,8 +65,8 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 			c := context.Background()
 			c = log.With().
 				Stringer(AccountIDCtxKey, accountID).
-				Stringer(ProjectIDCtxKey, projectID).
-				Stringer(SessionIDCtxKey, session.ID).
+				Str(ProjectIDCtxKey, projectID).
+				Str(SessionIDCtxKey, session.ID).
 				Logger().WithContext(c)
 
 			if e := srv.Session.Watch(c, session.ID); e != nil {

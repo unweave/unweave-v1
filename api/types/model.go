@@ -2,8 +2,6 @@ package types
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -71,8 +69,8 @@ type Node struct {
 }
 
 type Project struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type SSHKey struct {
@@ -88,7 +86,7 @@ type ConnectionInfo struct {
 }
 
 type Session struct {
-	ID         uuid.UUID       `json:"id"`
+	ID         string          `json:"id"`
 	SSHKey     SSHKey          `json:"sshKey"`
 	Connection *ConnectionInfo `json:"connection,omitempty"`
 	Status     SessionStatus   `json:"runtimeStatus"`

@@ -38,12 +38,12 @@ func GetAccountIDFromContext(ctx context.Context) uuid.UUID {
 	return uid
 }
 
-func SetProjectIDInContext(ctx context.Context, projectID uuid.UUID) context.Context {
+func SetProjectIDInContext(ctx context.Context, projectID string) context.Context {
 	return context.WithValue(ctx, ProjectIDCtxKey, projectID)
 }
 
-func GetProjectIDFromContext(ctx context.Context) uuid.UUID {
-	projectID, ok := ctx.Value(ProjectIDCtxKey).(uuid.UUID)
+func GetProjectIDFromContext(ctx context.Context) string {
+	projectID, ok := ctx.Value(ProjectIDCtxKey).(string)
 	if !ok {
 		// This should never happen at runtime.
 		log.Error().Msg("project not found in context")
@@ -52,12 +52,12 @@ func GetProjectIDFromContext(ctx context.Context) uuid.UUID {
 	return projectID
 }
 
-func SetSessionIDInContext(ctx context.Context, sessionID uuid.UUID) context.Context {
+func SetSessionIDInContext(ctx context.Context, sessionID string) context.Context {
 	return context.WithValue(ctx, SessionIDCtxKey, sessionID)
 }
 
-func GetSessionIDFromContext(ctx context.Context) uuid.UUID {
-	sessionID, ok := ctx.Value(SessionIDCtxKey).(uuid.UUID)
+func GetSessionIDFromContext(ctx context.Context) string {
+	sessionID, ok := ctx.Value(SessionIDCtxKey).(string)
 	if !ok {
 		// This should never happen at runtime.
 		log.Error().Msg("session not found in context")
@@ -83,15 +83,7 @@ func withAccountCtx(next http.Handler) http.Handler {
 func withProjectCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		projectID, err := uuid.Parse(chi.URLParam(r, "projectID"))
-		if err != nil {
-			render.Render(w, r.WithContext(ctx), &types.Error{
-				Code:       http.StatusBadRequest,
-				Message:    "Invalid project id",
-				Suggestion: "Make sure the project id is a valid UUID",
-			})
-			return
-		}
+		projectID := chi.URLParam(r, "projectID")
 
 		project, err := db.Q.ProjectGet(ctx, projectID)
 		if err != nil {
@@ -111,7 +103,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 		}
 
 		ctx = context.WithValue(ctx, ProjectIDCtxKey, project)
-		ctx = log.With().Stringer(ProjectIDCtxKey, project.ID).Logger().WithContext(ctx)
+		ctx = log.With().Str(ProjectIDCtxKey, project.ID).Logger().WithContext(ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -122,15 +114,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 func withSessionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		sessionID, err := uuid.Parse(chi.URLParam(r, "sessionID"))
-		if err != nil {
-			render.Render(w, r.WithContext(ctx), &types.Error{
-				Code:       http.StatusBadRequest,
-				Message:    "Invalid session id",
-				Suggestion: "Make sure the session id is a valid UUID",
-			})
-			return
-		}
+		sessionID := chi.URLParam(r, "sessionID")
 
 		session, err := db.Q.SessionGet(ctx, sessionID)
 		if err != nil {
@@ -149,7 +133,7 @@ func withSessionCtx(next http.Handler) http.Handler {
 		}
 
 		ctx = context.WithValue(ctx, SessionIDCtxKey, session)
-		ctx = log.With().Stringer(SessionIDCtxKey, session.ID).Logger().WithContext(ctx)
+		ctx = log.With().Str(SessionIDCtxKey, session.ID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

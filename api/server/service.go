@@ -7,7 +7,7 @@ import (
 
 type Service struct {
 	rti      runtime.Initializer
-	cid      uuid.UUID
+	cid      uuid.UUID // caller ID
 	Provider *ProviderService
 	Session  *SessionService
 	SSHKey   *SSHKeyService

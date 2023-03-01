@@ -4,6 +4,7 @@ set -e
 
 IS_SEED=0
 DB_URL=${DATABASE_URL}
+BASEDIR=$(dirname "$0")
 
 if [ $# -eq 1 ]; then
   if [ "$1" = "seed" ]; then
@@ -16,6 +17,7 @@ elif [ $# -gt 1 ]; then
   echo "Invalid number of arguments. Max one arg allowed: [seed]."
 fi
 
+psql "$DB_URL" -f "$BASEDIR/init-scripts/1_initial_schema.sql"
 go install github.com/pressly/goose/v3/cmd/goose@latest
 goose -dir ./migrations postgres "$DB_URL" up
 echo "Migrations complete."

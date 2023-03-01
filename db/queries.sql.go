@@ -32,7 +32,7 @@ where s.id = $1
 `
 
 type MxSessionGetRow struct {
-	ID              uuid.UUID            `json:"id"`
+	ID              string               `json:"id"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -47,7 +47,7 @@ type MxSessionGetRow struct {
 // -----------------------------------------------------------------
 // The queries below return data in the format expected by the API.
 // -----------------------------------------------------------------
-func (q *Queries) MxSessionGet(ctx context.Context, id uuid.UUID) (MxSessionGetRow, error) {
+func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow, error) {
 	row := q.db.QueryRowContext(ctx, MxSessionGet, id)
 	var i MxSessionGetRow
 	err := row.Scan(
@@ -82,7 +82,7 @@ where s.project_id = $1
 `
 
 type MxSessionsGetRow struct {
-	ID              uuid.UUID            `json:"id"`
+	ID              string               `json:"id"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -94,7 +94,7 @@ type MxSessionsGetRow struct {
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
 }
 
-func (q *Queries) MxSessionsGet(ctx context.Context, projectID uuid.UUID) ([]MxSessionsGetRow, error) {
+func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSessionsGetRow, error) {
 	rows, err := q.db.QueryContext(ctx, MxSessionsGet, projectID)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ from unweave.project
 where id = $1
 `
 
-func (q *Queries) ProjectGet(ctx context.Context, id uuid.UUID) (UnweaveProject, error) {
+func (q *Queries) ProjectGet(ctx context.Context, id string) (UnweaveProject, error) {
 	row := q.db.QueryRowContext(ctx, ProjectGet, id)
 	var i UnweaveProject
 	err := row.Scan(
@@ -264,7 +264,7 @@ returning id
 type SessionCreateParams struct {
 	NodeID         string          `json:"nodeID"`
 	CreatedBy      uuid.UUID       `json:"createdBy"`
-	ProjectID      uuid.UUID       `json:"projectID"`
+	ProjectID      string          `json:"projectID"`
 	Provider       string          `json:"provider"`
 	Region         string          `json:"region"`
 	Name           string          `json:"name"`
@@ -272,7 +272,7 @@ type SessionCreateParams struct {
 	SshKeyName     string          `json:"sshKeyName"`
 }
 
-func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (uuid.UUID, error) {
+func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (string, error) {
 	row := q.db.QueryRowContext(ctx, SessionCreate,
 		arg.NodeID,
 		arg.CreatedBy,
@@ -283,7 +283,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (u
 		arg.ConnectionInfo,
 		arg.SshKeyName,
 	)
-	var id uuid.UUID
+	var id string
 	err := row.Scan(&id)
 	return id, err
 }
@@ -294,7 +294,7 @@ from unweave.session
 where id = $1
 `
 
-func (q *Queries) SessionGet(ctx context.Context, id uuid.UUID) (UnweaveSession, error) {
+func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, error) {
 	row := q.db.QueryRowContext(ctx, SessionGet, id)
 	var i UnweaveSession
 	err := row.Scan(
@@ -369,7 +369,7 @@ where id = $1
 `
 
 type SessionSetErrorParams struct {
-	ID    uuid.UUID      `json:"id"`
+	ID    string         `json:"id"`
 	Error sql.NullString `json:"error"`
 }
 
@@ -385,7 +385,7 @@ where id = $1
 `
 
 type SessionStatusUpdateParams struct {
-	ID     uuid.UUID            `json:"id"`
+	ID     string               `json:"id"`
 	Status UnweaveSessionStatus `json:"status"`
 }
 
@@ -401,7 +401,7 @@ where id = $1
 `
 
 type SessionUpdateConnectionInfoParams struct {
-	ID             uuid.UUID       `json:"id"`
+	ID             string          `json:"id"`
 	ConnectionInfo json.RawMessage `json:"connectionInfo"`
 }
 
@@ -421,13 +421,13 @@ limit $2 offset $3
 `
 
 type SessionsGetParams struct {
-	ProjectID uuid.UUID `json:"projectID"`
-	Limit     int32     `json:"limit"`
-	Offset    int32     `json:"offset"`
+	ProjectID string `json:"projectID"`
+	Limit     int32  `json:"limit"`
+	Offset    int32  `json:"offset"`
 }
 
 type SessionsGetRow struct {
-	ID         uuid.UUID            `json:"id"`
+	ID         string               `json:"id"`
 	SshKeyName sql.NullString       `json:"sshKeyName"`
 	Status     UnweaveSessionStatus `json:"status"`
 }

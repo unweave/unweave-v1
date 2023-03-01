@@ -26,7 +26,7 @@ type ConnectionInfoV1 struct {
 	User    string `json:"user"`
 }
 
-func handleSessionError(ctx context.Context, sessionID uuid.UUID, err error, msg string) {
+func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
 	log.Ctx(ctx).Error().Err(err).Msg(msg)
 
 	params := db.SessionSetErrorParams{
@@ -138,7 +138,7 @@ func fetchCredentials(ctx context.Context, accountID uuid.UUID, sshKeyName, sshP
 	}, nil
 }
 
-func updateConnectionInfo(ctx context.Context, rt runtime.Session, nodeID string, sessionID uuid.UUID) error {
+func updateConnectionInfo(ctx context.Context, rt runtime.Session, nodeID string, sessionID string) error {
 	connInfo, err := rt.GetConnectionInfo(ctx, nodeID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection info: %w", err)
@@ -162,7 +162,7 @@ type SessionService struct {
 	srv *Service
 }
 
-func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params types.SessionCreateParams) (*types.Session, error) {
+func (s *SessionService) Create(ctx context.Context, projectID string, params types.SessionCreateParams) (*types.Session, error) {
 	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
@@ -221,7 +221,7 @@ func (s *SessionService) Create(ctx context.Context, projectID uuid.UUID, params
 	return session, nil
 }
 
-func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.Session, error) {
+func (s *SessionService) Get(ctx context.Context, sessionID string) (*types.Session, error) {
 	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -259,7 +259,7 @@ func (s *SessionService) Get(ctx context.Context, sessionID uuid.UUID) (*types.S
 	return session, nil
 }
 
-func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerminated bool) ([]types.Session, error) {
+func (s *SessionService) List(ctx context.Context, projectID string, listTerminated bool) ([]types.Session, error) {
 	sessions, err := db.Q.MxSessionsGet(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to get sessions from db: %w", err)
@@ -300,7 +300,7 @@ func (s *SessionService) List(ctx context.Context, projectID uuid.UUID, listTerm
 	return res, nil
 }
 
-func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
+func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 	session, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -378,7 +378,7 @@ func (s *SessionService) Watch(ctx context.Context, sessionID uuid.UUID) error {
 	return nil
 }
 
-func (s *SessionService) Terminate(ctx context.Context, sessionID uuid.UUID) error {
+func (s *SessionService) Terminate(ctx context.Context, sessionID string) error {
 	sess, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {

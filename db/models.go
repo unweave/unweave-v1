@@ -63,7 +63,7 @@ type UnweaveAccount struct {
 }
 
 type UnweaveProject struct {
-	ID        uuid.UUID `json:"id"`
+	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Icon      string    `json:"icon"`
 	OwnerID   uuid.UUID `json:"ownerID"`
@@ -71,7 +71,7 @@ type UnweaveProject struct {
 }
 
 type UnweaveSession struct {
-	ID             uuid.UUID            `json:"id"`
+	ID             string               `json:"id"`
 	Name           string               `json:"name"`
 	NodeID         string               `json:"nodeID"`
 	Region         string               `json:"region"`
@@ -80,15 +80,15 @@ type UnweaveSession struct {
 	ReadyAt        sql.NullTime         `json:"readyAt"`
 	ExitedAt       sql.NullTime         `json:"exitedAt"`
 	Status         UnweaveSessionStatus `json:"status"`
-	ProjectID      uuid.UUID            `json:"projectID"`
+	ProjectID      string               `json:"projectID"`
 	Provider       string               `json:"provider"`
-	SshKeyID       uuid.UUID            `json:"sshKeyID"`
+	SshKeyID       string               `json:"sshKeyID"`
 	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
 	Error          sql.NullString       `json:"error"`
 }
 
 type UnweaveSshKey struct {
-	ID        uuid.UUID `json:"id"`
+	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	OwnerID   uuid.UUID `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`

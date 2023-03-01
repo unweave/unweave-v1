@@ -33,8 +33,8 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 			c := context.Background()
 			c = log.With().
 				Stringer(AccountIDCtxKey, sess.CreatedBy).
-				Stringer(ProjectIDCtxKey, sess.ProjectID).
-				Stringer(SessionIDCtxKey, sess.ID).
+				Str(ProjectIDCtxKey, sess.ProjectID).
+				Str(SessionIDCtxKey, sess.ID).
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, sess.CreatedBy)
