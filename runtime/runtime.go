@@ -3,10 +3,10 @@ package runtime
 
 import (
 	"context"
-	"io"
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 )
 
 type Runtime struct {
@@ -53,11 +53,7 @@ type Session interface {
 	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
 }
 
-type Builder interface {
-	Build(ctx context.Context, buildCtx io.Reader) (buildID string, err error)
-}
-
 type Initializer interface {
 	InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
-	InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (Builder, error)
+	InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error)
 }

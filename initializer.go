@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/builder/docker"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
@@ -42,7 +43,7 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.U
 	}
 }
 
-func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (runtime.Builder, error) {
+func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error) {
 	if builder != "docker" {
 		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
 	}

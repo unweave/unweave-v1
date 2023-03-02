@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/runtime"
 )
 
@@ -16,7 +17,7 @@ type Service struct {
 	rti     runtime.Initializer
 	cid     uuid.UUID // caller ID
 	runtime runtime.Session
-	builder runtime.Builder
+	builder builder.Builder
 
 	Builder  *BuilderService
 	Provider *ProviderService
@@ -37,15 +38,15 @@ func (s *Service) InitializeRuntime(ctx context.Context, provider types.RuntimeP
 	return s.runtime, nil
 }
 
-func (s *Service) InitializerBuilder(ctx context.Context) (runtime.Builder, error) {
+func (s *Service) InitializerBuilder(ctx context.Context) (builder.Builder, error) {
 	if s.builder != nil {
 		return s.builder, nil
 	}
-	builder, err := s.rti.InitializeBuilder(ctx, s.cid, "docker")
+	bld, err := s.rti.InitializeBuilder(ctx, s.cid, "docker")
 	if err != nil {
 		return nil, err
 	}
-	s.builder = builder
+	s.builder = bld
 	return s.builder, nil
 }
 
