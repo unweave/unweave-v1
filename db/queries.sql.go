@@ -14,6 +14,48 @@ import (
 	"github.com/google/uuid"
 )
 
+const BuildCreate = `-- name: BuildCreate :exec
+insert into unweave.build (id, project_id, builder_type, created_at)
+values ($1, $2, $3, $4)
+`
+
+type BuildCreateParams struct {
+	ID          string    `json:"id"`
+	ProjectID   string    `json:"projectID"`
+	BuilderType string    `json:"builderType"`
+	CreatedAt   time.Time `json:"createdAt"`
+}
+
+func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) error {
+	_, err := q.db.ExecContext(ctx, BuildCreate,
+		arg.ID,
+		arg.ProjectID,
+		arg.BuilderType,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const BuildGet = `-- name: BuildGet :one
+select id, project_id, builder_type, status, created_at, meta_data
+from unweave.build
+where id = $1
+`
+
+func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error) {
+	row := q.db.QueryRowContext(ctx, BuildGet, id)
+	var i UnweaveBuild
+	err := row.Scan(
+		&i.ID,
+		&i.ProjectID,
+		&i.BuilderType,
+		&i.Status,
+		&i.CreatedAt,
+		&i.MetaData,
+	)
+	return i, err
+}
+
 const MxSessionGet = `-- name: MxSessionGet :one
 
 select s.id,

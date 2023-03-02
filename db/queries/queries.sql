@@ -1,3 +1,11 @@
+-- name: BuildCreate :exec
+insert into unweave.build (id, project_id, builder_type, created_at)
+values ($1, $2, $3, $4);
+-- name: BuildGet :one
+select *
+from unweave.build
+where id = $1;
+
 -- name: ProjectGet :one
 select *
 from unweave.project

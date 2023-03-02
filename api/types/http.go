@@ -8,7 +8,9 @@ import (
 
 const maxZeplContextSize = 1024 * 1024 * 100 // 100MB
 
-type ImageBuildParams struct{}
+type ImageBuildParams struct {
+	ProjectID string `json:"projectID"`
+}
 
 func (i *ImageBuildParams) Bind(r *http.Request) error {
 	return nil

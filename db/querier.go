@@ -11,6 +11,8 @@ import (
 )
 
 type Querier interface {
+	BuildCreate(ctx context.Context, arg BuildCreateParams) error
+	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------

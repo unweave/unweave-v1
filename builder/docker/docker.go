@@ -104,6 +104,10 @@ func pushImage(ctx context.Context, image string) (output string, err error) {
 
 type Builder struct{}
 
+func (b *Builder) GetBuilder() string {
+	return "docker"
+}
+
 func (b *Builder) Build(ctx context.Context, buildCtx io.Reader) (string, error) {
 	log.Ctx(ctx).Info().Msg("Building docker image")
 

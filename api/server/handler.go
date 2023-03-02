@@ -29,7 +29,7 @@ func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
 		accountID := GetAccountIDFromContext(ctx)
 		srv := NewCtxService(rti, accountID)
 
-		buildID, err := srv.Builder.Build(ctx, nil)
+		buildID, err := srv.Builder.Build(ctx, ibp.ProjectID, nil)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to build image"))
 			return
