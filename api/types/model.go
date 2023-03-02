@@ -46,6 +46,11 @@ func (r RuntimeProvider) DisplayName() string {
 	}
 }
 
+type LogEntry struct {
+	TimStamp time.Time `json:"timestamp"`
+	Message  string    `json:"message"`
+}
+
 type NodeSpecs struct {
 	VCPUs int `json:"vCPUs"`
 	// Memory is the RAM in GB

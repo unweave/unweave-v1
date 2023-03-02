@@ -7,8 +7,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/types"
 )
 
 // buildImage builds an image with the Dockerfile in the given buildPath directory. It
@@ -108,30 +110,32 @@ func (b *Builder) GetBuilder() string {
 	return "docker"
 }
 
-func (b *Builder) Build(ctx context.Context, buildCtx io.Reader) (string, error) {
+func (b *Builder) Build(ctx context.Context, buildCtx io.Reader) ([]types.LogEntry, error) {
 	log.Ctx(ctx).Info().Msg("Building docker image")
-
-	// write build context to disk
-	// build image
 
 	logsch, errch, err := buildImage(ctx, "", "", "")
 	if err != nil {
-		return "", fmt.Errorf("failed to build image: %v", err)
+		return nil, fmt.Errorf("failed to build image: %v", err)
 	}
 
-	go func() {
-		for {
-			select {
-			case l := <-logsch:
-				log.Ctx(ctx).Info().Msg(l)
-			case e := <-errch:
-				log.Ctx(ctx).Error().Msg(e.Error())
-			}
-		}
-	}()
+	var logs []types.LogEntry
 
-	buildID := "bld_123"
-	return buildID, nil
+	for {
+		select {
+		case <-ctx.Done():
+			return logs, nil
+		case l, ok := <-logsch:
+			if !ok {
+				return logs, nil
+			}
+			logs = append(logs, types.LogEntry{
+				TimStamp: time.Now(),
+				Message:  l,
+			})
+		case e := <-errch:
+			log.Ctx(ctx).Error().Err(e).Msg("Error building image")
+		}
+	}
 }
 
 func (b *Builder) Push(ctx context.Context, repo, tag string) error {

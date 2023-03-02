@@ -10,6 +10,7 @@ create table unweave.build
     builder_type text                                 not null,
     status       unweave.build_status                 not null default 'initializing',
     created_at   timestamptz                          not null default now(),
+    updated_at   timestamptz                          not null default now(),
     meta_data    jsonb                                not null default '{}'::jsonb
 );
 

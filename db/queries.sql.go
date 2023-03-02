@@ -14,30 +14,27 @@ import (
 	"github.com/google/uuid"
 )
 
-const BuildCreate = `-- name: BuildCreate :exec
-insert into unweave.build (id, project_id, builder_type, created_at)
-values ($1, $2, $3, $4)
+const BuildCreate = `-- name: BuildCreate :one
+insert into unweave.build (project_id, builder_type, created_at)
+values ($1, $2, $3)
+returning id
 `
 
 type BuildCreateParams struct {
-	ID          string    `json:"id"`
 	ProjectID   string    `json:"projectID"`
 	BuilderType string    `json:"builderType"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
 
-func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) error {
-	_, err := q.db.ExecContext(ctx, BuildCreate,
-		arg.ID,
-		arg.ProjectID,
-		arg.BuilderType,
-		arg.CreatedAt,
-	)
-	return err
+func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, BuildCreate, arg.ProjectID, arg.BuilderType, arg.CreatedAt)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }
 
 const BuildGet = `-- name: BuildGet :one
-select id, project_id, builder_type, status, created_at, meta_data
+select id, project_id, builder_type, status, created_at, updated_at, meta_data
 from unweave.build
 where id = $1
 `
@@ -51,9 +48,28 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 		&i.BuilderType,
 		&i.Status,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.MetaData,
 	)
 	return i, err
+}
+
+const BuildUpdate = `-- name: BuildUpdate :exec
+update unweave.build
+set status    = $2,
+    meta_data = $3
+where id = $1
+`
+
+type BuildUpdateParams struct {
+	ID       string             `json:"id"`
+	Status   UnweaveBuildStatus `json:"status"`
+	MetaData json.RawMessage    `json:"metaData"`
+}
+
+func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, BuildUpdate, arg.ID, arg.Status, arg.MetaData)
+	return err
 }
 
 const MxSessionGet = `-- name: MxSessionGet :one

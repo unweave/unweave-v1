@@ -113,6 +113,7 @@ type UnweaveBuild struct {
 	BuilderType string             `json:"builderType"`
 	Status      UnweaveBuildStatus `json:"status"`
 	CreatedAt   time.Time          `json:"createdAt"`
+	UpdatedAt   time.Time          `json:"updatedAt"`
 	MetaData    json.RawMessage    `json:"metaData"`
 }
 
