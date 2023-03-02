@@ -14,7 +14,7 @@ By default, Sessions on Unweave run on a standard Ubuntu 20.04 image customized 
 learning stack. If you need to customize the environment further, you can use a Dockerfile to 
 specify the base image to use for the Session.
 
-You can enable custom images by passing the `--ex-dockerfile` experimental flag when creating a new
+You can enable custom images by passing the `--x-dockerfile` experimental flag when creating a new
 Session. Unweave will detect a `Dockerfile` at the root of your project and use it 
 to build the Session image.
 
@@ -23,4 +23,3 @@ unweave sessions create --ex-dockerfile
 ```
 
 Images are automatically built and uploaded to the Unweave registry and tagged with the `sessionID`.
-

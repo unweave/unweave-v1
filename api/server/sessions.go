@@ -41,7 +41,7 @@ func handleSessionError(ctx context.Context, sessionID string, err error, msg st
 	}
 }
 
-func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
+func registerCredentials(ctx context.Context, rt runtime.Session, key types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
 	providerKeys, err := rt.ListSSHKeys(ctx)
 	if err != nil {
@@ -163,7 +163,7 @@ type SessionService struct {
 }
 
 func (s *SessionService) Create(ctx context.Context, projectID string, params types.SessionCreateParams) (*types.Session, error) {
-	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, params.Provider)
+	rt, err := s.srv.InitializeRuntime(ctx, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}
@@ -312,7 +312,7 @@ func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 		return fmt.Errorf("failed to get session from db: %w", err)
 	}
 
-	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, types.RuntimeProvider(session.Provider))
+	rt, err := s.srv.InitializeRuntime(ctx, types.RuntimeProvider(session.Provider))
 	if err != nil {
 		return fmt.Errorf("failed to initialize runtime: %w", err)
 	}
@@ -392,13 +392,13 @@ func (s *SessionService) Terminate(ctx context.Context, sessionID string) error 
 	}
 
 	provider := types.RuntimeProvider(sess.Provider)
-	rt, err := s.srv.rti.Initialize(ctx, s.srv.cid, provider)
+	rt, err := s.srv.InitializeRuntime(ctx, provider)
 	if err != nil {
 		return fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 	}
 
 	ctx = log.With().
-		Stringer(types.RuntimeProviderKey, rt.GetProvider()).
+		Stringer(types.RuntimeProviderKey, s.srv.runtime.GetProvider()).
 		Logger().
 		WithContext(ctx)
 

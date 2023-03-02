@@ -3,15 +3,20 @@ package types
 import (
 	"net/http"
 
-	"github.com/rs/zerolog"
 	"golang.org/x/crypto/ssh"
 )
 
-type NoOpLogHook struct{}
+const maxZeplContextSize = 1024 * 1024 * 100 // 100MB
 
-func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
+type ImageBuildParams struct{}
 
-var NewErrLogHook = func() zerolog.Hook { return NoOpLogHook{} }
+func (i *ImageBuildParams) Bind(r *http.Request) error {
+	return nil
+}
+
+type ImageBuildResponse struct {
+	BuildID string `json:"buildID"`
+}
 
 type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`

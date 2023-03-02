@@ -12,6 +12,34 @@ import (
 	"github.com/unweave/unweave/runtime"
 )
 
+// Builder
+
+func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Ctx(ctx).Info().Msgf("Executing ImagesBuild request")
+
+		ibp := types.ImageBuildParams{}
+		if err := render.Bind(r, &ibp); err != nil {
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			return
+		}
+
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
+
+		buildID, err := srv.Builder.Build(ctx, nil)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to build image"))
+			return
+		}
+
+		res := &types.ImageBuildResponse{BuildID: buildID}
+		render.JSON(w, r, res)
+	}
+}
+
 // Provider
 
 // NodeTypesList returns a list of node types available for the user

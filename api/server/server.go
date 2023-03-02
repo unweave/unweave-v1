@@ -87,6 +87,10 @@ func API(cfg Config, rti runtime.Initializer) {
 				r.Put("/{sessionID}/terminate", SessionsTerminate(rti))
 			})
 		})
+
+		r.Route("/images", func(r chi.Router) {
+			r.Post("/build", ImagesBuild(rti))
+		})
 	})
 
 	r.Route("/ssh-keys", func(r chi.Router) {

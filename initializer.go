@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder/docker"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/gonfig"
@@ -21,7 +22,7 @@ type providerConfig struct {
 	LambdaLabsAPIKey string `env:"LAMBDALABS_API_KEY"`
 }
 
-func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
+func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
 	var cfg providerConfig
 	gonfig.GetFromEnvVariables(&cfg)
 
@@ -39,4 +40,11 @@ func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, pr
 	default:
 		return nil, fmt.Errorf("%q provider not supported in the env initializer", provider)
 	}
+}
+
+func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (runtime.Builder, error) {
+	if builder != "docker" {
+		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
+	}
+	return &docker.Builder{}, nil
 }
