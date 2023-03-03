@@ -22,14 +22,16 @@ func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
 		ibp := types.ImageBuildParams{}
 		if err := render.Bind(r, &ibp); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
 		}
 
 		accountID := GetAccountIDFromContext(ctx)
+		projectID := GetProjectIDFromContext(ctx)
+
 		srv := NewCtxService(rti, accountID)
 
-		buildID, err := srv.Builder.Build(ctx, ibp.ProjectID, nil)
+		buildID, err := srv.Builder.Build(ctx, projectID, nil)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to build image"))
 			return
@@ -75,7 +77,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 		scr := types.SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
 		}
 
@@ -178,7 +180,7 @@ func SSHKeyAdd(rti runtime.Initializer) http.HandlerFunc {
 		params := types.SSHKeyAddParams{}
 		if err := render.Bind(r, &params); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
 		}
 
@@ -199,7 +201,11 @@ func SSHKeyGenerate(rti runtime.Initializer) http.HandlerFunc {
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
 
 		params := types.SSHKeyGenerateParams{}
-		render.Bind(r, &params)
+		if err := render.Bind(r, &params); err != nil {
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
+			return
+		}
 
 		accountID := GetAccountIDFromContext(ctx)
 		srv := NewCtxService(rti, accountID)

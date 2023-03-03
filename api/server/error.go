@@ -8,6 +8,24 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+func ErrHTTPBadRequest(err error, fallbackMessage string) render.Renderer {
+	var e *types.Error
+	if errors.As(err, &e) {
+		return &types.Error{
+			Code:       e.Code,
+			Message:    e.Message,
+			Provider:   e.Provider,
+			Suggestion: e.Suggestion,
+			Err:        err,
+		}
+	}
+	return &types.Error{
+		Code:    http.StatusBadRequest,
+		Message: fallbackMessage,
+		Err:     err,
+	}
+}
+
 func ErrHTTPError(err error, fallbackMessage string) render.Renderer {
 	if err == nil {
 		return nil

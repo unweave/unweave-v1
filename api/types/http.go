@@ -1,18 +1,44 @@
 package types
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/crypto/ssh"
 )
 
-const maxZeplContextSize = 1024 * 1024 * 100 // 100MB
+const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
 
-type ImageBuildParams struct {
-	ProjectID string `json:"projectID"`
-}
+type ImageBuildParams struct{}
 
 func (i *ImageBuildParams) Bind(r *http.Request) error {
+	// Validate build context in Multipart Form
+	invalidFileErr := &Error{
+		Code:       http.StatusBadRequest,
+		Message:    "Failed to parse build context file",
+		Suggestion: "Make sure the build context is a valid zipped multipart form file called 'context.zip'",
+	}
+
+	if err := r.ParseMultipartForm(maxBuildContextSize); err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to parse multipart form: %w", err)
+		return invalidFileErr
+	}
+
+	// Only allowed to upload a single file called context.zip for now
+	form := r.MultipartForm
+	file, exists := form.File["context"]
+	if !exists {
+		invalidFileErr.Message = "No build context file found"
+		return invalidFileErr
+	}
+	if len(file) != 1 {
+		invalidFileErr.Message = "More than one build context file found"
+		return invalidFileErr
+	}
+	if file[0].Filename != "context.zip" {
+		invalidFileErr.Message = "Invalid build context file name"
+		return invalidFileErr
+	}
 	return nil
 }
 
