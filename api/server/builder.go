@@ -21,25 +21,25 @@ type BuilderService struct {
 	srv *Service
 }
 
-func (b *BuilderService) Build(ctx context.Context, projectID string, buildCtx io.Reader) (string, error) {
-	builder, err := b.srv.InitializerBuilder(ctx)
+func (b *BuilderService) Build(ctx context.Context, projectID string, params *types.ImageBuildParams) (string, error) {
+	builder, err := b.srv.InitializerBuilder(ctx, params.Builder)
 	if err != nil {
 		return "", fmt.Errorf("failed to create runtime: %w", err)
 	}
 
-	params := db.BuildCreateParams{
+	bcp := db.BuildCreateParams{
 		ProjectID:   projectID,
 		BuilderType: builder.GetBuilder(),
 		CreatedAt:   time.Time{},
 	}
 
-	buildID, err := db.Q.BuildCreate(ctx, params)
+	buildID, err := db.Q.BuildCreate(ctx, bcp)
 	if err != nil {
 		return "", fmt.Errorf("failed to create build record: %v", err)
 	}
 
 	go func() {
-		logs, e := builder.Build(ctx, buildCtx)
+		logs, e := builder.Build(ctx, params.BuildContext)
 		if e != nil {
 			meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
 			if err != nil {

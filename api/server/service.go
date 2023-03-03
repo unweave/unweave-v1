@@ -38,11 +38,11 @@ func (s *Service) InitializeRuntime(ctx context.Context, provider types.RuntimeP
 	return s.runtime, nil
 }
 
-func (s *Service) InitializerBuilder(ctx context.Context) (builder.Builder, error) {
+func (s *Service) InitializerBuilder(ctx context.Context, builder string) (builder.Builder, error) {
 	if s.builder != nil {
 		return s.builder, nil
 	}
-	bld, err := s.rti.InitializeBuilder(ctx, s.cid, "docker")
+	bld, err := s.rti.InitializeBuilder(ctx, s.cid, builder)
 	if err != nil {
 		return nil, err
 	}
