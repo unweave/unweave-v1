@@ -1,7 +1,9 @@
 package types
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"golang.org/x/crypto/ssh"
@@ -9,9 +11,29 @@ import (
 
 const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
 
-type ImageBuildParams struct{}
+type ImageBuildParams struct {
+	Builder      string        `json:"builder"`
+	BuildContext io.ReadCloser `json:"-"`
+}
 
 func (i *ImageBuildParams) Bind(r *http.Request) error {
+	jsonStr := r.FormValue("params")
+	if err := json.Unmarshal([]byte(jsonStr), i); err != nil {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Failed to parse request body",
+			Suggestion: "Make sure the request body is valid JSON",
+			Err:        err,
+		}
+	}
+	if i.Builder != "docker" {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    fmt.Sprintf("Invalid builder: %s", i.Builder),
+			Suggestion: "Valid builders are: docker",
+		}
+	}
+
 	// Validate build context in Multipart Form
 	invalidFileErr := &Error{
 		Code:       http.StatusBadRequest,
@@ -39,6 +61,13 @@ func (i *ImageBuildParams) Bind(r *http.Request) error {
 		invalidFileErr.Message = "Invalid build context file name"
 		return invalidFileErr
 	}
+	part, err := file[0].Open()
+	if err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to open file: %w", err)
+		return invalidFileErr
+	}
+	i.BuildContext = part
+
 	return nil
 }
 

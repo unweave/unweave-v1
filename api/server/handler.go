@@ -14,13 +14,22 @@ import (
 
 // Builder
 
+// ImagesBuild expects a request body containing both the build context and the json
+// params for the build.
+//
+//		eg. curl -X POST \
+//				 -H 'Authorization: Bearer <token>' \
+//	 		 	 -H 'Content-Type: multipart/form-data' \
+//	 		 	 -F context=@context.zip \
+//	 		 	 -F 'params={"builder": "docker"}'
+//				 https://<api-host>/images/build
 func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing ImagesBuild request")
 
-		ibp := types.ImageBuildParams{}
-		if err := render.Bind(r, &ibp); err != nil {
+		ibp := &types.ImageBuildParams{}
+		if err := ibp.Bind(r); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
