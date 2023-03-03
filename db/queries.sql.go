@@ -15,19 +15,18 @@ import (
 )
 
 const BuildCreate = `-- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type, created_at)
-values ($1, $2, $3)
+insert into unweave.build (project_id, builder_type)
+values ($1, $2)
 returning id
 `
 
 type BuildCreateParams struct {
-	ProjectID   string    `json:"projectID"`
-	BuilderType string    `json:"builderType"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ProjectID   string `json:"projectID"`
+	BuilderType string `json:"builderType"`
 }
 
 func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, BuildCreate, arg.ProjectID, arg.BuilderType, arg.CreatedAt)
+	row := q.db.QueryRowContext(ctx, BuildCreate, arg.ProjectID, arg.BuilderType)
 	var id string
 	err := row.Scan(&id)
 	return id, err

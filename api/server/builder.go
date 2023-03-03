@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -30,7 +29,6 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 	bcp := db.BuildCreateParams{
 		ProjectID:   projectID,
 		BuilderType: builder.GetBuilder(),
-		CreatedAt:   time.Time{},
 	}
 
 	buildID, err := db.Q.BuildCreate(ctx, bcp)
@@ -39,11 +37,15 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 	}
 
 	go func() {
-		logs, e := builder.Build(ctx, params.BuildContext)
+		c := context.Background()
+		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
+
+		logs, e := builder.Build(c, buildID, params.BuildContext)
 		if e != nil {
+			log.Ctx(c).Error().Err(e).Msg("Failed to build image")
 			meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
 			if err != nil {
-				log.Ctx(ctx).Error().Err(err).Msg("Failed to marshal build metadata")
+				log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
 			}
 
 			p := db.BuildUpdateParams{
@@ -51,15 +53,15 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 				Status:   db.UnweaveBuildStatusError,
 				MetaData: meta,
 			}
-			if err := db.Q.BuildUpdate(ctx, p); err != nil {
-				log.Ctx(ctx).Error().Err(err).Msg("Failed to set build error in DB")
+			if err := db.Q.BuildUpdate(c, p); err != nil {
+				log.Ctx(c).Error().Err(err).Msg("Failed to set build error in DB")
 			}
 			return
 		}
 
 		meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
 		if err != nil {
-			log.Ctx(ctx).Error().Err(err).Msg("Failed to marshal build metadata")
+			log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
 		}
 
 		p := db.BuildUpdateParams{
@@ -67,8 +69,8 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			Status:   db.UnweaveBuildStatusSuccess,
 			MetaData: meta,
 		}
-		if err := db.Q.BuildUpdate(ctx, p); err != nil {
-			log.Ctx(ctx).Error().Err(err).Msg("Failed to set build success in DB")
+		if err := db.Q.BuildUpdate(c, p); err != nil {
+			log.Ctx(c).Error().Err(err).Msg("Failed to set build success in DB")
 		}
 	}()
 

@@ -1,6 +1,6 @@
 -- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type, created_at)
-values ($1, $2, $3)
+insert into unweave.build (project_id, builder_type)
+values ($1, $2)
 returning id;
 
 -- name: BuildGet :one

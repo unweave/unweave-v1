@@ -5,7 +5,7 @@ create type unweave.build_status as enum ('initializing', 'building', 'success',
 
 create table unweave.build
 (
-    id           text primary key                              default 'bl_' || nanoid() check ( length(id) > 11 ),
+    id           text primary key                              default 'bld_' || nanoid() check ( length(id) > 11 ),
     project_id   text references unweave.project (id) not null,
     builder_type text                                 not null,
     status       unweave.build_status                 not null default 'initializing',
