@@ -20,6 +20,7 @@ const (
 	UnweaveBuildStatusInitializing UnweaveBuildStatus = "initializing"
 	UnweaveBuildStatusBuilding     UnweaveBuildStatus = "building"
 	UnweaveBuildStatusSuccess      UnweaveBuildStatus = "success"
+	UnweaveBuildStatusFailed       UnweaveBuildStatus = "failed"
 	UnweaveBuildStatusError        UnweaveBuildStatus = "error"
 	UnweaveBuildStatusCanceled     UnweaveBuildStatus = "canceled"
 )

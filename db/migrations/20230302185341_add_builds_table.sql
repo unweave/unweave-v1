@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 
-create type unweave.build_status as enum ('initializing', 'building', 'success', 'error', 'canceled');
+create type unweave.build_status as enum ('initializing', 'building', 'success', 'failed', 'error', 'canceled');
 
 create table unweave.build
 (

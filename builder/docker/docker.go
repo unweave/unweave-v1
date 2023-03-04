@@ -17,6 +17,15 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+var (
+	// ErrBuildFailed is returned when a build fails.
+	ErrBuildFailed = &types.Error{
+		Code:       http.StatusBadRequest,
+		Message:    "Build failed - check the logs for more information",
+		Suggestion: "Make sure your Dockerfile is valid",
+	}
+)
+
 // buildImage builds an image with the Dockerfile in the given buildPath directory. It
 // expects the context directory to have a Dockerfile. It will return an error if none is
 // found.
@@ -75,9 +84,13 @@ func buildImage(ctx context.Context, buildPath, image, cache string) (
 		defer close(logsch)
 		if e := cmd.Start(); e != nil {
 			errch <- e
+			return
 		}
 		if e := cmd.Wait(); e != nil {
-			errch <- e
+			// This is the build failing not the command. i.e. not Unweave's fault, so
+			// we write it to the build logs and return a 400 to indicate user error.
+			logsch <- e.Error()
+			errch <- ErrBuildFailed
 		}
 	}()
 
@@ -215,8 +228,9 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 			}
 			logs = append(logs, types.LogEntry{TimeStamp: time.Now(), Message: l})
 		case e := <-errch:
-			log.Ctx(ctx).Error().Err(e).Msg("Error building image")
-			return nil, e
+			// Return both logs and error and let the caller decide what to do with them
+			// (e.g. return 500 or 400)
+			return logs, e
 		}
 	}
 }
