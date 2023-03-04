@@ -173,6 +173,10 @@ func (b *Builder) GetBuilder() string {
 	return "docker"
 }
 
+func (b *Builder) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
+	return nil, nil
+}
+
 func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader) ([]types.LogEntry, error) {
 	ctx = log.With().
 		Str("builder", b.GetBuilder()).
@@ -208,11 +212,16 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 			if !ok {
 				return logs, nil
 			}
+			log.Ctx(ctx).Info().Msgf("log entry: %v", l)
 			logs = append(logs, types.LogEntry{TimeStamp: time.Now(), Message: l})
 		case e := <-errch:
 			log.Ctx(ctx).Error().Err(e).Msg("Error building image")
 		}
 	}
+}
+
+func (b *Builder) SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error {
+	return nil
 }
 
 func (b *Builder) Push(ctx context.Context, repo, tag string) error {
