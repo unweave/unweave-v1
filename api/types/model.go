@@ -47,8 +47,8 @@ func (r RuntimeProvider) DisplayName() string {
 }
 
 type LogEntry struct {
-	TimStamp time.Time `json:"timestamp"`
-	Message  string    `json:"message"`
+	TimeStamp time.Time `json:"timestamp"`
+	Message   string    `json:"message"`
 }
 
 type NodeSpecs struct {

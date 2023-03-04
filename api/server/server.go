@@ -25,7 +25,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		return err
 	}
 
-	log.Ctx(ctx).Info().Msgf("Restarting watching %d sessions", len(sessions))
+	log.Ctx(ctx).Info().Msgf("🔄 Restarting watching %d sessions", len(sessions))
 
 	for _, s := range sessions {
 		sess := s

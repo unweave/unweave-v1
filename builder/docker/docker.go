@@ -208,7 +208,7 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 			if !ok {
 				return logs, nil
 			}
-			logs = append(logs, types.LogEntry{TimStamp: time.Now(), Message: l})
+			logs = append(logs, types.LogEntry{TimeStamp: time.Now(), Message: l})
 		case e := <-errch:
 			log.Ctx(ctx).Error().Err(e).Msg("Error building image")
 		}
