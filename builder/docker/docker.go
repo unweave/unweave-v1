@@ -52,8 +52,9 @@ func buildImage(ctx context.Context, buildPath, image, cache string) (
 		return nil, nil, err
 	}
 
-	// Buffer channel in case i/o is slow
-	logsch = make(chan string, 1000)
+	errch = make(chan error)
+	logsch = make(chan string, 1000) // buffer channel in case i/o is slow
+
 	readStdout := func(stdout io.ReadCloser, output chan string) {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -212,10 +213,10 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 			if !ok {
 				return logs, nil
 			}
-			log.Ctx(ctx).Info().Msgf("log entry: %v", l)
 			logs = append(logs, types.LogEntry{TimeStamp: time.Now(), Message: l})
 		case e := <-errch:
 			log.Ctx(ctx).Error().Err(e).Msg("Error building image")
+			return nil, e
 		}
 	}
 }
