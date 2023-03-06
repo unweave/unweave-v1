@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/rs/zerolog/log"
@@ -67,6 +66,10 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			return
 		}
 
+		if err := builder.SaveLogs(c, buildID, logs); err != nil {
+			log.Ctx(c).Error().Err(err).Msg("Failed to save logs")
+		}
+
 		meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
@@ -85,8 +88,22 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 	return buildID, nil
 }
 
-func (b *BuilderService) GetLogs(ctx context.Context, buildID string) (io.ReadCloser, error) {
-	return nil, nil
+func (b *BuilderService) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
+	build, err := db.Q.BuildGet(ctx, buildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get build: %v", err)
+	}
+
+	builder, err := b.srv.InitializeBuilder(ctx, build.BuilderType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initializer builder: %w", err)
+	}
+
+	logs, err := builder.GetLogs(ctx, buildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get logs from builder: %w", err)
+	}
+	return logs, nil
 }
 
 func (b *BuilderService) Watch(ctx context.Context, buildID string) error {

@@ -47,5 +47,6 @@ func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.U
 	if builder != "docker" {
 		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
 	}
-	return &docker.Builder{}, nil
+	logger := &docker.FsLogger{}
+	return docker.NewBuilder(logger), nil
 }

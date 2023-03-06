@@ -15,6 +15,12 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
+)
+
+const (
+	buildCtxCacheDir = "/tmp/unweave/buildctx"
+	buildLogsDir     = "/tmp/unweave/logs"
 )
 
 var (
@@ -181,14 +187,16 @@ func tagImage(ctx context.Context, source, target string) (string, error) {
 	return string(data), err
 }
 
-type Builder struct{}
+type Builder struct {
+	logger builder.LogDriver
+}
 
 func (b *Builder) GetBuilder() string {
 	return "docker"
 }
 
 func (b *Builder) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
-	return nil, nil
+	return b.logger.GetLogs(ctx, buildID)
 }
 
 func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader) ([]types.LogEntry, error) {
@@ -236,10 +244,14 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 }
 
 func (b *Builder) SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error {
-	return nil
+	return b.logger.SaveLogs(ctx, buildID, logs)
 }
 
 func (b *Builder) Push(ctx context.Context, repo, tag string) error {
 	//
 	return nil
+}
+
+func NewBuilder(logger builder.LogDriver) *Builder {
+	return &Builder{logger: logger}
 }
