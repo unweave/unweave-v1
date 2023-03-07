@@ -46,7 +46,29 @@ func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		res := &types.ImageBuildResponse{BuildID: buildID}
+		res := &types.ImagesBuildResponse{BuildID: buildID}
+		render.JSON(w, r, res)
+	}
+}
+
+// ImagesGetBuildLogs returns the logs for a build
+func ImagesGetBuildLogs(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Ctx(ctx).Info().Msgf("Executing ImagesGetBuildLogs request")
+
+		buildID := chi.URLParam(r, "buildID")
+
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
+
+		logs, err := srv.Builder.GetLogs(ctx, buildID)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build logs"))
+			return
+		}
+
+		res := &types.ImagesBuildLogsResponse{Logs: logs}
 		render.JSON(w, r, res)
 	}
 }

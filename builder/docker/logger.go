@@ -32,8 +32,11 @@ func (l *FsLogger) GetLogs(ctx context.Context, buildID string) ([]types.LogEntr
 }
 
 func (l *FsLogger) SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error {
-	path := filepath.Join(buildLogsDir, buildID+".json")
+	if err := os.MkdirAll(buildLogsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create build logs directory: %w", err)
+	}
 
+	path := filepath.Join(buildLogsDir, buildID+".json")
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create build log file: %w", err)

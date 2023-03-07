@@ -71,8 +71,12 @@ func (i *ImageBuildParams) Bind(r *http.Request) error {
 	return nil
 }
 
-type ImageBuildResponse struct {
+type ImagesBuildResponse struct {
 	BuildID string `json:"buildID"`
+}
+
+type ImagesBuildLogsResponse struct {
+	Logs []LogEntry `json:"buildLogs"`
 }
 
 type NodeTypesListResponse struct {
