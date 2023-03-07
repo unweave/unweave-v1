@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
 
@@ -51,31 +52,49 @@ func ImagesBuild(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-// ImagesGetBuildLogs returns the logs for a build
-func ImagesGetBuildLogs(rti runtime.Initializer) http.HandlerFunc {
+// ImagesGetBuild returns the details of a build. If the query param `logs` is set to
+// true, the logs of the build will be returned as well.
+func ImagesGetBuild(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		log.Ctx(ctx).Info().Msgf("Executing ImagesGetBuildLogs request")
+		log.Ctx(ctx).Info().Msgf("Executing ImagesGetBuild request")
 
 		buildID := chi.URLParam(r, "buildID")
+		getLogs := r.URL.Query().Get("logs") == "true"
 
 		accountID := GetAccountIDFromContext(ctx)
 		srv := NewCtxService(rti, accountID)
 
-		logs, err := srv.Builder.GetLogs(ctx, buildID)
+		// get build from db
+		build, err := db.Q.BuildGet(ctx, buildID)
 		if err != nil {
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build logs"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build"))
 			return
 		}
 
-		res := &types.ImagesBuildLogsResponse{Logs: logs}
+		res := &types.ImagesBuildGetResponse{
+			BuildID: buildID,
+			Status:  string(build.Status),
+			Logs:    nil,
+		}
+
+		if getLogs {
+			logs, err := srv.Builder.GetLogs(ctx, buildID)
+			if err != nil {
+				render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build logs"))
+				return
+			}
+			res.Logs = &logs
+		}
 		render.JSON(w, r, res)
 	}
 }
 
 // Provider
 
-// NodeTypesList returns a list of node types available for the user
+// NodeTypesList returns a list of node types available for the user. If the query param
+// `available` is set to true, only node types that are currently available to be
+// scheduled will be returned.
 func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

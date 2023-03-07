@@ -75,8 +75,10 @@ type ImagesBuildResponse struct {
 	BuildID string `json:"buildID"`
 }
 
-type ImagesBuildLogsResponse struct {
-	Logs []LogEntry `json:"buildLogs"`
+type ImagesBuildGetResponse struct {
+	BuildID string      `json:"buildID"`
+	Status  string      `json:"status"`
+	Logs    *[]LogEntry `json:"logs,omitempty"`
 }
 
 type NodeTypesListResponse struct {
