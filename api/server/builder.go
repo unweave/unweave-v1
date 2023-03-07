@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -78,7 +79,9 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 
 		// Push
 
-		err = builder.Push(c, buildID, "user-id", "project-id")
+		reponame := strings.ToLower(projectID) // reponame must be lowercase for dockerhub
+		namespace := strings.ToLower(b.srv.cid.String())
+		err = builder.Push(c, buildID, namespace, reponame)
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to push image")
 

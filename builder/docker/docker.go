@@ -223,7 +223,8 @@ func tagImage(ctx context.Context, source, target string) (string, error) {
 }
 
 type Builder struct {
-	logger builder.LogDriver
+	logger      builder.LogDriver
+	registryURI string
 }
 
 func (b *Builder) GetBuilder() string {
@@ -300,7 +301,8 @@ func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string)
 	}
 
 	// Tag provisional image with namespace/reponame:buildID
-	target := fmt.Sprintf("%s/%s:%s", namespace, reponame, buildID)
+
+	target := fmt.Sprintf("%s/%s/%s:%s", b.registryURI, namespace, reponame, buildID)
 	out, err := tagImage(ctx, imageID, target)
 	if err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
@@ -321,6 +323,6 @@ func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string)
 	return nil
 }
 
-func NewBuilder(logger builder.LogDriver) *Builder {
-	return &Builder{logger: logger}
+func NewBuilder(logger builder.LogDriver, registryURI string) *Builder {
+	return &Builder{logger: logger, registryURI: registryURI}
 }

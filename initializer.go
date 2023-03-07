@@ -23,6 +23,10 @@ type providerConfig struct {
 	LambdaLabsAPIKey string `env:"LAMBDALABS_API_KEY"`
 }
 
+type builderConfig struct {
+	RegistryURI string `env:"UNWEAVE_CONTAINER_REGISTRY_URI"`
+}
+
 func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
 	var cfg providerConfig
 	gonfig.GetFromEnvVariables(&cfg)
@@ -44,9 +48,12 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.U
 }
 
 func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error) {
+	var cfg builderConfig
+	gonfig.GetFromEnvVariables(&cfg)
+
 	if builder != "docker" {
 		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
 	}
 	logger := &docker.FsLogger{}
-	return docker.NewBuilder(logger), nil
+	return docker.NewBuilder(logger, cfg.RegistryURI), nil
 }
