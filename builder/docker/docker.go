@@ -93,23 +93,58 @@ func buildImage(ctx context.Context, buildPath, image, cache string) (
 			return
 		}
 		if e := cmd.Wait(); e != nil {
-			// This is the build failing not the command. i.e. not Unweave's fault, so
-			// we write it to the build logs and return a 400 to indicate user error.
-			logsch <- e.Error()
-			errch <- ErrBuildFailed
+			if e, ok := e.(*exec.ExitError); ok {
+				// This is the build failing not the command. i.e. not Unweave's fault, so
+				// we write it to the build logs and return a 400 to indicate user error.
+				logsch <- e.Error()
+				logsch <- fmt.Sprintf("Exit code: %d", e.ExitCode())
+				errch <- ErrBuildFailed
+				return
+			}
+			errch <- e
 		}
 	}()
 
 	return logsch, errch, nil
 }
 
+func findImage(ctx context.Context, image string) (string, error) {
+	cmd := exec.CommandContext(
+		ctx,
+		"docker",
+		"image",
+		"ls",
+		"-q",
+		image,
+	)
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+
+	imageID := ""
+	// Parse the output and return the first image ID. Use line break as the delimiter.
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		imageID = scanner.Text()
+		break
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error parsing image ls output: %v", err)
+	}
+	if imageID == "" {
+		return "", fmt.Errorf("image with name %q not found", image)
+	}
+	return imageID, nil
+}
+
 // pushImage pushes the image to the registry
-func pushImage(ctx context.Context, image string) (output string, err error) {
+func pushImage(ctx context.Context, uri string) (output string, err error) {
 	cmd := exec.CommandContext(
 		ctx,
 		"docker",
 		"push",
-		image,
+		uri,
 	)
 	data, err := cmd.CombinedOutput()
 	return string(data), err
@@ -250,8 +285,39 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 	}
 }
 
-func (b *Builder) Push(ctx context.Context, repo, tag string) error {
-	//
+func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string) error {
+	ctx = log.With().
+		Str("builder", b.GetBuilder()).
+		Str("buildID", buildID).
+		Logger().WithContext(ctx)
+
+	log.Ctx(ctx).Info().Msg("Executing push request")
+
+	// Find provisional image with buildID tag
+	imageID, err := findImage(ctx, fmt.Sprintf("uw-provisional:%s", buildID))
+	if err != nil {
+		return err
+	}
+
+	// Tag provisional image with namespace/reponame:buildID
+	target := fmt.Sprintf("%s/%s:%s", namespace, reponame, buildID)
+	out, err := tagImage(ctx, imageID, target)
+	if err != nil {
+		if e, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("failed to tag image: %s, %s", out, e.Stderr)
+		}
+		return fmt.Errorf("failed to tag image: %v", err)
+	}
+
+	out, err = pushImage(ctx, target)
+	if err != nil {
+		if e, ok := err.(*exec.ExitError); ok {
+			err = fmt.Errorf("failed to push image: %s, %s", out, e.Stderr)
+		}
+		return fmt.Errorf("failed to push image: %v", err)
+	}
+	log.Ctx(ctx).Info().Msgf("Pushed image to %q", target)
+
 	return nil
 }
 

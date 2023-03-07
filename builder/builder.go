@@ -22,4 +22,7 @@ type Builder interface {
 	Build(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
 	// Logs returns the logs for a build.
 	Logs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
+	// Push pushes an image to the container registry. The buildID is used as the tag.
+	// If you want to use a different tag, use the Tag method instead.
+	Push(ctx context.Context, buildID, namespace, reponame string) error
 }
