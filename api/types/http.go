@@ -11,12 +11,12 @@ import (
 
 const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
 
-type ImageBuildParams struct {
+type BuildsCreateParams struct {
 	Builder      string        `json:"builder"`
 	BuildContext io.ReadCloser `json:"-"`
 }
 
-func (i *ImageBuildParams) Bind(r *http.Request) error {
+func (i *BuildsCreateParams) Bind(r *http.Request) error {
 	jsonStr := r.FormValue("params")
 	if err := json.Unmarshal([]byte(jsonStr), i); err != nil {
 		return &Error{
@@ -71,11 +71,11 @@ func (i *ImageBuildParams) Bind(r *http.Request) error {
 	return nil
 }
 
-type ImagesBuildResponse struct {
+type BuildsCreateResponse struct {
 	BuildID string `json:"buildID"`
 }
 
-type ImagesBuildGetResponse struct {
+type BuildsGetResponse struct {
 	BuildID string      `json:"buildID"`
 	Status  string      `json:"status"`
 	Logs    *[]LogEntry `json:"logs,omitempty"`

@@ -88,9 +88,9 @@ func API(cfg Config, rti runtime.Initializer) {
 			})
 		})
 
-		r.Route("/images", func(r chi.Router) {
-			r.Post("/build", ImagesBuild(rti))
-			r.Get("/{buildID}/", ImagesGetBuild(rti))
+		r.Route("/builds", func(r chi.Router) {
+			r.Post("/", BuildsCreate(rti))
+			r.Get("/{buildID}/", BuildsGet(rti))
 		})
 	})
 

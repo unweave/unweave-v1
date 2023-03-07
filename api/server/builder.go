@@ -20,7 +20,7 @@ type BuilderService struct {
 	srv *Service
 }
 
-func (b *BuilderService) Build(ctx context.Context, projectID string, params *types.ImageBuildParams) (string, error) {
+func (b *BuilderService) Build(ctx context.Context, projectID string, params *types.BuildsCreateParams) (string, error) {
 	builder, err := b.srv.InitializeBuilder(ctx, params.Builder)
 	if err != nil {
 		return "", fmt.Errorf("failed to create runtime: %w", err)
