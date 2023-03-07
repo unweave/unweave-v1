@@ -14,6 +14,7 @@ import (
 
 type BuildMetaDataV1 struct {
 	Version string `json:"version"`
+	Error   string `json:"error"`
 }
 
 type BuilderService struct {
@@ -40,27 +41,61 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		c := context.Background()
 		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
 
+		// Build
+
 		err := builder.Build(c, buildID, params.BuildContext)
 		if err != nil {
+			log.Ctx(c).Error().Err(err).Msg("Failed to build image")
+
 			p := db.BuildUpdateParams{ID: buildID}
 
 			var e *types.Error
+			var errmeta string
 			if errors.As(err, &e) && e.Code == http.StatusBadRequest {
 				log.Ctx(c).Warn().Err(err).Msg("User build failed")
 				p.Status = db.UnweaveBuildStatusFailed
+				errmeta = fmt.Sprintf("Build failed: %v", err.Error())
 			} else {
 				log.Ctx(c).Error().Err(err).Msg("Failed to build image")
 				p.Status = db.UnweaveBuildStatusError
+				errmeta = fmt.Sprintf("Build error: %v", err.Error())
 			}
 
-			meta, err := json.Marshal(BuildMetaDataV1{Version: "1"})
-			if err != nil {
-				log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
+			meta, merr := json.Marshal(BuildMetaDataV1{
+				Version: "1",
+				Error:   errmeta,
+			})
+			if merr != nil {
+				log.Ctx(c).Error().Err(merr).Msg("Failed to marshal build metadata")
 			}
 			p.MetaData = meta
 
-			if err := db.Q.BuildUpdate(c, p); err != nil {
-				log.Ctx(c).Error().Err(err).Msg("Failed to set build error in DB")
+			if derr := db.Q.BuildUpdate(c, p); derr != nil {
+				log.Ctx(c).Error().Err(derr).Msg("Failed to set build error in DB")
+			}
+			return
+		}
+
+		// Push
+
+		err = builder.Push(c, buildID, "user-id", "project-id")
+		if err != nil {
+			log.Ctx(c).Error().Err(err).Msg("Failed to push image")
+
+			meta, e := json.Marshal(BuildMetaDataV1{
+				Version: "1",
+				Error:   fmt.Sprintf("Builc push failed: %v", err.Error()),
+			})
+			if e != nil {
+				log.Ctx(c).Error().Err(e).Msg("Failed to marshal build metadata")
+			}
+			p := db.BuildUpdateParams{
+				ID:       buildID,
+				Status:   db.UnweaveBuildStatusError,
+				MetaData: meta,
+			}
+			if e := db.Q.BuildUpdate(c, p); e != nil {
+				log.Ctx(c).Error().Err(e).Msg("Failed to set build error in DB")
 			}
 			return
 		}
