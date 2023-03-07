@@ -13,8 +13,7 @@ import (
 )
 
 type BuildMetaDataV1 struct {
-	Version string           `json:"version"`
-	Logs    []types.LogEntry `json:"logs"`
+	Version string `json:"version"`
 }
 
 type BuilderService struct {
@@ -41,7 +40,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		c := context.Background()
 		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
 
-		logs, err := builder.Build(c, buildID, params.BuildContext)
+		err := builder.Build(c, buildID, params.BuildContext)
 		if err != nil {
 			p := db.BuildUpdateParams{ID: buildID}
 
@@ -54,7 +53,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 				p.Status = db.UnweaveBuildStatusError
 			}
 
-			meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
+			meta, err := json.Marshal(BuildMetaDataV1{Version: "1"})
 			if err != nil {
 				log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
 			}
@@ -66,11 +65,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			return
 		}
 
-		if err := builder.SaveLogs(c, buildID, logs); err != nil {
-			log.Ctx(c).Error().Err(err).Msg("Failed to save logs")
-		}
-
-		meta, err := json.Marshal(BuildMetaDataV1{Version: "1", Logs: logs})
+		meta, err := json.Marshal(BuildMetaDataV1{Version: "1"})
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
 		}
@@ -99,7 +94,7 @@ func (b *BuilderService) GetLogs(ctx context.Context, buildID string) ([]types.L
 		return nil, fmt.Errorf("failed to initializer builder: %w", err)
 	}
 
-	logs, err := builder.GetLogs(ctx, buildID)
+	logs, err := builder.Logs(ctx, buildID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get logs from builder: %w", err)
 	}

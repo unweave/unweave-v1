@@ -15,10 +15,11 @@ type LogDriver interface {
 }
 
 type Builder interface {
-	LogDriver
 	GetBuilder() string
 	// Build builds a container image from a build context.
 	// The build context is a zip file containing the source code and any other files
 	// needed to build the image.
-	Build(ctx context.Context, buildID string, buildCtx io.Reader) (logs []types.LogEntry, err error)
+	Build(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
+	// Logs returns the logs for a build.
+	Logs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
 }

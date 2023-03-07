@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	buildCtxCacheDir = "/tmp/unweave/buildctx"
-	buildLogsDir     = "/tmp/unweave/logs"
+	buildCtxDir  = "/tmp/unweave/buildctx"
+	buildLogsDir = "/tmp/unweave/logs"
 )
 
 var (
@@ -47,7 +47,7 @@ func buildImage(ctx context.Context, buildPath, image, cache string) (
 	c := []string{
 		"docker",
 		"build",
-		//"--cache-from", cache,
+		//"--cache-from", cache, // TODO
 		"--build-arg", "BUILDKIT_INLINE_CACHE=1",
 		"-t", image,
 		buildPath,
@@ -195,11 +195,13 @@ func (b *Builder) GetBuilder() string {
 	return "docker"
 }
 
-func (b *Builder) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
+func (b *Builder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
+	ctx = log.With().Str("builder", b.GetBuilder()).Str("buildID", buildID).Logger().WithContext(ctx)
+	log.Ctx(ctx).Info().Msg("Executing logs request")
 	return b.logger.GetLogs(ctx, buildID)
 }
 
-func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader) ([]types.LogEntry, error) {
+func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader) error {
 	ctx = log.With().
 		Str("builder", b.GetBuilder()).
 		Str("buildID", buildID).
@@ -207,44 +209,45 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 
 	log.Ctx(ctx).Info().Msg("Executing build request")
 
-	dir := fmt.Sprintf("/tmp/uw-build-ctx/%s", buildID)
+	dir := filepath.Join(buildCtxDir, buildID)
 	buildBytes, err := io.ReadAll(buildCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read build context: %v", err)
+		return fmt.Errorf("failed to read build context: %v", err)
 	}
 
 	if err := saveContext(dir, buildBytes); err != nil {
-		return nil, fmt.Errorf("failed to save build context: %v", err)
+		return fmt.Errorf("failed to save build context: %v", err)
 	}
 
 	imageURI := fmt.Sprintf("uw-provisional:%s", buildID) // until tagged
 	logsch, errch, err := buildImage(ctx, dir, imageURI, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to build image: %v", err)
+		return fmt.Errorf("failed to build image: %v", err)
 	}
 	log.Ctx(ctx).Info().Msg("Started image build with build context at " + dir)
 
 	var logs []types.LogEntry
 
+	defer func() {
+		log.Ctx(ctx).Info().Msg("Saving logs")
+		if err := b.logger.SaveLogs(ctx, buildID, logs); err != nil {
+			log.Ctx(ctx).Error().Err(err).Msg("Failed to save logs")
+		}
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
-			return logs, nil
+			return nil
 		case l, ok := <-logsch:
 			if !ok {
-				return logs, nil
+				return nil
 			}
 			logs = append(logs, types.LogEntry{TimeStamp: time.Now(), Message: l})
 		case e := <-errch:
-			// Return both logs and error and let the caller decide what to do with them
-			// (e.g. return 500 or 400)
-			return logs, e
+			return e
 		}
 	}
-}
-
-func (b *Builder) SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error {
-	return b.logger.SaveLogs(ctx, buildID, logs)
 }
 
 func (b *Builder) Push(ctx context.Context, repo, tag string) error {
