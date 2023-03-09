@@ -14,6 +14,9 @@ create table unweave.build
     meta_data    jsonb                                not null default '{}'::jsonb
 );
 
+alter table unweave.project
+    add column default_build text references unweave.build (id);
+
 -- +goose StatementEnd
 
 -- +goose Down
