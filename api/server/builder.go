@@ -14,7 +14,7 @@ import (
 )
 
 type BuildMetaDataV1 struct {
-	Version string `json:"version"`
+	Version int16  `json:"version"`
 	Error   string `json:"error"`
 }
 
@@ -63,7 +63,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			}
 
 			meta, merr := json.Marshal(BuildMetaDataV1{
-				Version: "1",
+				Version: 1,
 				Error:   errmeta,
 			})
 			if merr != nil {
@@ -86,7 +86,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			log.Ctx(c).Error().Err(err).Msg("Failed to push image")
 
 			meta, e := json.Marshal(BuildMetaDataV1{
-				Version: "1",
+				Version: 1,
 				Error:   fmt.Sprintf("Builc push failed: %v", err.Error()),
 			})
 			if e != nil {
@@ -103,7 +103,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			return
 		}
 
-		meta, err := json.Marshal(BuildMetaDataV1{Version: "1"})
+		meta, err := json.Marshal(BuildMetaDataV1{Version: 1})
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to marshal build metadata")
 		}

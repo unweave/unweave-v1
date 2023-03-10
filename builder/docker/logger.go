@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 )
 
 type FsLogger struct{}
@@ -24,11 +25,11 @@ func (l *FsLogger) GetLogs(ctx context.Context, buildID string) ([]types.LogEntr
 	if err != nil {
 		return nil, fmt.Errorf("failed to read build log file: %w", err)
 	}
-	var logs []types.LogEntry
-	if err := json.Unmarshal(contents, &logs); err != nil {
+	var data builder.BuildLogsV1
+	if err := json.Unmarshal(contents, &data); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal build logs: %w", err)
 	}
-	return logs, nil
+	return data.Logs, nil
 }
 
 func (l *FsLogger) SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error {
@@ -41,7 +42,12 @@ func (l *FsLogger) SaveLogs(ctx context.Context, buildID string, logs []types.Lo
 	if err != nil {
 		return fmt.Errorf("failed to create build log file: %w", err)
 	}
-	contents, err := json.Marshal(logs)
+
+	data := builder.BuildLogsV1{
+		Version: 1,
+		Logs:    logs,
+	}
+	contents, err := json.Marshal(data)
 	if err != nil {
 		return fmt.Errorf("failed to marshal build logs: %w", err)
 	}

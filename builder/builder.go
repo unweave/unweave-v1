@@ -7,6 +7,11 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+type BuildLogsV1 struct {
+	Version int16            `json:"version"`
+	Logs    []types.LogEntry `json:"logs"`
+}
+
 type LogDriver interface {
 	// GetLogs returns the logs for a build.
 	GetLogs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
