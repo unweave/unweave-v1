@@ -9,6 +9,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave/builder/docker"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/gonfig"
@@ -21,7 +23,11 @@ type providerConfig struct {
 	LambdaLabsAPIKey string `env:"LAMBDALABS_API_KEY"`
 }
 
-func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
+type builderConfig struct {
+	RegistryURI string `env:"UNWEAVE_CONTAINER_REGISTRY_URI"`
+}
+
+func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
 	var cfg providerConfig
 	gonfig.GetFromEnvVariables(&cfg)
 
@@ -39,4 +45,15 @@ func (i *EnvInitializer) Initialize(ctx context.Context, accountID uuid.UUID, pr
 	default:
 		return nil, fmt.Errorf("%q provider not supported in the env initializer", provider)
 	}
+}
+
+func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error) {
+	var cfg builderConfig
+	gonfig.GetFromEnvVariables(&cfg)
+
+	if builder != "docker" {
+		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
+	}
+	logger := &docker.FsLogger{}
+	return docker.NewBuilder(logger, cfg.RegistryURI), nil
 }

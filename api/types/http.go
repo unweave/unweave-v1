@@ -1,17 +1,85 @@
 package types
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
-	"github.com/rs/zerolog"
 	"golang.org/x/crypto/ssh"
 )
 
-type NoOpLogHook struct{}
+const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
 
-func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
+type BuildsCreateParams struct {
+	Builder      string        `json:"builder"`
+	BuildContext io.ReadCloser `json:"-"`
+}
 
-var NewErrLogHook = func() zerolog.Hook { return NoOpLogHook{} }
+func (i *BuildsCreateParams) Bind(r *http.Request) error {
+	jsonStr := r.FormValue("params")
+	if err := json.Unmarshal([]byte(jsonStr), i); err != nil {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Failed to parse request body",
+			Suggestion: "Make sure the request body is valid JSON",
+			Err:        err,
+		}
+	}
+	if i.Builder != "docker" {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    fmt.Sprintf("Invalid builder: %s", i.Builder),
+			Suggestion: "Valid builders are: docker",
+		}
+	}
+
+	// Validate build context in Multipart Form
+	invalidFileErr := &Error{
+		Code:       http.StatusBadRequest,
+		Message:    "Failed to parse build context file",
+		Suggestion: "Make sure the build context is a valid zipped multipart form file called 'context.zip'",
+	}
+
+	if err := r.ParseMultipartForm(maxBuildContextSize); err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to parse multipart form: %w", err)
+		return invalidFileErr
+	}
+
+	// Only allowed to upload a single file called context.zip for now
+	form := r.MultipartForm
+	file, exists := form.File["context"]
+	if !exists {
+		invalidFileErr.Message = "No build context file found"
+		return invalidFileErr
+	}
+	if len(file) != 1 {
+		invalidFileErr.Message = "More than one build context file found"
+		return invalidFileErr
+	}
+	if file[0].Filename != "context.zip" {
+		invalidFileErr.Message = "Invalid build context file name"
+		return invalidFileErr
+	}
+	part, err := file[0].Open()
+	if err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to open file: %w", err)
+		return invalidFileErr
+	}
+	i.BuildContext = part
+
+	return nil
+}
+
+type BuildsCreateResponse struct {
+	BuildID string `json:"buildID"`
+}
+
+type BuildsGetResponse struct {
+	BuildID string      `json:"buildID"`
+	Status  string      `json:"status"`
+	Logs    *[]LogEntry `json:"logs,omitempty"`
+}
 
 type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`

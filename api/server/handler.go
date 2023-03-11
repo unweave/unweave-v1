@@ -9,12 +9,92 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
 
+// Builder
+
+// BuildsCreate expects a request body containing both the build context and the json
+// params for the build.
+//
+//		eg. curl -X POST \
+//				 -H 'Authorization: Bearer <token>' \
+//	 		 	 -H 'Content-Type: multipart/form-data' \
+//	 		 	 -F context=@context.zip \
+//	 		 	 -F 'params={"builder": "docker"}'
+//				 https://<api-host>/builds
+func BuildsCreate(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Ctx(ctx).Info().Msgf("Executing BuildsCreate request")
+
+		ibp := &types.BuildsCreateParams{}
+		if err := ibp.Bind(r); err != nil {
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
+			return
+		}
+
+		accountID := GetAccountIDFromContext(ctx)
+		projectID := GetProjectIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID)
+
+		buildID, err := srv.Builder.Build(ctx, projectID, ibp)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to build image"))
+			return
+		}
+
+		res := &types.BuildsCreateResponse{BuildID: buildID}
+		render.JSON(w, r, res)
+	}
+}
+
+// BuildsGet returns the details of a build. If the query param `logs` is set to
+// true, the logs of the build will be returned as well.
+func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Ctx(ctx).Info().Msgf("Executing BuildsGet request")
+
+		buildID := chi.URLParam(r, "buildID")
+		getLogs := r.URL.Query().Get("logs") == "true"
+
+		accountID := GetAccountIDFromContext(ctx)
+		srv := NewCtxService(rti, accountID)
+
+		// get build from db
+		build, err := db.Q.BuildGet(ctx, buildID)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build"))
+			return
+		}
+
+		res := &types.BuildsGetResponse{
+			BuildID: buildID,
+			Status:  string(build.Status),
+			Logs:    nil,
+		}
+
+		if getLogs {
+			logs, err := srv.Builder.GetLogs(ctx, buildID)
+			if err != nil {
+				render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get build logs"))
+				return
+			}
+			res.Logs = &logs
+		}
+		render.JSON(w, r, res)
+	}
+}
+
 // Provider
 
-// NodeTypesList returns a list of node types available for the user
+// NodeTypesList returns a list of node types available for the user. If the query param
+// `available` is set to true, only node types that are currently available to be
+// scheduled will be returned.
 func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -47,7 +127,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 		scr := types.SessionCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
 		}
 
@@ -150,7 +230,7 @@ func SSHKeyAdd(rti runtime.Initializer) http.HandlerFunc {
 		params := types.SSHKeyAddParams{}
 		if err := render.Bind(r, &params); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Invalid request body"))
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
 		}
 
@@ -171,7 +251,11 @@ func SSHKeyGenerate(rti runtime.Initializer) http.HandlerFunc {
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyCreate request")
 
 		params := types.SSHKeyGenerateParams{}
-		render.Bind(r, &params)
+		if err := render.Bind(r, &params); err != nil {
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
+			return
+		}
 
 		accountID := GetAccountIDFromContext(ctx)
 		srv := NewCtxService(rti, accountID)

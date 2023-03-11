@@ -1,3 +1,19 @@
+-- name: BuildCreate :one
+insert into unweave.build (project_id, builder_type)
+values ($1, $2)
+returning id;
+
+-- name: BuildGet :one
+select *
+from unweave.build
+where id = $1;
+
+-- name: BuildUpdate :exec
+update unweave.build
+set status    = $2,
+    meta_data = $3
+where id = $1;
+
 -- name: ProjectGet :one
 select *
 from unweave.project

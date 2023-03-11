@@ -2,20 +2,25 @@ package types
 
 import (
 	"time"
-)
 
-const (
-	RuntimeProviderKey = "RuntimeProvider"
+	"github.com/rs/zerolog"
 )
 
 type SessionStatus string
 
 const (
+	RuntimeProviderKey               = "RuntimeProvider"
 	StatusInitializing SessionStatus = "initializing"
 	StatusRunning      SessionStatus = "running"
 	StatusTerminated   SessionStatus = "terminated"
 	StatusError        SessionStatus = "error"
 )
+
+type NoOpLogHook struct{}
+
+func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
+
+var NewErrLogHook = func() zerolog.Hook { return NoOpLogHook{} }
 
 // RuntimeProvider is the platform that the node is spawned on. This is where the user
 // code runs
@@ -39,6 +44,11 @@ func (r RuntimeProvider) DisplayName() string {
 	default:
 		return "Unknown"
 	}
+}
+
+type LogEntry struct {
+	TimeStamp time.Time `json:"timestamp"`
+	Message   string    `json:"message"`
 }
 
 type NodeSpecs struct {

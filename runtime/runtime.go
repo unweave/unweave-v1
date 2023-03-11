@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 )
 
 type Runtime struct {
@@ -53,5 +54,6 @@ type Session interface {
 }
 
 type Initializer interface {
-	Initialize(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*Runtime, error)
+	InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error)
 }

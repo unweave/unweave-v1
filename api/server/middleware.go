@@ -19,6 +19,7 @@ import (
 // the call stack.
 const (
 	AccountIDCtxKey     = "accountID"
+	BuildIDCtxKey       = "buildID"
 	ProjectIDCtxKey     = "project"
 	SessionIDCtxKey     = "session"
 	SessionStatusCtxKey = "sessionStatus"

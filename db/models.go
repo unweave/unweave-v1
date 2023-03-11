@@ -14,6 +14,52 @@ import (
 	"github.com/google/uuid"
 )
 
+type UnweaveBuildStatus string
+
+const (
+	UnweaveBuildStatusInitializing UnweaveBuildStatus = "initializing"
+	UnweaveBuildStatusBuilding     UnweaveBuildStatus = "building"
+	UnweaveBuildStatusSuccess      UnweaveBuildStatus = "success"
+	UnweaveBuildStatusFailed       UnweaveBuildStatus = "failed"
+	UnweaveBuildStatusError        UnweaveBuildStatus = "error"
+	UnweaveBuildStatusCanceled     UnweaveBuildStatus = "canceled"
+)
+
+func (e *UnweaveBuildStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UnweaveBuildStatus(s)
+	case string:
+		*e = UnweaveBuildStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UnweaveBuildStatus: %T", src)
+	}
+	return nil
+}
+
+type NullUnweaveBuildStatus struct {
+	UnweaveBuildStatus UnweaveBuildStatus
+	Valid              bool // Valid is true if String is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUnweaveBuildStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.UnweaveBuildStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UnweaveBuildStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUnweaveBuildStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return ns.UnweaveBuildStatus, nil
+}
+
 type UnweaveSessionStatus string
 
 const (
@@ -60,6 +106,16 @@ func (ns NullUnweaveSessionStatus) Value() (driver.Value, error) {
 
 type UnweaveAccount struct {
 	ID uuid.UUID `json:"id"`
+}
+
+type UnweaveBuild struct {
+	ID          string             `json:"id"`
+	ProjectID   string             `json:"projectID"`
+	BuilderType string             `json:"builderType"`
+	Status      UnweaveBuildStatus `json:"status"`
+	CreatedAt   time.Time          `json:"createdAt"`
+	UpdatedAt   time.Time          `json:"updatedAt"`
+	MetaData    json.RawMessage    `json:"metaData"`
 }
 
 type UnweaveProject struct {

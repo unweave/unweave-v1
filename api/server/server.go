@@ -25,7 +25,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		return err
 	}
 
-	log.Ctx(ctx).Info().Msgf("Restarting watching %d sessions", len(sessions))
+	log.Ctx(ctx).Info().Msgf("🔄 Restarting watching %d sessions", len(sessions))
 
 	for _, s := range sessions {
 		sess := s
@@ -86,6 +86,11 @@ func API(cfg Config, rti runtime.Initializer) {
 				r.Get("/{sessionID}", SessionsGet(rti))
 				r.Put("/{sessionID}/terminate", SessionsTerminate(rti))
 			})
+		})
+
+		r.Route("/builds", func(r chi.Router) {
+			r.Post("/", BuildsCreate(rti))
+			r.Get("/{buildID}/", BuildsGet(rti))
 		})
 	})
 
