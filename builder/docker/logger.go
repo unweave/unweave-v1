@@ -12,6 +12,8 @@ import (
 	"github.com/unweave/unweave/builder"
 )
 
+// FsLogger is a FileSystem logger that implements the builder.LogDriver interface.
+// It stores the build logs in a directory on the filesystem.
 type FsLogger struct{}
 
 func (l *FsLogger) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {

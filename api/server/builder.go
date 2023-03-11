@@ -13,6 +13,7 @@ import (
 	"github.com/unweave/unweave/db"
 )
 
+// BuildMetaDataV1 versions the metadata for a build stored in the DB.
 type BuildMetaDataV1 struct {
 	Version int16  `json:"version"`
 	Error   string `json:"error"`
@@ -137,12 +138,4 @@ func (b *BuilderService) GetLogs(ctx context.Context, buildID string) ([]types.L
 		return nil, fmt.Errorf("failed to get logs from builder: %w", err)
 	}
 	return logs, nil
-}
-
-func (b *BuilderService) Watch(ctx context.Context, buildID string) error {
-
-	// call builder to get build status
-	// update build status in db
-
-	return nil
 }

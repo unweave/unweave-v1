@@ -9,10 +9,6 @@ import (
 	"github.com/unweave/unweave/runtime"
 )
 
-type CtxService interface {
-	Initialize()
-}
-
 type Service struct {
 	rti     runtime.Initializer
 	cid     uuid.UUID // caller ID

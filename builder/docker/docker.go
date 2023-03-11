@@ -222,6 +222,7 @@ func tagImage(ctx context.Context, source, target string) (string, error) {
 	return string(data), err
 }
 
+// Builder is a Docker builder that implements the builder.Builder interface.
 type Builder struct {
 	logger      builder.LogDriver
 	registryURI string

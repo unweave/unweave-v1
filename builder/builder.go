@@ -7,11 +7,13 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+// BuildLogsV1 versions the build logs format stored and fetched by the LogDriver.
 type BuildLogsV1 struct {
 	Version int16            `json:"version"`
 	Logs    []types.LogEntry `json:"logs"`
 }
 
+// LogDriver defines the interface for storing and retrieving build logs.
 type LogDriver interface {
 	// GetLogs returns the logs for a build.
 	GetLogs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
@@ -19,6 +21,7 @@ type LogDriver interface {
 	SaveLogs(ctx context.Context, buildID string, logs []types.LogEntry) error
 }
 
+// Builder defines the interface for building and storing container images.
 type Builder interface {
 	GetBuilder() string
 	// Build builds a container image from a build context.
