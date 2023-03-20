@@ -13,6 +13,7 @@ const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
 
 type BuildsCreateParams struct {
 	Builder      string        `json:"builder"`
+	Name         *string       `json:"name,omitempty"`
 	BuildContext io.ReadCloser `json:"-"`
 }
 

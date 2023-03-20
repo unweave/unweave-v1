@@ -18,7 +18,6 @@ elif [ $# -gt 1 ]; then
 fi
 
 psql "$DB_URL" -f "$BASEDIR/init-scripts/1_initial_schema.sql"
-go install github.com/pressly/goose/v3/cmd/goose@latest
 goose -dir ./migrations postgres "$DB_URL" up
 echo "Migrations complete."
 

@@ -15,25 +15,32 @@ import (
 )
 
 const BuildCreate = `-- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type)
-values ($1, $2)
+insert into unweave.build (project_id, builder_type, name, created_by)
+values ($1, $2, $3, $4)
 returning id
 `
 
 type BuildCreateParams struct {
-	ProjectID   string `json:"projectID"`
-	BuilderType string `json:"builderType"`
+	ProjectID   string    `json:"projectID"`
+	BuilderType string    `json:"builderType"`
+	Name        string    `json:"name"`
+	CreatedBy   uuid.UUID `json:"createdBy"`
 }
 
 func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, BuildCreate, arg.ProjectID, arg.BuilderType)
+	row := q.db.QueryRowContext(ctx, BuildCreate,
+		arg.ProjectID,
+		arg.BuilderType,
+		arg.Name,
+		arg.CreatedBy,
+	)
 	var id string
 	err := row.Scan(&id)
 	return id, err
 }
 
 const BuildGet = `-- name: BuildGet :one
-select id, project_id, builder_type, status, created_at, updated_at, meta_data
+select id, name, project_id, builder_type, status, created_by, created_at, started_at, finished_at, updated_at, meta_data
 from unweave.build
 where id = $1
 `
@@ -43,10 +50,14 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	var i UnweaveBuild
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.ProjectID,
 		&i.BuilderType,
 		&i.Status,
+		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.StartedAt,
+		&i.FinishedAt,
 		&i.UpdatedAt,
 		&i.MetaData,
 	)
@@ -186,22 +197,15 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 }
 
 const ProjectGet = `-- name: ProjectGet :one
-select id, name, icon, owner_id, created_at
+select id
 from unweave.project
 where id = $1
 `
 
-func (q *Queries) ProjectGet(ctx context.Context, id string) (UnweaveProject, error) {
+func (q *Queries) ProjectGet(ctx context.Context, id string) (string, error) {
 	row := q.db.QueryRowContext(ctx, ProjectGet, id)
-	var i UnweaveProject
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Icon,
-		&i.OwnerID,
-		&i.CreatedAt,
-	)
-	return i, err
+	err := row.Scan(&id)
+	return id, err
 }
 
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
@@ -346,7 +350,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error, build
 from unweave.session
 where id = $1
 `
@@ -369,12 +373,13 @@ func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, er
 		&i.SshKeyID,
 		&i.ConnectionInfo,
 		&i.Error,
+		&i.Build,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error, build
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -404,6 +409,7 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.SshKeyID,
 			&i.ConnectionInfo,
 			&i.Error,
+			&i.Build,
 		); err != nil {
 			return nil, err
 		}

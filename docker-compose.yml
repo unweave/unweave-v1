@@ -18,7 +18,9 @@ services:
       retries: 10
 
   migrate:
-    image: golang:1.19
+    build:
+      context: db
+      dockerfile: Dockerfile
     working_dir: /home/db
     depends_on:
       db:
@@ -26,6 +28,7 @@ services:
     volumes:
       - ./db/migrations:/home/db/migrations
       - ./db/seed/:/home/db/seed/
+      - ./db/init-scripts:/home/db/init-scripts
       - ./db/migrate.sh:/home/db/migrate.sh
     environment:
       DATABASE_URL: postgres://${UNWEAVE_DB_USER}:${UNWEAVE_DB_PASSWORD}@db/${UNWEAVE_DB_NAME}?sslmode=disable

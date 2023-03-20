@@ -86,7 +86,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		projectID := chi.URLParam(r, "projectID")
 
-		project, err := db.Q.ProjectGet(ctx, projectID)
+		_, err := db.Q.ProjectGet(ctx, projectID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				render.Render(w, r.WithContext(ctx), &types.Error{
@@ -99,12 +99,12 @@ func withProjectCtx(next http.Handler) http.Handler {
 
 			err = fmt.Errorf("failed to fetch project from db %q: %w", projectID, err)
 			render.Render(w, r.WithContext(ctx),
-				ErrInternalServer(err, "Failed to terminate session"))
+				ErrInternalServer(err, "Failed to fetch project"))
 			return
 		}
 
-		ctx = context.WithValue(ctx, ProjectIDCtxKey, project)
-		ctx = log.With().Str(ProjectIDCtxKey, project.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, ProjectIDCtxKey, projectID)
+		ctx = log.With().Str(ProjectIDCtxKey, projectID).Logger().WithContext(ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -129,7 +129,7 @@ func withSessionCtx(next http.Handler) http.Handler {
 			}
 
 			err = fmt.Errorf("failed to fetch session from db %q: %w", sessionID, err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to terminate session"))
+			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to fetch session"))
 			return
 		}
 
