@@ -8,6 +8,13 @@ select *
 from unweave.build
 where id = $1;
 
+-- name: BuildGetUsedBy :many
+select s.*
+from (select id from unweave.build as ub where ub.id = $1) as b
+         join unweave.session s
+              on s.build = b.id
+;
+
 -- name: BuildUpdate :exec
 update unweave.build
 set status    = $2,

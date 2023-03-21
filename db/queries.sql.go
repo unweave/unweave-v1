@@ -64,6 +64,52 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	return i, err
 }
 
+const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.provider, s.ssh_key_id, s.connection_info, s.error, s.build
+from (select id from unweave.build as ub where ub.id = $1) as b
+         join unweave.session s
+              on s.build = b.id
+`
+
+func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSession, error) {
+	rows, err := q.db.QueryContext(ctx, BuildGetUsedBy, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveSession
+	for rows.Next() {
+		var i UnweaveSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NodeID,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.Provider,
+			&i.SshKeyID,
+			&i.ConnectionInfo,
+			&i.Error,
+			&i.Build,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const BuildUpdate = `-- name: BuildUpdate :exec
 update unweave.build
 set status    = $2,

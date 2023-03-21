@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -61,6 +62,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 
 		buildID := chi.URLParam(r, "buildID")
 		getLogs := r.URL.Query().Get("logs") == "true"
+		usedBy := r.URL.Query().Get("usedBy") == "true"
 
 		accountID := GetAccountIDFromContext(ctx)
 		srv := NewCtxService(rti, accountID)
@@ -72,10 +74,50 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
+		var st *time.Time
+		if build.StartedAt.Valid {
+			st = &build.StartedAt.Time
+		}
+		var ft *time.Time
+		if build.FinishedAt.Valid {
+			ft = &build.FinishedAt.Time
+		}
+
 		res := &types.BuildsGetResponse{
-			BuildID: buildID,
-			Status:  string(build.Status),
-			Logs:    nil,
+			BuildID:        buildID,
+			Name:           build.Name,
+			ProjectID:      build.ProjectID,
+			Status:         string(build.Status),
+			BuilderType:    build.BuilderType,
+			CreatedAt:      build.CreatedAt,
+			StartedAt:      st,
+			FinishedAt:     ft,
+			UsedBySessions: []types.Session{},
+			Logs:           nil,
+		}
+
+		if usedBy {
+			sessions, err := db.Q.BuildGetUsedBy(ctx, buildID)
+			if err != nil {
+				render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get sessions using build"))
+				return
+			}
+
+			ubs := make([]types.Session, len(sessions))
+			for i, s := range sessions {
+				s := s
+				ubs[i] = types.Session{
+					ID:         s.ID,
+					SSHKey:     types.SSHKey{}, // TODO: should we return this here?
+					Connection: nil,            // TODO: should we return this here?
+					Status:     types.SessionStatus(s.Status),
+					CreatedAt:  &s.CreatedAt,
+					NodeTypeID: s.NodeID,
+					Region:     s.Region,
+					Provider:   types.RuntimeProvider(s.Provider),
+				}
+			}
+			res.UsedBySessions = ubs
 		}
 
 		if getLogs {
