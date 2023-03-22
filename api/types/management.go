@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"regexp"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const projectNameRegex = `^[\w.-]+$`
@@ -36,7 +34,7 @@ type AccessTokensDeleteResponse struct {
 }
 
 type Account struct {
-	UserID         uuid.UUID `json:"userID"`
+	UserID         string    `json:"userID"`
 	Email          string    `json:"email"`
 	GithubID       int32     `json:"githubID"`
 	GithubUsername string    `json:"githubUsername"`

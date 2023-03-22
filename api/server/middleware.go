@@ -25,13 +25,13 @@ const (
 	SessionStatusCtxKey = "sessionStatus"
 )
 
-func SetAccountIDInContext(ctx context.Context, uid uuid.UUID) context.Context {
-	return context.WithValue(ctx, AccountIDCtxKey, uid)
+func SetAccountIDInContext(ctx context.Context, aid string) context.Context {
+	return context.WithValue(ctx, AccountIDCtxKey, aid)
 }
 
-func GetAccountIDFromContext(ctx context.Context) uuid.UUID {
-	uid, ok := ctx.Value(AccountIDCtxKey).(uuid.UUID)
-	if !ok {
+func GetAccountIDFromContext(ctx context.Context) string {
+	uid, ok := ctx.Value(AccountIDCtxKey).(string)
+	if !ok || uid == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("account not found in context")
 		panic("account not found in context")
@@ -45,7 +45,7 @@ func SetProjectIDInContext(ctx context.Context, projectID string) context.Contex
 
 func GetProjectIDFromContext(ctx context.Context) string {
 	projectID, ok := ctx.Value(ProjectIDCtxKey).(string)
-	if !ok {
+	if !ok || projectID == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("project not found in context")
 		panic("project not found in context")
@@ -59,7 +59,7 @@ func SetSessionIDInContext(ctx context.Context, sessionID string) context.Contex
 
 func GetSessionIDFromContext(ctx context.Context) string {
 	sessionID, ok := ctx.Value(SessionIDCtxKey).(string)
-	if !ok {
+	if !ok || sessionID == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("session not found in context")
 		panic("session not found in context")

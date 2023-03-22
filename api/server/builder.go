@@ -89,7 +89,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		// Push
 
 		reponame := strings.ToLower(projectID) // reponame must be lowercase for dockerhub
-		namespace := strings.ToLower(b.srv.cid.String())
+		namespace := strings.ToLower(b.srv.cid)
 		err = builder.Push(c, buildID, namespace, reponame)
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to push image")

@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/runtime"
@@ -11,7 +10,7 @@ import (
 
 type Service struct {
 	rti     runtime.Initializer
-	cid     uuid.UUID // caller ID
+	cid     string // caller ID
 	runtime runtime.Session
 	builder builder.Builder
 
@@ -46,7 +45,7 @@ func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builde
 	return s.builder, nil
 }
 
-func NewCtxService(rti runtime.Initializer, callerID uuid.UUID) *Service {
+func NewCtxService(rti runtime.Initializer, callerID string) *Service {
 	srv := &Service{
 		rti:      rti,
 		cid:      callerID,

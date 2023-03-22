@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/builder/docker"
@@ -27,7 +26,7 @@ type builderConfig struct {
 	RegistryURI string `env:"UNWEAVE_CONTAINER_REGISTRY_URI"`
 }
 
-func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.UUID, provider types.RuntimeProvider) (*runtime.Runtime, error) {
+func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID string, provider types.RuntimeProvider) (*runtime.Runtime, error) {
 	var cfg providerConfig
 	gonfig.GetFromEnvVariables(&cfg)
 
@@ -47,7 +46,7 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, accountID uuid.U
 	}
 }
 
-func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID uuid.UUID, builder string) (builder.Builder, error) {
+func (i *EnvInitializer) InitializeBuilder(ctx context.Context, accountID string, builder string) (builder.Builder, error) {
 	var cfg builderConfig
 	gonfig.GetFromEnvVariables(&cfg)
 

@@ -10,8 +10,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const BuildCreate = `-- name: BuildCreate :one
@@ -21,10 +19,10 @@ returning id
 `
 
 type BuildCreateParams struct {
-	ProjectID   string    `json:"projectID"`
-	BuilderType string    `json:"builderType"`
-	Name        string    `json:"name"`
-	CreatedBy   uuid.UUID `json:"createdBy"`
+	ProjectID   string `json:"projectID"`
+	BuilderType string `json:"builderType"`
+	Name        string `json:"name"`
+	CreatedBy   string `json:"createdBy"`
 }
 
 func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
@@ -260,9 +258,9 @@ values ($1, $2, $3)
 `
 
 type SSHKeyAddParams struct {
-	OwnerID   uuid.UUID `json:"ownerID"`
-	Name      string    `json:"name"`
-	PublicKey string    `json:"publicKey"`
+	OwnerID   string `json:"ownerID"`
+	Name      string `json:"name"`
+	PublicKey string `json:"publicKey"`
 }
 
 func (q *Queries) SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error {
@@ -278,8 +276,8 @@ where name = $1
 `
 
 type SSHKeyGetByNameParams struct {
-	Name    string    `json:"name"`
-	OwnerID uuid.UUID `json:"ownerID"`
+	Name    string `json:"name"`
+	OwnerID string `json:"ownerID"`
 }
 
 func (q *Queries) SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error) {
@@ -304,8 +302,8 @@ where public_key = $1
 `
 
 type SSHKeyGetByPublicKeyParams struct {
-	PublicKey string    `json:"publicKey"`
-	OwnerID   uuid.UUID `json:"ownerID"`
+	PublicKey string `json:"publicKey"`
+	OwnerID   string `json:"ownerID"`
 }
 
 func (q *Queries) SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error) {
@@ -328,7 +326,7 @@ from unweave.ssh_key
 where owner_id = $1
 `
 
-func (q *Queries) SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error) {
+func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error) {
 	rows, err := q.db.QueryContext(ctx, SSHKeysGet, ownerID)
 	if err != nil {
 		return nil, err
@@ -370,7 +368,7 @@ returning id
 
 type SessionCreateParams struct {
 	NodeID         string          `json:"nodeID"`
-	CreatedBy      uuid.UUID       `json:"createdBy"`
+	CreatedBy      string          `json:"createdBy"`
 	ProjectID      string          `json:"projectID"`
 	Provider       string          `json:"provider"`
 	Region         string          `json:"region"`

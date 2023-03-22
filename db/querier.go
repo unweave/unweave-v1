@@ -6,8 +6,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 type Querier interface {
@@ -24,7 +22,7 @@ type Querier interface {
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
-	SSHKeysGet(ctx context.Context, ownerID uuid.UUID) ([]UnweaveSshKey, error)
+	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
 	SessionCreate(ctx context.Context, arg SessionCreateParams) (string, error)
 	SessionGet(ctx context.Context, id string) (UnweaveSession, error)
 	SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error)

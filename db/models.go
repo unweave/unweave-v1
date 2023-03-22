@@ -10,8 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type UnweaveBuildStatus string
@@ -105,7 +103,7 @@ func (ns NullUnweaveSessionStatus) Value() (driver.Value, error) {
 }
 
 type UnweaveAccount struct {
-	ID uuid.UUID `json:"id"`
+	ID string `json:"id"`
 }
 
 type UnweaveBuild struct {
@@ -114,7 +112,7 @@ type UnweaveBuild struct {
 	ProjectID   string             `json:"projectID"`
 	BuilderType string             `json:"builderType"`
 	Status      UnweaveBuildStatus `json:"status"`
-	CreatedBy   uuid.UUID          `json:"createdBy"`
+	CreatedBy   string             `json:"createdBy"`
 	CreatedAt   time.Time          `json:"createdAt"`
 	StartedAt   sql.NullTime       `json:"startedAt"`
 	FinishedAt  sql.NullTime       `json:"finishedAt"`
@@ -131,7 +129,7 @@ type UnweaveSession struct {
 	Name           string               `json:"name"`
 	NodeID         string               `json:"nodeID"`
 	Region         string               `json:"region"`
-	CreatedBy      uuid.UUID            `json:"createdBy"`
+	CreatedBy      string               `json:"createdBy"`
 	CreatedAt      time.Time            `json:"createdAt"`
 	ReadyAt        sql.NullTime         `json:"readyAt"`
 	ExitedAt       sql.NullTime         `json:"exitedAt"`
@@ -147,7 +145,7 @@ type UnweaveSession struct {
 type UnweaveSshKey struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
-	OwnerID   uuid.UUID `json:"ownerID"`
+	OwnerID   string    `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
 	PublicKey string    `json:"publicKey"`
 	IsActive  bool      `json:"isActive"`

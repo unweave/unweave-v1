@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools"
@@ -64,7 +63,7 @@ func createSSHKeyPair() (string, string, error) {
 	return string(privatePEM), string(publicKey), nil
 }
 
-func saveSSHKey(ctx context.Context, accountID uuid.UUID, name, publicKey string) error {
+func saveSSHKey(ctx context.Context, accountID string, name, publicKey string) error {
 	arg := db.SSHKeyAddParams{
 		OwnerID:   accountID,
 		Name:      name,

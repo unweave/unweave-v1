@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
@@ -58,7 +57,7 @@ func registerCredentials(ctx context.Context, rt runtime.Session, key types.SSHK
 	return nil
 }
 
-func fetchCredentials(ctx context.Context, accountID uuid.UUID, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
+func fetchCredentials(ctx context.Context, accountID string, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	if sshKeyName == nil && sshPublicKey == nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,

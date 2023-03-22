@@ -32,7 +32,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Stringer(AccountIDCtxKey, sess.CreatedBy).
+				Str(AccountIDCtxKey, sess.CreatedBy).
 				Str(ProjectIDCtxKey, sess.ProjectID).
 				Str(SessionIDCtxKey, sess.ID).
 				Logger().WithContext(c)

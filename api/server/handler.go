@@ -186,7 +186,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Stringer(AccountIDCtxKey, accountID).
+				Str(AccountIDCtxKey, accountID).
 				Str(ProjectIDCtxKey, projectID).
 				Str(SessionIDCtxKey, session.ID).
 				Logger().WithContext(c)
