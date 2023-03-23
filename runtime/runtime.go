@@ -53,6 +53,6 @@ type Session interface {
 }
 
 type Initializer interface {
-	InitializeRuntime(ctx context.Context, accountID string, provider types.RuntimeProvider) (*Runtime, error)
-	InitializeBuilder(ctx context.Context, accountID string, builder string) (builder.Builder, error)
+	InitializeRuntime(ctx context.Context, userID string, provider types.RuntimeProvider) (*Runtime, error)
+	InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error)
 }

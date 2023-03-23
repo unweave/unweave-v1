@@ -57,7 +57,7 @@ func registerCredentials(ctx context.Context, rt runtime.Session, key types.SSHK
 	return nil
 }
 
-func fetchCredentials(ctx context.Context, accountID string, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
+func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
 	if sshKeyName == nil && sshPublicKey == nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
@@ -66,7 +66,7 @@ func fetchCredentials(ctx context.Context, accountID string, sshKeyName, sshPubl
 	}
 
 	if sshKeyName != nil {
-		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: accountID}
+		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: userID}
 		k, err := db.Q.SSHKeyGetByName(ctx, params)
 		if err == nil {
 			return types.SSHKey{
@@ -95,7 +95,7 @@ func fetchCredentials(ctx context.Context, accountID string, sshKeyName, sshPubl
 		}
 
 		pkStr := string(ssh.MarshalAuthorizedKey(pk))
-		params := db.SSHKeyGetByPublicKeyParams{PublicKey: pkStr, OwnerID: accountID}
+		params := db.SSHKeyGetByPublicKeyParams{PublicKey: pkStr, OwnerID: userID}
 		k, err := db.Q.SSHKeyGetByPublicKey(ctx, params)
 		if err == nil {
 			return types.SSHKey{
@@ -125,7 +125,7 @@ func fetchCredentials(ctx context.Context, accountID string, sshKeyName, sshPubl
 	}
 
 	// Key doesn't exist in db, but the user provided a public key, so add it to the db
-	if err := saveSSHKey(ctx, accountID, *sshKeyName, *sshPublicKey); err != nil {
+	if err := saveSSHKey(ctx, userID, *sshKeyName, *sshPublicKey); err != nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to save SSH key",

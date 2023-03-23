@@ -18,7 +18,7 @@ import (
 // either in the middleware or in the handlers. They should not be passed further into
 // the call stack.
 const (
-	AccountIDCtxKey     = "accountID"
+	UserIDCtxKey        = "userID"
 	BuildIDCtxKey       = "buildID"
 	ProjectIDCtxKey     = "project"
 	SessionIDCtxKey     = "session"
@@ -26,11 +26,11 @@ const (
 )
 
 func SetAccountIDInContext(ctx context.Context, aid string) context.Context {
-	return context.WithValue(ctx, AccountIDCtxKey, aid)
+	return context.WithValue(ctx, UserIDCtxKey, aid)
 }
 
-func GetAccountIDFromContext(ctx context.Context) string {
-	uid, ok := ctx.Value(AccountIDCtxKey).(string)
+func GetUserIDFromContext(ctx context.Context) string {
+	uid, ok := ctx.Value(UserIDCtxKey).(string)
 	if !ok || uid == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("account not found in context")
@@ -72,9 +72,9 @@ func GetSessionIDFromContext(ctx context.Context) string {
 func withAccountCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		accountID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-		ctx = context.WithValue(ctx, AccountIDCtxKey, accountID)
-		ctx = log.With().Stringer(AccountIDCtxKey, accountID).Logger().WithContext(ctx)
+		userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+		ctx = context.WithValue(ctx, UserIDCtxKey, userID)
+		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
