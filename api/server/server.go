@@ -37,7 +37,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 				Str(SessionIDCtxKey, sess.ID).
 				Logger().WithContext(c)
 
-			srv := NewCtxService(rti, sess.CreatedBy)
+			srv := NewCtxService(rti, "", sess.CreatedBy)
 			if e := srv.Session.Watch(c, sess.ID); e != nil {
 				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
 			}
@@ -74,27 +74,27 @@ func API(cfg Config, rti runtime.Initializer) {
 	}))
 
 	r.Use(withAccountCtx) // fakes an authenticated user
-	r.Route("/projects/{projectID}", func(r chi.Router) {
+	r.Route("/projects/{owner}/{project}", func(r chi.Router) {
 		r.Use(withProjectCtx)
+
+		r.Route("/builds", func(r chi.Router) {
+			r.Post("/", BuildsCreate(rti))
+			r.Get("/{buildID}", BuildsGet(rti))
+		})
 
 		r.Route("/sessions", func(r chi.Router) {
 			r.Post("/", SessionsCreate(rti))
 			r.Get("/", SessionsList(rti))
 
-			r.Group(func(r chi.Router) {
+			r.Route("/{sessionID}", func(r chi.Router) {
 				r.Use(withSessionCtx)
-				r.Get("/{sessionID}", SessionsGet(rti))
-				r.Put("/{sessionID}/terminate", SessionsTerminate(rti))
+				r.Get("/", SessionsGet(rti))
+				r.Put("/terminate", SessionsTerminate(rti))
 			})
-		})
-
-		r.Route("/builds", func(r chi.Router) {
-			r.Post("/", BuildsCreate(rti))
-			r.Get("/{buildID}/", BuildsGet(rti))
 		})
 	})
 
-	r.Route("/ssh-keys", func(r chi.Router) {
+	r.Route("/ssh-keys/{owner}", func(r chi.Router) {
 		r.Post("/", SSHKeyAdd(rti))
 		r.Get("/", SSHKeyList(rti))
 		r.Post("/generate", SSHKeyGenerate(rti))

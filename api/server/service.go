@@ -10,6 +10,7 @@ import (
 
 type Service struct {
 	rti     runtime.Initializer
+	aid     string // account ID
 	cid     string // caller ID
 	runtime runtime.Session
 	builder builder.Builder
@@ -45,9 +46,10 @@ func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builde
 	return s.builder, nil
 }
 
-func NewCtxService(rti runtime.Initializer, callerID string) *Service {
+func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service {
 	srv := &Service{
 		rti:      rti,
+		aid:      accountID,
 		cid:      callerID,
 		Provider: nil,
 		Session:  nil,

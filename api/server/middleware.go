@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
@@ -19,13 +18,28 @@ import (
 // the call stack.
 const (
 	UserIDCtxKey        = "userID"
+	AccountIDCtxKey     = "accountID"
 	BuildIDCtxKey       = "buildID"
-	ProjectIDCtxKey     = "project"
-	SessionIDCtxKey     = "session"
+	ProjectIDCtxKey     = "projectID"
+	SessionIDCtxKey     = "sessionID"
 	SessionStatusCtxKey = "sessionStatus"
 )
 
 func SetAccountIDInContext(ctx context.Context, aid string) context.Context {
+	return context.WithValue(ctx, AccountIDCtxKey, aid)
+}
+
+func GetAccountIDFromContext(ctx context.Context) string {
+	uid, ok := ctx.Value(AccountIDCtxKey).(string)
+	if !ok || uid == "" {
+		// This should never happen at runtime.
+		log.Error().Msg("account not found in context")
+		panic("account not found in context")
+	}
+	return uid
+}
+
+func SetUserIDInContext(ctx context.Context, aid string) context.Context {
 	return context.WithValue(ctx, UserIDCtxKey, aid)
 }
 
@@ -72,9 +86,10 @@ func GetSessionIDFromContext(ctx context.Context) string {
 func withAccountCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		userID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
-		ctx = context.WithValue(ctx, UserIDCtxKey, userID)
-		ctx = log.With().Stringer(UserIDCtxKey, userID).Logger().WithContext(ctx)
+		userID := "uid_1234"
+		ctx = SetUserIDInContext(ctx, userID)
+		ctx = SetAccountIDInContext(ctx, userID)
+		ctx = log.With().Str(UserIDCtxKey, userID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -84,7 +99,7 @@ func withAccountCtx(next http.Handler) http.Handler {
 func withProjectCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		projectID := chi.URLParam(r, "projectID")
+		projectID := chi.URLParam(r, "project")
 
 		_, err := db.Q.ProjectGet(ctx, projectID)
 		if err != nil {

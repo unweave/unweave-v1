@@ -38,9 +38,10 @@ func BuildsCreate(rti runtime.Initializer) http.HandlerFunc {
 		}
 
 		userID := GetUserIDFromContext(ctx)
+		accountID := GetAccountIDFromContext(ctx)
 		projectID := GetProjectIDFromContext(ctx)
 
-		srv := NewCtxService(rti, userID)
+		srv := NewCtxService(rti, accountID, userID)
 
 		buildID, err := srv.Builder.Build(ctx, projectID, ibp)
 		if err != nil {
@@ -65,7 +66,9 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 		usedBy := r.URL.Query().Get("usedBy") == "true"
 
 		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		// get build from db
 		build, err := db.Q.BuildGet(ctx, buildID)
@@ -146,7 +149,7 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 		filterAvailable := r.URL.Query().Get("available") == "true"
 
 		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		srv := NewCtxService(rti, "", userID)
 
 		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider, filterAvailable)
 		if err != nil {
@@ -175,7 +178,9 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 
 		userID := GetUserIDFromContext(ctx)
 		projectID := GetProjectIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		session, err := srv.Session.Create(ctx, projectID, scr)
 		if err != nil {
@@ -206,8 +211,10 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 		log.Ctx(ctx).Info().Msgf("Executing SessionsGet request")
 
 		userID := GetUserIDFromContext(ctx)
+		accountID := GetAccountIDFromContext(ctx)
 		sessionID := GetSessionIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		session, err := srv.Session.Get(ctx, sessionID)
 		if err != nil {
@@ -223,12 +230,13 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
+		accountID := GetAccountIDFromContext(ctx)
 		projectID := GetProjectIDFromContext(ctx)
 		listTerminated := r.URL.Query().Get("terminated") == "true"
 
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
-		srv := NewCtxService(rti, userID)
+		srv := NewCtxService(rti, accountID, userID)
 		sessions, err := srv.Session.List(ctx, projectID, listTerminated)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list sessions"))
@@ -248,7 +256,9 @@ func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 			Msgf("Executing SessionsTerminate request")
 
 		sessionID := GetSessionIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		if err := srv.Session.Terminate(ctx, sessionID); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate session"))
@@ -277,7 +287,9 @@ func SSHKeyAdd(rti runtime.Initializer) http.HandlerFunc {
 		}
 
 		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		if err := srv.SSHKey.Add(ctx, params); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to add SSH key"))
@@ -300,7 +312,9 @@ func SSHKeyGenerate(rti runtime.Initializer) http.HandlerFunc {
 		}
 
 		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		name, prv, pub, err := srv.SSHKey.Generate(ctx, params)
 		if err != nil {
@@ -323,7 +337,9 @@ func SSHKeyList(rti runtime.Initializer) http.HandlerFunc {
 		log.Ctx(ctx).Info().Msgf("Executing SSHKeyList request")
 
 		userID := GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, userID)
+		accountID := GetAccountIDFromContext(ctx)
+
+		srv := NewCtxService(rti, accountID, userID)
 
 		keys, err := srv.SSHKey.List(ctx)
 		if err != nil {
