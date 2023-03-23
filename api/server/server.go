@@ -38,7 +38,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, "", sess.CreatedBy)
-			if e := srv.Session.Watch(c, sess.ID); e != nil {
+			if e := srv.Exec.Watch(c, sess.ID); e != nil {
 				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
 			}
 		}()

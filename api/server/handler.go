@@ -95,7 +95,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 			CreatedAt:      build.CreatedAt,
 			StartedAt:      st,
 			FinishedAt:     ft,
-			UsedBySessions: []types.Session{},
+			UsedBySessions: []types.Exec{},
 			Logs:           nil,
 		}
 
@@ -106,10 +106,10 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 				return
 			}
 
-			ubs := make([]types.Session, len(sessions))
+			ubs := make([]types.Exec, len(sessions))
 			for i, s := range sessions {
 				s := s
-				ubs[i] = types.Session{
+				ubs[i] = types.Exec{
 					ID:         s.ID,
 					SSHKey:     types.SSHKey{}, // TODO: should we return this here?
 					Connection: nil,            // TODO: should we return this here?
@@ -117,7 +117,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 					CreatedAt:  &s.CreatedAt,
 					NodeTypeID: s.NodeID,
 					Region:     s.Region,
-					Provider:   types.RuntimeProvider(s.Provider),
+					Provider:   types.Provider(s.Provider),
 				}
 			}
 			res.UsedBySessions = ubs
@@ -143,7 +143,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		provider := types.RuntimeProvider(chi.URLParam(r, "provider"))
+		provider := types.Provider(chi.URLParam(r, "provider"))
 		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
 
 		filterAvailable := r.URL.Query().Get("available") == "true"
@@ -169,7 +169,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
 
-		scr := types.SessionCreateParams{}
+		scr := types.ExecCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
@@ -182,7 +182,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Session.Create(ctx, projectID, scr)
+		session, err := srv.Exec.Create(ctx, projectID, scr)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create session"))
 			return
@@ -196,7 +196,7 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 				Str(SessionIDCtxKey, session.ID).
 				Logger().WithContext(c)
 
-			if e := srv.Session.Watch(c, session.ID); e != nil {
+			if e := srv.Exec.Watch(c, session.ID); e != nil {
 				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
 			}
 		}()
@@ -216,7 +216,7 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Session.Get(ctx, sessionID)
+		session, err := srv.Exec.Get(ctx, sessionID)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get session"))
 			return
@@ -237,7 +237,7 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
 
 		srv := NewCtxService(rti, accountID, userID)
-		sessions, err := srv.Session.List(ctx, projectID, listTerminated)
+		sessions, err := srv.Exec.List(ctx, projectID, listTerminated)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to list sessions"))
 			return
@@ -260,7 +260,7 @@ func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		if err := srv.Session.Terminate(ctx, sessionID); err != nil {
+		if err := srv.Exec.Terminate(ctx, sessionID); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate session"))
 			return
 		}

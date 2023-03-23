@@ -12,7 +12,7 @@ type ProviderService struct {
 	srv *Service
 }
 
-func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.RuntimeProvider, filterAvailable bool) ([]types.NodeType, error) {
+func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.Provider, filterAvailable bool) ([]types.NodeType, error) {
 	if provider != types.LambdaLabsProvider && provider != types.UnweaveProvider {
 		return nil, &types.Error{
 			Code:       http.StatusBadRequest,

@@ -9,12 +9,12 @@ import (
 )
 
 type Runtime struct {
-	Session
+	Node
 }
 
-// Session represents an interactive session on a node. You can connect to it via SSH and
+// Node represents an interactive session on a node. You can connect to it via SSH and
 // train your ML models for example.
-type Session interface {
+type Node interface {
 	// AddSSHKey adds a new SSH key to the provider.
 	//
 	// If the sshKey.PublicKey is nil, the provider will generate a new keypair with the
@@ -27,8 +27,10 @@ type Session interface {
 	// already exist with the provider, this should be a no-op. In this case, both the
 	// name and public key should match those with the provider.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
+	// Exec is a code execution request.
+	Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) error
 	// GetProvider returns the provider.
-	GetProvider() types.RuntimeProvider
+	GetProvider() types.Provider
 	// GetConnectionInfo returns the connection information for the node running a session.
 	GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error)
 	// HealthCheck performs a health check on the provider.
@@ -53,6 +55,6 @@ type Session interface {
 }
 
 type Initializer interface {
-	InitializeRuntime(ctx context.Context, userID string, provider types.RuntimeProvider) (*Runtime, error)
+	InitializeRuntime(ctx context.Context, userID string, provider types.Provider) (*Runtime, error)
 	InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error)
 }

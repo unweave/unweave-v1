@@ -95,7 +95,7 @@ type Session struct {
 	client *client.ClientWithResponses
 }
 
-func (s *Session) GetProvider() types.RuntimeProvider {
+func (s *Session) GetProvider() types.Provider {
 	return types.LambdaLabsProvider
 }
 
@@ -180,6 +180,10 @@ func (s *Session) findRegionForNode(ctx context.Context, nodeTypeID string) (str
 	e := err503(fmt.Sprintf("No region with available capacity for node type %q", nodeTypeID), nil)
 	e.Suggestion = suggestion
 	return "", e
+}
+
+func (s *Session) Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) (err error) {
+	return fmt.Errorf("not implemented")
 }
 
 func (s *Session) GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error) {

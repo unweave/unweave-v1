@@ -12,17 +12,17 @@ type Service struct {
 	rti     runtime.Initializer
 	aid     string // account ID
 	cid     string // caller ID
-	runtime runtime.Session
+	runtime runtime.Node
 	builder builder.Builder
 
 	Builder  *BuilderService
 	Provider *ProviderService
-	Session  *SessionService
+	Exec     *ExecService
 	SSHKey   *SSHKeyService
 }
 
 // InitializeRuntime initializes the runtime a caches it in memory.
-func (s *Service) InitializeRuntime(ctx context.Context, provider types.RuntimeProvider) (runtime.Session, error) {
+func (s *Service) InitializeRuntime(ctx context.Context, provider types.Provider) (runtime.Node, error) {
 	if s.runtime != nil {
 		return s.runtime, nil
 	}
@@ -30,7 +30,7 @@ func (s *Service) InitializeRuntime(ctx context.Context, provider types.RuntimeP
 	if err != nil {
 		return nil, err
 	}
-	s.runtime = rt.Session
+	s.runtime = rt.Node
 	return s.runtime, nil
 }
 
@@ -52,12 +52,12 @@ func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service
 		aid:      accountID,
 		cid:      callerID,
 		Provider: nil,
-		Session:  nil,
+		Exec:     nil,
 		SSHKey:   nil,
 	}
 	srv.Builder = &BuilderService{srv: srv}
 	srv.Provider = &ProviderService{srv: srv}
-	srv.Session = &SessionService{srv: srv}
+	srv.Exec = &ExecService{srv: srv}
 	srv.SSHKey = &SSHKeyService{srv: srv}
 
 	return srv
