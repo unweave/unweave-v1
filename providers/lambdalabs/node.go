@@ -343,7 +343,7 @@ func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.Sess
 			return "", err403(res.JSON403.Error.Message, nil)
 		}
 		if res.JSON404 != nil {
-			return "", err500(res.JSON404.Error.Message, fmt.Errorf("instance not found, %n", res.JSON404.Error.Message))
+			return "", err500(res.JSON404.Error.Message, fmt.Errorf("instance not found, %s", res.JSON404.Error.Message))
 		}
 		return "", errUnknown(res.StatusCode(), nil)
 	}
@@ -358,8 +358,8 @@ func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.Sess
 	case client.Unhealthy:
 		return types.StatusError, nil
 	default:
-		log.Ctx(ctx).Error().Msgf("Unknown lambda status %n", res.JSON200.Data.Status)
-		return "", fmt.Errorf("unknown lambda status %n", res.JSON200.Data.Status)
+		log.Ctx(ctx).Error().Msgf("Unknown lambda status %s", res.JSON200.Data.Status)
+		return "", fmt.Errorf("unknown lambda status %s", res.JSON200.Data.Status)
 	}
 }
 
