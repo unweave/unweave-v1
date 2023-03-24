@@ -99,6 +99,7 @@ where public_key = $1
 
 -- name: MxSessionGet :one
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -114,6 +115,7 @@ where s.id = $1;
 
 -- name: MxSessionsGet :many
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,

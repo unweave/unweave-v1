@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -78,14 +77,7 @@ type BuildsCreateResponse struct {
 }
 
 type BuildsGetResponse struct {
-	BuildID        string      `json:"buildID"`
-	Name           string      `json:"name"`
-	ProjectID      string      `json:"projectID"`
-	Status         string      `json:"status"`
-	BuilderType    string      `json:"builderType"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	StartedAt      *time.Time  `json:"startedAt,omitempty"`
-	FinishedAt     *time.Time  `json:"finishedAt,omitempty"`
+	Build
 	UsedBySessions []Exec      `json:"usedBySessions,omitempty"`
 	Logs           *[]LogEntry `json:"logs,omitempty"`
 }

@@ -129,6 +129,7 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 const MxSessionGet = `-- name: MxSessionGet :one
 
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -145,6 +146,7 @@ where s.id = $1
 
 type MxSessionGetRow struct {
 	ID              string               `json:"id"`
+	Name            string               `json:"name"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -164,6 +166,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 	var i MxSessionGetRow
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.Status,
 		&i.NodeID,
 		&i.Provider,
@@ -179,6 +182,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 
 const MxSessionsGet = `-- name: MxSessionsGet :many
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -195,6 +199,7 @@ where s.project_id = $1
 
 type MxSessionsGetRow struct {
 	ID              string               `json:"id"`
+	Name            string               `json:"name"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -217,6 +222,7 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 		var i MxSessionsGetRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Name,
 			&i.Status,
 			&i.NodeID,
 			&i.Provider,

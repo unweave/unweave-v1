@@ -227,6 +227,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	createdAt := time.Now()
 	session := &types.Exec{
 		ID:         execID,
+		Name:       dbp.Name,
 		SSHKey:     node.KeyPair,
 		Connection: nil,
 		Status:     types.StatusInitializing,
@@ -257,7 +258,8 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 	}
 
 	session := &types.Exec{
-		ID: sessionID,
+		ID:   sessionID,
+		Name: dbs.Name,
 		SSHKey: types.SSHKey{
 			Name:      dbs.SshKeyName,
 			PublicKey: &dbs.PublicKey,
@@ -273,6 +275,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
 		Provider:   types.Provider(dbs.Provider),
+		Ctx:        types.ExecCtx{},
 	}
 	return session, nil
 }
@@ -296,7 +299,8 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
 		session := types.Exec{
-			ID: s.ID,
+			ID:   s.ID,
+			Name: s.Name,
 			SSHKey: types.SSHKey{
 				Name:      s.SshKeyName,
 				PublicKey: &s.PublicKey,

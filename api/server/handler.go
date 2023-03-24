@@ -87,14 +87,16 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 		}
 
 		res := &types.BuildsGetResponse{
-			BuildID:        buildID,
-			Name:           build.Name,
-			ProjectID:      build.ProjectID,
-			Status:         string(build.Status),
-			BuilderType:    build.BuilderType,
-			CreatedAt:      build.CreatedAt,
-			StartedAt:      st,
-			FinishedAt:     ft,
+			Build: types.Build{
+				BuildID:     buildID,
+				Name:        build.Name,
+				ProjectID:   build.ProjectID,
+				Status:      string(build.Status),
+				BuilderType: build.BuilderType,
+				CreatedAt:   build.CreatedAt,
+				StartedAt:   st,
+				FinishedAt:  ft,
+			},
 			UsedBySessions: []types.Exec{},
 			Logs:           nil,
 		}
@@ -111,6 +113,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 				s := s
 				ubs[i] = types.Exec{
 					ID:         s.ID,
+					Name:       s.Name,
 					SSHKey:     types.SSHKey{}, // TODO: should we return this here?
 					Connection: nil,            // TODO: should we return this here?
 					Status:     types.SessionStatus(s.Status),
