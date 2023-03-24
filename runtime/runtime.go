@@ -56,9 +56,9 @@ type Node interface {
 type Session interface {
 	// Init initializes a new session on a node. It creates environment the users code
 	// will in with the provided build and configures ssh keys for interactive access.
-	Init(ctx context.Context, nodeID string, sshKeys []types.SSHKey, image string) error
+	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string) error
 	// Exec is a code execution request.
-	Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) error
+	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
 }
 
 type Initializer interface {

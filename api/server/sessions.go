@@ -205,7 +205,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
 
-	if err := rt.Session.Init(ctx, node.ID, []types.SSHKey{sshKey}, ""); err != nil {
+	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, ""); err != nil {
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {

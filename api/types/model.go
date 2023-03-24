@@ -95,6 +95,14 @@ type ConnectionInfo struct {
 	User string `json:"user"`
 }
 
+type Session struct {
+	ID         string          `json:"id"`
+	SSHKeys    []SSHKey        `json:"sshKeys"`
+	Connection *ConnectionInfo `json:"connection,omitempty"`
+	Status     SessionStatus   `json:"runtimeStatus"`
+	NodeID     string          `json:"nodeID"`
+}
+
 type Exec struct {
 	ID         string          `json:"id"`
 	SSHKey     SSHKey          `json:"sshKey"`

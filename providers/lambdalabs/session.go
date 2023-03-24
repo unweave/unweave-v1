@@ -8,12 +8,12 @@ import (
 
 type SessionRuntime struct{}
 
-func (s *SessionRuntime) Init(ctx context.Context, nodeID string, sshKeys []types.SSHKey, image string) error {
+func (s *SessionRuntime) Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string) error {
 	// noop - not implemented
 	return nil
 }
 
-func (s *SessionRuntime) Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) error {
+func (s *SessionRuntime) Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error {
 	// noop - not implemented
 	return nil
 }
