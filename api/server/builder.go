@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -57,7 +58,10 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to build image")
 
-			p := db.BuildUpdateParams{ID: buildID}
+			p := db.BuildUpdateParams{
+				ID:     buildID,
+				Status: "building",
+			}
 
 			var e *types.Error
 			var errmeta string
@@ -118,9 +122,10 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		}
 
 		p := db.BuildUpdateParams{
-			ID:       buildID,
-			Status:   db.UnweaveBuildStatusSuccess,
-			MetaData: meta,
+			ID:         buildID,
+			Status:     db.UnweaveBuildStatusSuccess,
+			FinishedAt: time.Now(),
+			MetaData:   meta,
 		}
 		if err := db.Q.BuildUpdate(c, p); err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to set build success in DB")

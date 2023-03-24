@@ -13,16 +13,17 @@ import (
 )
 
 const BuildCreate = `-- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type, name, created_by)
-values ($1, $2, $3, $4)
+insert into unweave.build (project_id, builder_type, name, created_by, started_at)
+values ($1, $2, $3, $4, case when $5::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz then now() else $5::timestamptz end)
 returning id
 `
 
 type BuildCreateParams struct {
-	ProjectID   string `json:"projectID"`
-	BuilderType string `json:"builderType"`
-	Name        string `json:"name"`
-	CreatedBy   string `json:"createdBy"`
+	ProjectID   string    `json:"projectID"`
+	BuilderType string    `json:"builderType"`
+	Name        string    `json:"name"`
+	CreatedBy   string    `json:"createdBy"`
+	StartedAt   time.Time `json:"startedAt"`
 }
 
 func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
@@ -31,6 +32,7 @@ func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (strin
 		arg.BuilderType,
 		arg.Name,
 		arg.CreatedBy,
+		arg.StartedAt,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -109,20 +111,31 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSessi
 }
 
 const BuildUpdate = `-- name: BuildUpdate :exec
-update unweave.build
-set status    = $2,
-    meta_data = $3
-where id = $1
+UPDATE unweave.build
+SET
+    status = $2,
+    meta_data = $3,
+    started_at = COALESCE(NULLIF($4::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), started_at),
+    finished_at = COALESCE(NULLIF($5::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), finished_at)
+WHERE id = $1
 `
 
 type BuildUpdateParams struct {
-	ID       string             `json:"id"`
-	Status   UnweaveBuildStatus `json:"status"`
-	MetaData json.RawMessage    `json:"metaData"`
+	ID         string             `json:"id"`
+	Status     UnweaveBuildStatus `json:"status"`
+	MetaData   json.RawMessage    `json:"metaData"`
+	StartedAt  time.Time          `json:"startedAt"`
+	FinishedAt time.Time          `json:"finishedAt"`
 }
 
 func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, BuildUpdate, arg.ID, arg.Status, arg.MetaData)
+	_, err := q.db.ExecContext(ctx, BuildUpdate,
+		arg.ID,
+		arg.Status,
+		arg.MetaData,
+		arg.StartedAt,
+		arg.FinishedAt,
+	)
 	return err
 }
 
