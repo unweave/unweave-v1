@@ -12,7 +12,7 @@ type Service struct {
 	rti     runtime.Initializer
 	aid     string // account ID
 	cid     string // caller ID
-	runtime runtime.Node
+	runtime *runtime.Runtime
 	builder builder.Builder
 
 	Builder  *BuilderService
@@ -22,7 +22,7 @@ type Service struct {
 }
 
 // InitializeRuntime initializes the runtime a caches it in memory.
-func (s *Service) InitializeRuntime(ctx context.Context, provider types.Provider) (runtime.Node, error) {
+func (s *Service) InitializeRuntime(ctx context.Context, provider types.Provider) (*runtime.Runtime, error) {
 	if s.runtime != nil {
 		return s.runtime, nil
 	}
@@ -30,7 +30,7 @@ func (s *Service) InitializeRuntime(ctx context.Context, provider types.Provider
 	if err != nil {
 		return nil, err
 	}
-	s.runtime = rt.Node
+	s.runtime = rt
 	return s.runtime, nil
 }
 

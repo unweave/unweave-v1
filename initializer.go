@@ -35,11 +35,16 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, userID string, p
 		if cfg.LambdaLabsAPIKey == "" {
 			return nil, fmt.Errorf("missing LambdaLabs API key in runtime config file")
 		}
-		sess, err := lambdalabs.NewSessionProvider(cfg.LambdaLabsAPIKey)
+		node, err := lambdalabs.NewNodeRuntime(cfg.LambdaLabsAPIKey)
 		if err != nil {
 			return nil, err
 		}
-		return &runtime.Runtime{Node: sess}, nil
+		sess, err := lambdalabs.NewSessionRuntime(cfg.LambdaLabsAPIKey)
+		if err != nil {
+			return nil, err
+		}
+
+		return &runtime.Runtime{Node: node, Session: sess}, nil
 
 	default:
 		return nil, fmt.Errorf("%q provider not supported in the env initializer", provider)

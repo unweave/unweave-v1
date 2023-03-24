@@ -26,7 +26,7 @@ func (p *ProviderService) ListNodeTypes(ctx context.Context, provider types.Prov
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}
 
-	nodeTypes, err := rt.ListNodeTypes(ctx, filterAvailable)
+	nodeTypes, err := rt.Node.ListNodeTypes(ctx, filterAvailable)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list node types: %w", err)
 	}

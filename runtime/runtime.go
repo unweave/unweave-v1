@@ -9,7 +9,8 @@ import (
 )
 
 type Runtime struct {
-	Node
+	Node    Node
+	Session Session
 }
 
 // Node represents an interactive session on a node. You can connect to it via SSH and
@@ -27,8 +28,6 @@ type Node interface {
 	// already exist with the provider, this should be a no-op. In this case, both the
 	// name and public key should match those with the provider.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
-	// Exec is a code execution request.
-	Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) error
 	// GetProvider returns the provider.
 	GetProvider() types.Provider
 	// GetConnectionInfo returns the connection information for the node running a session.
@@ -52,6 +51,14 @@ type Node interface {
 	TerminateNode(ctx context.Context, nodeID string) error
 	// Watch watches the status of the node running a session.
 	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
+}
+
+type Session interface {
+	// Init initializes a new session on a node. It creates environment the users code
+	// will in with the provided build and configures ssh keys for interactive access.
+	Init(ctx context.Context, nodeID string, sshKeys []types.SSHKey, image string) error
+	// Exec is a code execution request.
+	Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) error
 }
 
 type Initializer interface {
