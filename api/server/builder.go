@@ -64,11 +64,11 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			if errors.As(err, &e) && e.Code == http.StatusBadRequest {
 				log.Ctx(c).Warn().Err(err).Msg("User build failed")
 				p.Status = db.UnweaveBuildStatusFailed
-				errmeta = fmt.Sprintf("Build failed: %v", err.Error())
+				errmeta = fmt.Sprintf("Build failed: %v", e.Message)
 			} else {
 				log.Ctx(c).Error().Err(err).Msg("Failed to build image")
 				p.Status = db.UnweaveBuildStatusError
-				errmeta = fmt.Sprintf("Build error: %v", err.Error())
+				errmeta = fmt.Sprintf("Build error: Something went wrong. Please contact us for support.")
 			}
 
 			meta, merr := json.Marshal(BuildMetaDataV1{
