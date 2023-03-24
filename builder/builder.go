@@ -23,11 +23,14 @@ type LogDriver interface {
 
 // Builder defines the interface for building and storing container images.
 type Builder interface {
-	GetBuilder() string
 	// Build builds a container image from a build context.
 	// The build context is a zip file containing the source code and any other files
 	// needed to build the image.
 	Build(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
+	// GetBuilder returns the name of the builder.
+	GetBuilder() string
+	// GetImageURI returns the URI of the image in the container registry.
+	GetImageURI(ctx context.Context, buildID, namespace, reponame string) string
 	// Logs returns the logs for a build.
 	Logs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
 	// Push pushes an image to the container registry. The buildID is used as the tag.

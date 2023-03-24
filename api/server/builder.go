@@ -147,3 +147,21 @@ func (b *BuilderService) GetLogs(ctx context.Context, buildID string) ([]types.L
 	}
 	return logs, nil
 }
+
+func (b *BuilderService) GetImageURI(ctx context.Context, buildID string) (string, error) {
+	build, err := db.Q.BuildGet(ctx, buildID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get build: %v", err)
+	}
+
+	builder, err := b.srv.InitializeBuilder(ctx, build.BuilderType)
+	if err != nil {
+		return "", fmt.Errorf("failed to initializer builder: %w", err)
+	}
+
+	reponame := strings.ToLower(build.ProjectID) // reponame must be lowercase for dockerhub
+	namespace := strings.ToLower(b.srv.cid)
+	uri := builder.GetImageURI(ctx, build.ID, namespace, reponame)
+
+	return uri, nil
+}

@@ -205,7 +205,11 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
 
-	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, ""); err != nil {
+	imageURI, err := s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get image uri: %w", err)
+	}
+	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, imageURI); err != nil {
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
