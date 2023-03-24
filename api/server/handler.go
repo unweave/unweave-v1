@@ -162,12 +162,12 @@ func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-// Sessions
+// Execs
 
-func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
+func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		log.Ctx(ctx).Info().Msgf("Executing SessionsCreate request")
+		log.Ctx(ctx).Info().Msgf("Executing ExecCreate request")
 
 		scr := types.ExecCreateParams{}
 		if err := render.Bind(r, &scr); err != nil {
@@ -205,10 +205,10 @@ func SessionsCreate(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
+func ExecsGet(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		log.Ctx(ctx).Info().Msgf("Executing SessionsGet request")
+		log.Ctx(ctx).Info().Msgf("Executing ExecsGet request")
 
 		userID := GetUserIDFromContext(ctx)
 		accountID := GetAccountIDFromContext(ctx)
@@ -226,7 +226,7 @@ func SessionsGet(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-func SessionsList(rti runtime.Initializer) http.HandlerFunc {
+func ExecsList(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
@@ -234,7 +234,7 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 		projectID := GetProjectIDFromContext(ctx)
 		listTerminated := r.URL.Query().Get("terminated") == "true"
 
-		log.Ctx(ctx).Info().Msgf("Executing SessionsList request")
+		log.Ctx(ctx).Info().Msgf("Executing ExecsList request")
 
 		srv := NewCtxService(rti, accountID, userID)
 		sessions, err := srv.Exec.List(ctx, projectID, listTerminated)
@@ -246,14 +246,14 @@ func SessionsList(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-func SessionsTerminate(rti runtime.Initializer) http.HandlerFunc {
+func ExecsTerminate(rti runtime.Initializer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := GetUserIDFromContext(ctx)
 
 		log.Ctx(ctx).
 			Info().
-			Msgf("Executing SessionsTerminate request")
+			Msgf("Executing ExecsTerminate request")
 
 		sessionID := GetSessionIDFromContext(ctx)
 		accountID := GetAccountIDFromContext(ctx)

@@ -205,7 +205,15 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
 
-	imageURI, err := s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
+	imageURI := "alpine:latest"
+	if params.Ctx.BuildID != nil {
+		var err error
+		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
+		if err != nil {
+			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
+		}
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
