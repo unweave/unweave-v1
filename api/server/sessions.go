@@ -180,7 +180,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to register credentials: %w", err)
 	}
 
-	node, err := rt.Node.InitNode(ctx, sshKey, params.NodeTypeID, params.Region)
+	node, err := rt.Node.InitNode(ctx, []types.SSHKey{sshKey}, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
 	}

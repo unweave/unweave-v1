@@ -41,7 +41,7 @@ type Node interface {
 	// implemented at. For example, it could be implemented at a VM level for a bare-metal
 	// provider, at a container level, batch job level, etc. In each case, the node must
 	// be accessible via SSH.
-	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
+	InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.

@@ -155,8 +155,16 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 	return err
 }
 
-func (n *NodeRuntime) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
-	log.Ctx(ctx).Debug().Msgf("Launching instance with SSH key %q", sshKey.Name)
+func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+	if len(sshKey) == 0 {
+		return types.Node{}, &types.Error{
+			Code:    http.StatusInternalServerError,
+			Message: "", // This is our fault, not the user's
+			Err:     fmt.Errorf("no SSH keys provided - this is a bug"),
+		}
+	}
+
+	log.Ctx(ctx).Debug().Msgf("Launching instance with SSH key %q", sshKey[0].Name)
 
 	if region == nil {
 		var err error
@@ -174,7 +182,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTyp
 		Name:             tools.Stringy("uw-" + random.GenerateRandomPhrase(3, "-")),
 		Quantity:         tools.Inty(1),
 		RegionName:       *region,
-		SshKeyNames:      []string{sshKey.Name},
+		SshKeyNames:      []string{sshKey[0].Name},
 	}
 
 	res, err := n.client.LaunchInstanceWithResponse(ctx, req)
@@ -235,7 +243,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey types.SSHKey, nodeTyp
 		ID:       res.JSON200.Data.InstanceIds[0],
 		TypeID:   nodeTypeID,
 		Region:   *region,
-		KeyPair:  sshKey,
+		KeyPair:  sshKey[0],
 		Status:   types.StatusInitializing,
 		Provider: types.LambdaLabsProvider,
 	}, nil
