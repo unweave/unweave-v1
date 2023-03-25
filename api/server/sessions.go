@@ -26,6 +26,14 @@ type ConnectionInfoV1 struct {
 }
 
 func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
+
+	var e *types.Error
+	if errors.As(err, &e) {
+		msg += ": " + e.Message
+	}
+	msg += ": " + err.Error()
+
 	log.Ctx(ctx).Error().Err(err).Msg(msg)
 
 	params := db.SessionSetErrorParams{
@@ -138,6 +146,7 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 }
 
 func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, sessionID string) error {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 	connInfo, err := rt.GetConnectionInfo(ctx, nodeID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection info: %w", err)
@@ -155,6 +164,17 @@ func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, s
 		return fmt.Errorf("failed to update connection info: %w", e)
 	}
 	return nil
+}
+
+func updateExecStatus(ctx context.Context, execID string, status types.SessionStatus) {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
+	params := db.SessionStatusUpdateParams{
+		ID:     execID,
+		Status: db.UnweaveSessionStatus(status),
+	}
+	if err := db.Q.SessionStatusUpdate(ctx, params); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msg("Failed to update exec status")
+	}
 }
 
 type ExecService struct {
@@ -204,6 +224,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
+	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
 
 	imageURI := "alpine:latest"
 	if params.Ctx.BuildID != nil {
@@ -218,9 +239,11 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
 	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, imageURI); err != nil {
+		go handleSessionError(ctx, execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
+		go handleSessionError(ctx, execID, err, "failed to run exec")
 		return nil, fmt.Errorf("failed to to run exec: %w", err)
 	}
 
@@ -385,13 +408,10 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 				// happen. Since we don't know the cause of this error, let's play it safe
 				// and terminate the node. This will mean the user will lose their work
 				// but the alternative is to have a runaway node that drains all their credit.
-				var err *types.Error
-				if errors.As(e, &err) {
-					handleSessionError(ctx, sessionID, e, err.Message)
-				}
 				if err := s.Terminate(ctx, sessionID); err != nil {
 					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate session on failure to watch")
 				}
+				handleSessionError(ctx, sessionID, e, "Failed to watch session")
 				return
 			}
 		}
