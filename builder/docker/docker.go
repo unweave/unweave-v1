@@ -41,7 +41,7 @@ func buildImage(ctx context.Context, buildPath, image, cache string) (
 	logsch chan string, errch chan error, err error,
 ) {
 	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
-		return nil, nil, fmt.Errorf("buildPath %q does not exist: %v", buildPath, err)
+		return nil, nil, fmt.Errorf("buildPath %q does not exist: %w", buildPath, err)
 	}
 
 	c := []string{
@@ -130,7 +130,7 @@ func findImage(ctx context.Context, image string) (string, error) {
 		break
 	}
 	if err := scanner.Err(); err != nil {
-		return "", fmt.Errorf("error parsing image ls output: %v", err)
+		return "", fmt.Errorf("error parsing image ls output: %w", err)
 	}
 	if imageID == "" {
 		return "", fmt.Errorf("image with name %q not found", image)
@@ -232,6 +232,10 @@ func (b *Builder) GetBuilder() string {
 	return "docker"
 }
 
+func (b *Builder) GetImageURI(ctx context.Context, buildID, namespace, reponame string) string {
+	return fmt.Sprintf("%s/%s/%s:%s", b.registryURI, namespace, reponame, buildID)
+}
+
 func (b *Builder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
 	ctx = log.With().Str("builder", b.GetBuilder()).Str("buildID", buildID).Logger().WithContext(ctx)
 	log.Ctx(ctx).Info().Msg("Executing logs request")
@@ -249,32 +253,34 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 	dir := filepath.Join(buildCtxDir, buildID)
 	buildBytes, err := io.ReadAll(buildCtx)
 	if err != nil {
-		return fmt.Errorf("failed to read build context: %v", err)
+		return fmt.Errorf("failed to read build context: %w", err)
 	}
 
 	if err := saveContext(dir, buildBytes); err != nil {
-		return fmt.Errorf("failed to save build context: %v", err)
+		return fmt.Errorf("failed to save build context: %w", err)
 	}
 
 	imageURI := fmt.Sprintf("uw-provisional:%s", buildID) // until tagged
 	logsch, errch, err := buildImage(ctx, dir, imageURI, "")
 	if err != nil {
-		return fmt.Errorf("failed to build image: %v", err)
+		return fmt.Errorf("failed to build image: %w", err)
 	}
 	log.Ctx(ctx).Info().Msg("Started image build with build context at " + dir)
 
 	var logs []types.LogEntry
 
+	saveCtx := context.Background()
+	saveCtx = log.Logger.WithContext(ctx)
 	defer func() {
-		log.Ctx(ctx).Info().Msg("Saving logs")
-		if err := b.logger.SaveLogs(ctx, buildID, logs); err != nil {
-			log.Ctx(ctx).Error().Err(err).Msg("Failed to save logs")
+		log.Ctx(saveCtx).Info().Msg("Saving logs")
+		if err := b.logger.SaveLogs(saveCtx, buildID, logs); err != nil {
+			log.Ctx(saveCtx).Error().Err(err).Msg("Failed to save logs")
 		}
 	}()
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-saveCtx.Done():
 			return nil
 		case l, ok := <-logsch:
 			if !ok {
@@ -309,7 +315,7 @@ func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string)
 		if e, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("failed to tag image: %s, %s", out, e.Stderr)
 		}
-		return fmt.Errorf("failed to tag image: %v", err)
+		return fmt.Errorf("failed to tag image: %w", err)
 	}
 
 	out, err = pushImage(ctx, target)
@@ -317,7 +323,7 @@ func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string)
 		if e, ok := err.(*exec.ExitError); ok {
 			err = fmt.Errorf("failed to push image: %s, %s", out, e.Stderr)
 		}
-		return fmt.Errorf("failed to push image: %v", err)
+		return fmt.Errorf("failed to push image: %w", err)
 	}
 	log.Ctx(ctx).Info().Msgf("Pushed image to %q", target)
 

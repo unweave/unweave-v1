@@ -13,16 +13,17 @@ import (
 )
 
 const BuildCreate = `-- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type, name, created_by)
-values ($1, $2, $3, $4)
+insert into unweave.build (project_id, builder_type, name, created_by, started_at)
+values ($1, $2, $3, $4, case when $5::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz then now() else $5::timestamptz end)
 returning id
 `
 
 type BuildCreateParams struct {
-	ProjectID   string `json:"projectID"`
-	BuilderType string `json:"builderType"`
-	Name        string `json:"name"`
-	CreatedBy   string `json:"createdBy"`
+	ProjectID   string    `json:"projectID"`
+	BuilderType string    `json:"builderType"`
+	Name        string    `json:"name"`
+	CreatedBy   string    `json:"createdBy"`
+	StartedAt   time.Time `json:"startedAt"`
 }
 
 func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error) {
@@ -31,6 +32,7 @@ func (q *Queries) BuildCreate(ctx context.Context, arg BuildCreateParams) (strin
 		arg.BuilderType,
 		arg.Name,
 		arg.CreatedBy,
+		arg.StartedAt,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -109,26 +111,38 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSessi
 }
 
 const BuildUpdate = `-- name: BuildUpdate :exec
-update unweave.build
-set status    = $2,
-    meta_data = $3
-where id = $1
+UPDATE unweave.build
+SET
+    status = $2,
+    meta_data = $3,
+    started_at = COALESCE(NULLIF($4::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), started_at),
+    finished_at = COALESCE(NULLIF($5::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), finished_at)
+WHERE id = $1
 `
 
 type BuildUpdateParams struct {
-	ID       string             `json:"id"`
-	Status   UnweaveBuildStatus `json:"status"`
-	MetaData json.RawMessage    `json:"metaData"`
+	ID         string             `json:"id"`
+	Status     UnweaveBuildStatus `json:"status"`
+	MetaData   json.RawMessage    `json:"metaData"`
+	StartedAt  time.Time          `json:"startedAt"`
+	FinishedAt time.Time          `json:"finishedAt"`
 }
 
 func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, BuildUpdate, arg.ID, arg.Status, arg.MetaData)
+	_, err := q.db.ExecContext(ctx, BuildUpdate,
+		arg.ID,
+		arg.Status,
+		arg.MetaData,
+		arg.StartedAt,
+		arg.FinishedAt,
+	)
 	return err
 }
 
 const MxSessionGet = `-- name: MxSessionGet :one
 
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -145,6 +159,7 @@ where s.id = $1
 
 type MxSessionGetRow struct {
 	ID              string               `json:"id"`
+	Name            string               `json:"name"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -164,6 +179,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 	var i MxSessionGetRow
 	err := row.Scan(
 		&i.ID,
+		&i.Name,
 		&i.Status,
 		&i.NodeID,
 		&i.Provider,
@@ -179,6 +195,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 
 const MxSessionsGet = `-- name: MxSessionsGet :many
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -195,6 +212,7 @@ where s.project_id = $1
 
 type MxSessionsGetRow struct {
 	ID              string               `json:"id"`
+	Name            string               `json:"name"`
 	Status          UnweaveSessionStatus `json:"status"`
 	NodeID          string               `json:"nodeID"`
 	Provider        string               `json:"provider"`
@@ -217,6 +235,7 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 		var i MxSessionsGetRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.Name,
 			&i.Status,
 			&i.NodeID,
 			&i.Provider,

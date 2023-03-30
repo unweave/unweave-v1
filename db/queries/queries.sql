@@ -1,7 +1,8 @@
 -- name: BuildCreate :one
-insert into unweave.build (project_id, builder_type, name, created_by)
-values ($1, $2, $3, $4)
+insert into unweave.build (project_id, builder_type, name, created_by, started_at)
+values ($1, $2, $3, $4, case when @started_at::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz then now() else @started_at::timestamptz end)
 returning id;
+
 
 -- name: BuildGet :one
 select *
@@ -16,10 +17,13 @@ from (select id from unweave.build as ub where ub.id = $1) as b
 ;
 
 -- name: BuildUpdate :exec
-update unweave.build
-set status    = $2,
-    meta_data = $3
-where id = $1;
+UPDATE unweave.build
+SET
+    status = $2,
+    meta_data = $3,
+    started_at = COALESCE(NULLIF(@started_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), started_at),
+    finished_at = COALESCE(NULLIF(@finished_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), finished_at)
+WHERE id = $1;
 
 -- name: ProjectGet :one
 select *
@@ -99,6 +103,7 @@ where public_key = $1
 
 -- name: MxSessionGet :one
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,
@@ -114,6 +119,7 @@ where s.id = $1;
 
 -- name: MxSessionsGet :many
 select s.id,
+       s.name,
        s.status,
        s.node_id,
        s.provider,

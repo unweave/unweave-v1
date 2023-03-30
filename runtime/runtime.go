@@ -9,12 +9,13 @@ import (
 )
 
 type Runtime struct {
-	Session
+	Node    Node
+	Session Session
 }
 
-// Session represents an interactive session on a node. You can connect to it via SSH and
+// Node represents an interactive session on a node. You can connect to it via SSH and
 // train your ML models for example.
-type Session interface {
+type Node interface {
 	// AddSSHKey adds a new SSH key to the provider.
 	//
 	// If the sshKey.PublicKey is nil, the provider will generate a new keypair with the
@@ -28,7 +29,7 @@ type Session interface {
 	// name and public key should match those with the provider.
 	AddSSHKey(ctx context.Context, sshKey types.SSHKey) (types.SSHKey, error)
 	// GetProvider returns the provider.
-	GetProvider() types.RuntimeProvider
+	GetProvider() types.Provider
 	// GetConnectionInfo returns the connection information for the node running a session.
 	GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error)
 	// HealthCheck performs a health check on the provider.
@@ -40,7 +41,7 @@ type Session interface {
 	// implemented at. For example, it could be implemented at a VM level for a bare-metal
 	// provider, at a container level, batch job level, etc. In each case, the node must
 	// be accessible via SSH.
-	InitNode(ctx context.Context, sshKey types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
+	InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.
@@ -52,7 +53,15 @@ type Session interface {
 	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
 }
 
+type Session interface {
+	// Init initializes a new session on a node. It creates environment the users code
+	// will in with the provided build and configures ssh keys for interactive access.
+	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string) error
+	// Exec is a code execution request.
+	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
+}
+
 type Initializer interface {
-	InitializeRuntime(ctx context.Context, userID string, provider types.RuntimeProvider) (*Runtime, error)
+	InitializeRuntime(ctx context.Context, userID string, provider types.Provider) (*Runtime, error)
 	InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error)
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -78,15 +77,8 @@ type BuildsCreateResponse struct {
 }
 
 type BuildsGetResponse struct {
-	BuildID        string      `json:"buildID"`
-	Name           string      `json:"name"`
-	ProjectID      string      `json:"projectID"`
-	Status         string      `json:"status"`
-	BuilderType    string      `json:"builderType"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	StartedAt      *time.Time  `json:"startedAt,omitempty"`
-	FinishedAt     *time.Time  `json:"finishedAt,omitempty"`
-	UsedBySessions []Session   `json:"usedBySessions,omitempty"`
+	Build
+	UsedBySessions []Exec      `json:"usedBySessions,omitempty"`
 	Logs           *[]LogEntry `json:"logs,omitempty"`
 }
 
@@ -94,15 +86,17 @@ type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`
 }
 
-type SessionCreateParams struct {
-	Provider     RuntimeProvider `json:"provider"`
-	NodeTypeID   string          `json:"nodeTypeID,omitempty"`
-	Region       *string         `json:"region,omitempty"`
-	SSHKeyName   *string         `json:"sshKeyName"`
-	SSHPublicKey *string         `json:"sshPublicKey"`
+type ExecCreateParams struct {
+	Provider      Provider `json:"provider"`
+	NodeTypeID    string   `json:"nodeTypeID,omitempty"`
+	Region        *string  `json:"region,omitempty"`
+	SSHKeyName    *string  `json:"sshKeyName"`
+	SSHPublicKey  *string  `json:"sshPublicKey"`
+	IsInteractive bool     `json:"isInteractive"`
+	Ctx           ExecCtx  `json:"ctx,omitempty"`
 }
 
-func (s *SessionCreateParams) Bind(r *http.Request) error {
+func (s *ExecCreateParams) Bind(r *http.Request) error {
 	if s.Provider == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
@@ -119,8 +113,8 @@ func (s *SessionCreateParams) Bind(r *http.Request) error {
 }
 
 type ProviderConnectParams struct {
-	Provider      RuntimeProvider `json:"provider"`
-	ProviderToken string          `json:"providerToken,omitempty"`
+	Provider      Provider `json:"provider"`
+	ProviderToken string   `json:"providerToken,omitempty"`
 }
 
 func (p *ProviderConnectParams) Bind(r *http.Request) error {
@@ -134,15 +128,15 @@ func (p *ProviderConnectParams) Bind(r *http.Request) error {
 }
 
 type ProvidersListResponse struct {
-	Providers []RuntimeProvider `json:"providers"`
+	Providers []Provider `json:"providers"`
 }
 
 type SessionGetResponse struct {
-	Session Session `json:"session"`
+	Session Exec `json:"session"`
 }
 
 type SessionsListResponse struct {
-	Sessions []Session `json:"sessions"`
+	Sessions []Exec `json:"sessions"`
 }
 
 type SessionTerminateResponse struct {

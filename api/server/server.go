@@ -38,7 +38,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, "", sess.CreatedBy)
-			if e := srv.Session.Watch(c, sess.ID); e != nil {
+			if e := srv.Exec.Watch(c, sess.ID); e != nil {
 				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
 			}
 		}()
@@ -83,13 +83,13 @@ func API(cfg Config, rti runtime.Initializer) {
 		})
 
 		r.Route("/sessions", func(r chi.Router) {
-			r.Post("/", SessionsCreate(rti))
-			r.Get("/", SessionsList(rti))
+			r.Post("/", ExecCreate(rti))
+			r.Get("/", ExecsList(rti))
 
 			r.Route("/{sessionID}", func(r chi.Router) {
 				r.Use(withSessionCtx)
-				r.Get("/", SessionsGet(rti))
-				r.Put("/terminate", SessionsTerminate(rti))
+				r.Get("/", ExecsGet(rti))
+				r.Put("/terminate", ExecsTerminate(rti))
 			})
 		})
 	})

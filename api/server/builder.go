@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -57,18 +58,21 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		if err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to build image")
 
-			p := db.BuildUpdateParams{ID: buildID}
+			p := db.BuildUpdateParams{
+				ID:     buildID,
+				Status: "building",
+			}
 
 			var e *types.Error
 			var errmeta string
 			if errors.As(err, &e) && e.Code == http.StatusBadRequest {
 				log.Ctx(c).Warn().Err(err).Msg("User build failed")
 				p.Status = db.UnweaveBuildStatusFailed
-				errmeta = fmt.Sprintf("Build failed: %v", err.Error())
+				errmeta = fmt.Sprintf("Build failed: %v", e.Message)
 			} else {
 				log.Ctx(c).Error().Err(err).Msg("Failed to build image")
 				p.Status = db.UnweaveBuildStatusError
-				errmeta = fmt.Sprintf("Build error: %v", err.Error())
+				errmeta = fmt.Sprintf("Build error: Something went wrong. Please contact us for support.")
 			}
 
 			meta, merr := json.Marshal(BuildMetaDataV1{
@@ -118,9 +122,10 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		}
 
 		p := db.BuildUpdateParams{
-			ID:       buildID,
-			Status:   db.UnweaveBuildStatusSuccess,
-			MetaData: meta,
+			ID:         buildID,
+			Status:     db.UnweaveBuildStatusSuccess,
+			FinishedAt: time.Now(),
+			MetaData:   meta,
 		}
 		if err := db.Q.BuildUpdate(c, p); err != nil {
 			log.Ctx(c).Error().Err(err).Msg("Failed to set build success in DB")
@@ -146,4 +151,22 @@ func (b *BuilderService) GetLogs(ctx context.Context, buildID string) ([]types.L
 		return nil, fmt.Errorf("failed to get logs from builder: %w", err)
 	}
 	return logs, nil
+}
+
+func (b *BuilderService) GetImageURI(ctx context.Context, buildID string) (string, error) {
+	build, err := db.Q.BuildGet(ctx, buildID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get build: %v", err)
+	}
+
+	builder, err := b.srv.InitializeBuilder(ctx, build.BuilderType)
+	if err != nil {
+		return "", fmt.Errorf("failed to initializer builder: %w", err)
+	}
+
+	reponame := strings.ToLower(build.ProjectID) // reponame must be lowercase for dockerhub
+	namespace := strings.ToLower(b.srv.cid)
+	uri := builder.GetImageURI(ctx, build.ID, namespace, reponame)
+
+	return uri, nil
 }

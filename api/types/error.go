@@ -42,11 +42,11 @@ import (
 // error message from the same struct. The error message should not expose in inner workings
 // of the API.
 type Error struct {
-	Code       int             `json:"code"`
-	Message    string          `json:"message"`
-	Suggestion string          `json:"suggestion,omitempty"`
-	Provider   RuntimeProvider `json:"provider,omitempty"`
-	Err        error           `json:"-"`
+	Code       int      `json:"code"`
+	Message    string   `json:"message"`
+	Suggestion string   `json:"suggestion,omitempty"`
+	Provider   Provider `json:"provider,omitempty"`
+	Err        error    `json:"-"`
 }
 
 func (e *Error) Error() string {

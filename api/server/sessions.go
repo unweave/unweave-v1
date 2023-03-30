@@ -26,6 +26,14 @@ type ConnectionInfoV1 struct {
 }
 
 func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
+
+	var e *types.Error
+	if errors.As(err, &e) {
+		msg += ": " + e.Message
+	}
+	msg += ": " + err.Error()
+
 	log.Ctx(ctx).Error().Err(err).Msg(msg)
 
 	params := db.SessionSetErrorParams{
@@ -40,9 +48,9 @@ func handleSessionError(ctx context.Context, sessionID string, err error, msg st
 	}
 }
 
-func registerCredentials(ctx context.Context, rt runtime.Session, key types.SSHKey) error {
+func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
-	providerKeys, err := rt.ListSSHKeys(ctx)
+	providerKeys, err := rt.Node.ListSSHKeys(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list ssh keys from provider: %w", err)
 	}
@@ -51,7 +59,7 @@ func registerCredentials(ctx context.Context, rt runtime.Session, key types.SSHK
 			return nil
 		}
 	}
-	if _, err = rt.AddSSHKey(ctx, key); err != nil {
+	if _, err = rt.Node.AddSSHKey(ctx, key); err != nil {
 		return fmt.Errorf("failed to add ssh key to provider: %w", err)
 	}
 	return nil
@@ -137,7 +145,8 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}, nil
 }
 
-func updateConnectionInfo(ctx context.Context, rt runtime.Session, nodeID string, sessionID string) error {
+func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, sessionID string) error {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 	connInfo, err := rt.GetConnectionInfo(ctx, nodeID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection info: %w", err)
@@ -157,18 +166,29 @@ func updateConnectionInfo(ctx context.Context, rt runtime.Session, nodeID string
 	return nil
 }
 
-type SessionService struct {
+func updateExecStatus(ctx context.Context, execID string, status types.SessionStatus) {
+	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
+	params := db.SessionStatusUpdateParams{
+		ID:     execID,
+		Status: db.UnweaveSessionStatus(status),
+	}
+	if err := db.Q.SessionStatusUpdate(ctx, params); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msg("Failed to update exec status")
+	}
+}
+
+type ExecService struct {
 	srv *Service
 }
 
-func (s *SessionService) Create(ctx context.Context, projectID string, params types.SessionCreateParams) (*types.Session, error) {
+func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams) (*types.Exec, error) {
 	rt, err := s.srv.InitializeRuntime(ctx, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
 	}
 
 	ctx = log.With().
-		Stringer(types.RuntimeProviderKey, rt.GetProvider()).
+		Stringer(types.RuntimeProviderKey, rt.Node.GetProvider()).
 		Logger().
 		WithContext(ctx)
 
@@ -180,7 +200,7 @@ func (s *SessionService) Create(ctx context.Context, projectID string, params ty
 		return nil, fmt.Errorf("failed to register credentials: %w", err)
 	}
 
-	node, err := rt.InitNode(ctx, sshKey, params.NodeTypeID, params.Region)
+	node, err := rt.Node.InitNode(ctx, []types.SSHKey{sshKey}, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
 	}
@@ -200,14 +220,37 @@ func (s *SessionService) Create(ctx context.Context, projectID string, params ty
 		ConnectionInfo: connInfo,
 		SshKeyName:     sshKey.Name,
 	}
-	sessionID, err := db.Q.SessionCreate(ctx, dbp)
+	execID, err := db.Q.SessionCreate(ctx, dbp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
+	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
+
+	imageURI := "alpine:latest"
+	if params.Ctx.BuildID != nil {
+		var err error
+		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
+		if err != nil {
+			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get image uri: %w", err)
+	}
+	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, imageURI); err != nil {
+		go handleSessionError(ctx, execID, err, "failed to init session")
+		return nil, fmt.Errorf("failed to init session: %w", err)
+	}
+	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
+		go handleSessionError(ctx, execID, err, "failed to run exec")
+		return nil, fmt.Errorf("failed to to run exec: %w", err)
+	}
 
 	createdAt := time.Now()
-	session := &types.Session{
-		ID:         sessionID,
+	session := &types.Exec{
+		ID:         execID,
+		Name:       dbp.Name,
 		SSHKey:     node.KeyPair,
 		Connection: nil,
 		Status:     types.StatusInitializing,
@@ -220,7 +263,7 @@ func (s *SessionService) Create(ctx context.Context, projectID string, params ty
 	return session, nil
 }
 
-func (s *SessionService) Get(ctx context.Context, sessionID string) (*types.Session, error) {
+func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, error) {
 	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -237,8 +280,9 @@ func (s *SessionService) Get(ctx context.Context, sessionID string) (*types.Sess
 		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 	}
 
-	session := &types.Session{
-		ID: sessionID,
+	session := &types.Exec{
+		ID:   sessionID,
+		Name: dbs.Name,
 		SSHKey: types.SSHKey{
 			Name:      dbs.SshKeyName,
 			PublicKey: &dbs.PublicKey,
@@ -253,19 +297,20 @@ func (s *SessionService) Get(ctx context.Context, sessionID string) (*types.Sess
 		CreatedAt:  &dbs.CreatedAt,
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
-		Provider:   types.RuntimeProvider(dbs.Provider),
+		Provider:   types.Provider(dbs.Provider),
+		Ctx:        types.ExecCtx{},
 	}
 	return session, nil
 }
 
-func (s *SessionService) List(ctx context.Context, projectID string, listTerminated bool) ([]types.Session, error) {
+func (s *ExecService) List(ctx context.Context, projectID string, listTerminated bool) ([]types.Exec, error) {
 	sessions, err := db.Q.MxSessionsGet(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to get sessions from db: %w", err)
 		return nil, err
 	}
 
-	var res []types.Session
+	var res []types.Exec
 
 	for _, s := range sessions {
 		s := s
@@ -276,8 +321,9 @@ func (s *SessionService) List(ctx context.Context, projectID string, listTermina
 		if err := json.Unmarshal(s.ConnectionInfo, connInfo); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
-		session := types.Session{
-			ID: s.ID,
+		session := types.Exec{
+			ID:   s.ID,
+			Name: s.Name,
 			SSHKey: types.SSHKey{
 				Name:      s.SshKeyName,
 				PublicKey: &s.PublicKey,
@@ -292,14 +338,14 @@ func (s *SessionService) List(ctx context.Context, projectID string, listTermina
 			CreatedAt:  &s.CreatedAt,
 			NodeTypeID: s.NodeID,
 			Region:     s.Region,
-			Provider:   types.RuntimeProvider(s.Provider),
+			Provider:   types.Provider(s.Provider),
 		}
 		res = append(res, session)
 	}
 	return res, nil
 }
 
-func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
+func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 	session, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -311,13 +357,13 @@ func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 		return fmt.Errorf("failed to get session from db: %w", err)
 	}
 
-	rt, err := s.srv.InitializeRuntime(ctx, types.RuntimeProvider(session.Provider))
+	rt, err := s.srv.InitializeRuntime(ctx, types.Provider(session.Provider))
 	if err != nil {
 		return fmt.Errorf("failed to initialize runtime: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	statusch, errch := rt.Watch(ctx, session.NodeID)
+	statusch, errch := rt.Node.Watch(ctx, session.NodeID)
 
 	log.Ctx(ctx).Info().Msgf("Starting to watch session %s", sessionID)
 
@@ -334,7 +380,7 @@ func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 					Msg("session status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(ctx, rt, session.NodeID, sessionID); e != nil {
+					if e := updateConnectionInfo(ctx, rt.Node, session.NodeID, sessionID); e != nil {
 						// We mark the error in the DB but don't terminate the node. This
 						// is left to the user to do manually. Perhaps this should be
 						// changed in the future but for now, it might help debugging.
@@ -362,13 +408,10 @@ func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 				// happen. Since we don't know the cause of this error, let's play it safe
 				// and terminate the node. This will mean the user will lose their work
 				// but the alternative is to have a runaway node that drains all their credit.
-				var err *types.Error
-				if errors.As(e, &err) {
-					handleSessionError(ctx, sessionID, e, err.Message)
-				}
 				if err := s.Terminate(ctx, sessionID); err != nil {
 					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate session on failure to watch")
 				}
+				handleSessionError(ctx, sessionID, e, "Failed to watch session")
 				return
 			}
 		}
@@ -377,7 +420,7 @@ func (s *SessionService) Watch(ctx context.Context, sessionID string) error {
 	return nil
 }
 
-func (s *SessionService) Terminate(ctx context.Context, sessionID string) error {
+func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	sess, err := db.Q.SessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -390,18 +433,18 @@ func (s *SessionService) Terminate(ctx context.Context, sessionID string) error 
 		return fmt.Errorf("failed to fetch session from db %q: %w", sessionID, err)
 	}
 
-	provider := types.RuntimeProvider(sess.Provider)
+	provider := types.Provider(sess.Provider)
 	rt, err := s.srv.InitializeRuntime(ctx, provider)
 	if err != nil {
 		return fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
 	}
 
 	ctx = log.With().
-		Stringer(types.RuntimeProviderKey, s.srv.runtime.GetProvider()).
+		Stringer(types.RuntimeProviderKey, s.srv.runtime.Node.GetProvider()).
 		Logger().
 		WithContext(ctx)
 
-	if err = rt.TerminateNode(ctx, sess.NodeID); err != nil {
+	if err = rt.Node.TerminateNode(ctx, sess.NodeID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
 	params := db.SessionStatusUpdateParams{
