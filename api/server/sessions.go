@@ -214,7 +214,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		NodeID:         node.ID,
 		CreatedBy:      s.srv.cid,
 		ProjectID:      projectID,
-		Provider:       params.Provider.String(),
 		Region:         node.Region,
 		Name:           random.GenerateRandomPhrase(4, "-"),
 		ConnectionInfo: connInfo,
@@ -346,7 +345,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 }
 
 func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
-	session, err := db.Q.SessionGet(ctx, sessionID)
+	session, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -421,7 +420,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 }
 
 func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
-	sess, err := db.Q.SessionGet(ctx, sessionID)
+	sess, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{

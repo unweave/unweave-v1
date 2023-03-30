@@ -14,7 +14,10 @@ import (
 
 const BuildCreate = `-- name: BuildCreate :one
 insert into unweave.build (project_id, builder_type, name, created_by, started_at)
-values ($1, $2, $3, $4, case when $5::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz then now() else $5::timestamptz end)
+values ($1, $2, $3, $4, case
+                            when $5::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz
+                                then now()
+                            else $5::timestamptz end)
 returning id
 `
 
@@ -65,21 +68,41 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.provider, s.ssh_key_id, s.connection_info, s.error, s.build
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.connection_info, s.error, s.build, s.spec, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build = b.id
+         join unweave.node as n on s.node_id = node.id
 `
 
-func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSession, error) {
+type BuildGetUsedByRow struct {
+	ID             string               `json:"id"`
+	Name           string               `json:"name"`
+	NodeID         string               `json:"nodeID"`
+	Region         string               `json:"region"`
+	CreatedBy      string               `json:"createdBy"`
+	CreatedAt      time.Time            `json:"createdAt"`
+	ReadyAt        sql.NullTime         `json:"readyAt"`
+	ExitedAt       sql.NullTime         `json:"exitedAt"`
+	Status         UnweaveSessionStatus `json:"status"`
+	ProjectID      string               `json:"projectID"`
+	SshKeyID       string               `json:"sshKeyID"`
+	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
+	Error          sql.NullString       `json:"error"`
+	Build          sql.NullString       `json:"build"`
+	Spec           json.RawMessage      `json:"spec"`
+	Provider       string               `json:"provider"`
+}
+
+func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error) {
 	rows, err := q.db.QueryContext(ctx, BuildGetUsedBy, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []UnweaveSession
+	var items []BuildGetUsedByRow
 	for rows.Next() {
-		var i UnweaveSession
+		var i BuildGetUsedByRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -91,11 +114,12 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSessi
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.Provider,
 			&i.SshKeyID,
 			&i.ConnectionInfo,
 			&i.Error,
 			&i.Build,
+			&i.Spec,
+			&i.Provider,
 		); err != nil {
 			return nil, err
 		}
@@ -111,13 +135,16 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSessi
 }
 
 const BuildUpdate = `-- name: BuildUpdate :exec
-UPDATE unweave.build
-SET
-    status = $2,
-    meta_data = $3,
-    started_at = COALESCE(NULLIF($4::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), started_at),
-    finished_at = COALESCE(NULLIF($5::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), finished_at)
-WHERE id = $1
+update unweave.build
+set status      = $2,
+    meta_data   = $3,
+    started_at  = coalesce(
+            nullif($4::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz),
+            started_at),
+    finished_at = coalesce(
+            nullif($5::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz),
+            finished_at)
+where id = $1
 `
 
 type BuildUpdateParams struct {
@@ -145,7 +172,7 @@ select s.id,
        s.name,
        s.status,
        s.node_id,
-       s.provider,
+       n.provider,
        s.region,
        s.created_at,
        s.connection_info,
@@ -154,6 +181,7 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+         join unweave.node as n on s.node_id = node.id
 where s.id = $1
 `
 
@@ -198,7 +226,7 @@ select s.id,
        s.name,
        s.status,
        s.node_id,
-       s.provider,
+       n.provider,
        s.region,
        s.created_at,
        s.connection_info,
@@ -207,6 +235,7 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+         join unweave.node as n on s.node_id = node.id
 where s.project_id = $1
 `
 
@@ -376,12 +405,12 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 }
 
 const SessionCreate = `-- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id,
+insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $8
-                           and owner_id = $2), $5, $6, $7)
+values ($1, $2, $3, (select id
+                     from unweave.ssh_key as ssh_keys
+                     where ssh_keys.name = $7
+                       and owner_id = $2), $4, $5, $6)
 returning id
 `
 
@@ -389,7 +418,6 @@ type SessionCreateParams struct {
 	NodeID         string          `json:"nodeID"`
 	CreatedBy      string          `json:"createdBy"`
 	ProjectID      string          `json:"projectID"`
-	Provider       string          `json:"provider"`
 	Region         string          `json:"region"`
 	Name           string          `json:"name"`
 	ConnectionInfo json.RawMessage `json:"connectionInfo"`
@@ -401,7 +429,6 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 		arg.NodeID,
 		arg.CreatedBy,
 		arg.ProjectID,
-		arg.Provider,
 		arg.Region,
 		arg.Name,
 		arg.ConnectionInfo,
@@ -413,7 +440,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error, build
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec
 from unweave.session
 where id = $1
 `
@@ -432,17 +459,17 @@ func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, er
 		&i.ExitedAt,
 		&i.Status,
 		&i.ProjectID,
-		&i.Provider,
 		&i.SshKeyID,
 		&i.ConnectionInfo,
 		&i.Error,
 		&i.Build,
+		&i.Spec,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, provider, ssh_key_id, connection_info, error, build
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -468,11 +495,11 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.Provider,
 			&i.SshKeyID,
 			&i.ConnectionInfo,
 			&i.Error,
 			&i.Build,
+			&i.Spec,
 		); err != nil {
 			return nil, err
 		}

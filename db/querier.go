@@ -11,7 +11,7 @@ import (
 type Querier interface {
 	BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error)
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
-	BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSession, error)
+	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.

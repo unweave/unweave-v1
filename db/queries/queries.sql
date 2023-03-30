@@ -1,6 +1,9 @@
 -- name: BuildCreate :one
 insert into unweave.build (project_id, builder_type, name, created_by, started_at)
-values ($1, $2, $3, $4, case when @started_at::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz then now() else @started_at::timestamptz end)
+values ($1, $2, $3, $4, case
+                            when @started_at::timestamptz = '0001-01-01 00:00:00 UTC'::timestamptz
+                                then now()
+                            else @started_at::timestamptz end)
 returning id;
 
 
@@ -10,20 +13,23 @@ from unweave.build
 where id = $1;
 
 -- name: BuildGetUsedBy :many
-select s.*
+select s.*, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build = b.id
-;
+         join unweave.node as n on s.node_id = node.id;
 
 -- name: BuildUpdate :exec
-UPDATE unweave.build
-SET
-    status = $2,
-    meta_data = $3,
-    started_at = COALESCE(NULLIF(@started_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), started_at),
-    finished_at = COALESCE(NULLIF(@finished_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz), finished_at)
-WHERE id = $1;
+update unweave.build
+set status      = $2,
+    meta_data   = $3,
+    started_at  = coalesce(
+            nullif(@started_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz),
+            started_at),
+    finished_at = coalesce(
+            nullif(@finished_at::timestamptz, '0001-01-01 00:00:00 UTC'::timestamptz),
+            finished_at)
+where id = $1;
 
 -- name: ProjectGet :one
 select *
@@ -31,12 +37,12 @@ from unweave.project
 where id = $1;
 
 -- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, provider, ssh_key_id,
+insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = @ssh_key_name
-                           and owner_id = $2), $5, $6, $7)
+values ($1, $2, $3, (select id
+                     from unweave.ssh_key as ssh_keys
+                     where ssh_keys.name = @ssh_key_name
+                       and owner_id = $2), $4, $5, $6)
 returning id;
 
 -- name: SessionGet :one
@@ -106,7 +112,7 @@ select s.id,
        s.name,
        s.status,
        s.node_id,
-       s.provider,
+       n.provider,
        s.region,
        s.created_at,
        s.connection_info,
@@ -115,6 +121,7 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+         join unweave.node as n on s.node_id = node.id
 where s.id = $1;
 
 -- name: MxSessionsGet :many
@@ -122,7 +129,7 @@ select s.id,
        s.name,
        s.status,
        s.node_id,
-       s.provider,
+       n.provider,
        s.region,
        s.created_at,
        s.connection_info,
@@ -131,4 +138,5 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
+         join unweave.node as n on s.node_id = node.id
 where s.project_id = $1;
