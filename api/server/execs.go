@@ -166,7 +166,7 @@ func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, s
 	return nil
 }
 
-func updateExecStatus(ctx context.Context, execID string, status types.SessionStatus) {
+func updateExecStatus(ctx context.Context, execID string, status types.NodeStatus) {
 	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 	params := db.SessionStatusUpdateParams{
 		ID:     execID,
@@ -203,6 +203,24 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	node, err := rt.Node.InitNode(ctx, []types.SSHKey{sshKey}, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
+	}
+
+	specs, err := json.Marshal(node.Specs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
+	}
+
+	np := db.NodeCreateParams{
+		ID:        node.ID,
+		Provider:  string(rt.Node.GetProvider()),
+		Region:    node.Region,
+		Spec:      specs,
+		Status:    string(types.StatusInitializing),
+		OwnerID:   s.srv.aid,
+		SshKeyIds: []string{sshKey.Name},
+	}
+	if err = db.Q.NodeCreate(ctx, np); err != nil {
+		return nil, fmt.Errorf("failed to create node in db: %w", err)
 	}
 
 	connInfo, err := json.Marshal(ConnectionInfoV1{Version: 1})
@@ -292,7 +310,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 			Port: connInfo.Port,
 			User: connInfo.User,
 		},
-		Status:     types.SessionStatus(dbs.Status),
+		Status:     types.NodeStatus(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
@@ -333,7 +351,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 				Port: connInfo.Port,
 				User: connInfo.User,
 			},
-			Status:     types.SessionStatus(s.Status),
+			Status:     types.NodeStatus(s.Status),
 			CreatedAt:  &s.CreatedAt,
 			NodeTypeID: s.NodeID,
 			Region:     s.Region,

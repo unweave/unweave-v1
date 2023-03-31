@@ -6,14 +6,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type SessionStatus string
+type NodeStatus string
 
 const (
-	RuntimeProviderKey               = "Provider"
-	StatusInitializing SessionStatus = "initializing"
-	StatusRunning      SessionStatus = "running"
-	StatusTerminated   SessionStatus = "terminated"
-	StatusError        SessionStatus = "error"
+	RuntimeProviderKey            = "Provider"
+	StatusInitializing NodeStatus = "initializing"
+	StatusRunning      NodeStatus = "running"
+	StatusTerminated   NodeStatus = "terminated"
+	StatusError        NodeStatus = "error"
 )
 
 type NoOpLogHook struct{}
@@ -66,8 +66,12 @@ type NodeSpecs struct {
 	VCPUs int `json:"vCPUs"`
 	// Memory is the RAM in GB
 	Memory int `json:"memory"`
+	// Storage is the storage in GB
+	Storage *int `json:"storage"`
 	// GPUMemory is the GPU RAM in GB
 	GPUMemory *int `json:"gpuMemory"`
+	// GPUCount is the number of GPUs
+	GPUCount *int `json:"gpuCount"`
 }
 
 type NodeType struct {
@@ -81,12 +85,13 @@ type NodeType struct {
 }
 
 type Node struct {
-	ID       string        `json:"id"`
-	TypeID   string        `json:"typeID"`
-	Region   string        `json:"region"`
-	KeyPair  SSHKey        `json:"sshKeyPair"`
-	Status   SessionStatus `json:"status"`
-	Provider Provider      `json:"provider"`
+	ID       string     `json:"id"`
+	TypeID   string     `json:"typeID"`
+	Region   string     `json:"region"`
+	KeyPair  SSHKey     `json:"sshKeyPair"`
+	Status   NodeStatus `json:"status"`
+	Provider Provider   `json:"provider"`
+	Specs    NodeSpecs  `json:"specs"`
 }
 
 type Project struct {
@@ -111,7 +116,7 @@ type Session struct {
 	Name       string          `json:"name"`
 	SSHKeys    []SSHKey        `json:"sshKeys"`
 	Connection *ConnectionInfo `json:"connection,omitempty"`
-	Status     SessionStatus   `json:"status"`
+	Status     NodeStatus      `json:"status"`
 	NodeID     string          `json:"nodeID"`
 }
 
@@ -120,7 +125,7 @@ type Exec struct {
 	Name       string          `json:"name"`
 	SSHKey     SSHKey          `json:"sshKey"`
 	Connection *ConnectionInfo `json:"connection,omitempty"`
-	Status     SessionStatus   `json:"status"`
+	Status     NodeStatus      `json:"status"`
 	CreatedAt  *time.Time      `json:"createdAt,omitempty"`
 	NodeTypeID string          `json:"nodeTypeID"`
 	Region     string          `json:"region"`

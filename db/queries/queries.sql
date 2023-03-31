@@ -36,6 +36,17 @@ select *
 from unweave.project
 where id = $1;
 
+-- name: NodeCreate :exec
+select unweave.insert_node(
+               @id,
+               @provider,
+               @region,
+               @spec,
+               @status,
+               @owner_id,
+               @ssh_key_ids :: text[]
+           );
+
 -- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info)

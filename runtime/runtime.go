@@ -47,10 +47,10 @@ type Node interface {
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	// NodeStatus returns the status of the node running a session.
-	NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error)
+	NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 	// Watch watches the status of the node running a session.
-	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
+	Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error)
 }
 
 type Session interface {

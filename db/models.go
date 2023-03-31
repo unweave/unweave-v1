@@ -125,10 +125,16 @@ type UnweaveNode struct {
 	Provider  string          `json:"provider"`
 	Region    string          `json:"region"`
 	Spec      json.RawMessage `json:"spec"`
-	Status    sql.NullString  `json:"status"`
-	CreatedAt sql.NullTime    `json:"createdAt"`
+	Status    string          `json:"status"`
+	CreatedAt time.Time       `json:"createdAt"`
 	ReadyAt   sql.NullTime    `json:"readyAt"`
-	OwnerID   sql.NullString  `json:"ownerID"`
+	OwnerID   string          `json:"ownerID"`
+}
+
+type UnweaveNodeSshKey struct {
+	NodeID    string    `json:"nodeID"`
+	SshKeyID  string    `json:"sshKeyID"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type UnweaveProject struct {
@@ -146,7 +152,7 @@ type UnweaveSession struct {
 	ExitedAt       sql.NullTime         `json:"exitedAt"`
 	Status         UnweaveSessionStatus `json:"status"`
 	ProjectID      string               `json:"projectID"`
-	SshKeyID       string               `json:"sshKeyID"`
+	SshKeyID       sql.NullString       `json:"sshKeyID"`
 	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
 	Error          sql.NullString       `json:"error"`
 	Build          sql.NullString       `json:"build"`

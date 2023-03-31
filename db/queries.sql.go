@@ -10,6 +10,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const BuildCreate = `-- name: BuildCreate :one
@@ -86,7 +88,7 @@ type BuildGetUsedByRow struct {
 	ExitedAt       sql.NullTime         `json:"exitedAt"`
 	Status         UnweaveSessionStatus `json:"status"`
 	ProjectID      string               `json:"projectID"`
-	SshKeyID       string               `json:"sshKeyID"`
+	SshKeyID       sql.NullString       `json:"sshKeyID"`
 	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
 	Error          sql.NullString       `json:"error"`
 	Build          sql.NullString       `json:"build"`
@@ -286,6 +288,41 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 		return nil, err
 	}
 	return items, nil
+}
+
+const NodeCreate = `-- name: NodeCreate :exec
+select unweave.insert_node(
+               $1,
+               $2,
+               $3,
+               $4,
+               $5,
+               $6,
+               $7 :: text[]
+           )
+`
+
+type NodeCreateParams struct {
+	ID        string          `json:"id"`
+	Provider  string          `json:"provider"`
+	Region    string          `json:"region"`
+	Spec      json.RawMessage `json:"spec"`
+	Status    string          `json:"status"`
+	OwnerID   string          `json:"ownerID"`
+	SshKeyIds []string        `json:"sshKeyIds"`
+}
+
+func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
+	_, err := q.db.ExecContext(ctx, NodeCreate,
+		arg.ID,
+		arg.Provider,
+		arg.Region,
+		arg.Spec,
+		arg.Status,
+		arg.OwnerID,
+		pq.Array(arg.SshKeyIds),
+	)
+	return err
 }
 
 const ProjectGet = `-- name: ProjectGet :one
