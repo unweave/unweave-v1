@@ -44,7 +44,7 @@ begin
     end loop;
 end;
 $$;
-comment on function unweave.insert_node(text, text, text, jsonb, text, text, text) is
+comment on function unweave.insert_node(text, text, text, jsonb, text, text, text[]) is
     'Insert a new node and associated ssh key';
 
 alter table unweave.session

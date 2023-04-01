@@ -192,6 +192,7 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 }
 
 func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+	log.Ctx(ctx).Debug().Msgf("Executing InitNode for Lambdalabs - no op")
 	if len(sshKey) == 0 {
 		return types.Node{}, &types.Error{
 			Code:    http.StatusInternalServerError,
@@ -241,7 +242,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 
 		// We get a 400 if the instance type is not available. We check for the available
 		// instances and return them in the error message. Since this is not critical, we
-		// can ignore if there'n any errors in the process.
+		// can ignore if there are any errors in the process.
 		if res.JSON400 != nil {
 			suggestion := ""
 			msg := strings.ToLower(res.JSON400.Error.Message)

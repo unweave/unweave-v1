@@ -48,20 +48,24 @@ func handleSessionError(ctx context.Context, sessionID string, err error, msg st
 	}
 }
 
-func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
+func registerCredentials(ctx context.Context, rt *runtime.Runtime, keys []types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
 	providerKeys, err := rt.Node.ListSSHKeys(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list ssh keys from provider: %w", err)
 	}
-	for _, k := range providerKeys {
-		if k.Name == key.Name {
-			return nil
+
+	for _, key := range keys {
+		for _, k := range providerKeys {
+			if k.Name == key.Name {
+				return nil
+			}
+		}
+		if _, err = rt.Node.AddSSHKey(ctx, key); err != nil {
+			return fmt.Errorf("failed to add ssh key to provider: %w", err)
 		}
 	}
-	if _, err = rt.Node.AddSSHKey(ctx, key); err != nil {
-		return fmt.Errorf("failed to add ssh key to provider: %w", err)
-	}
+
 	return nil
 }
 
@@ -192,15 +196,26 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Logger().
 		WithContext(ctx)
 
-	sshKey, err := fetchCredentials(ctx, s.srv.cid, params.SSHKeyName, params.SSHPublicKey)
+	userKey, err := fetchCredentials(ctx, s.srv.cid, params.SSHKeyName, params.SSHPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
-	if err = registerCredentials(ctx, rt, sshKey); err != nil {
+	_, pub, err := generateSSHKeyPair()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate ssh key pair: %w", err)
+	}
+	adminKey := types.SSHKey{
+		Name:      "umk-" + random.GenerateRandomAdjectiveNounTriplet(),
+		PublicKey: &pub,
+		CreatedAt: nil,
+	}
+	keys := []types.SSHKey{userKey, adminKey}
+
+	if err = registerCredentials(ctx, rt, keys); err != nil {
 		return nil, fmt.Errorf("failed to register credentials: %w", err)
 	}
 
-	node, err := rt.Node.InitNode(ctx, []types.SSHKey{sshKey}, params.NodeTypeID, params.Region)
+	node, err := rt.Node.InitNode(ctx, keys, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
 	}
@@ -217,7 +232,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Spec:      specs,
 		Status:    string(types.StatusInitializing),
 		OwnerID:   s.srv.aid,
-		SshKeyIds: []string{sshKey.Name},
+		SshKeyIds: []string{},
 	}
 	if err = db.Q.NodeCreate(ctx, np); err != nil {
 		return nil, fmt.Errorf("failed to create node in db: %w", err)
@@ -235,7 +250,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Region:         node.Region,
 		Name:           random.GenerateRandomPhrase(4, "-"),
 		ConnectionInfo: connInfo,
-		SshKeyName:     sshKey.Name,
+		SshKeyName:     userKey.Name,
 	}
 	execID, err := db.Q.SessionCreate(ctx, dbp)
 	if err != nil {
@@ -255,7 +270,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
-	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, imageURI); err != nil {
+	if err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI); err != nil {
 		go handleSessionError(ctx, execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
