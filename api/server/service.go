@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/vault"
 )
 
 type Service struct {
@@ -14,6 +16,7 @@ type Service struct {
 	cid     string // caller ID
 	runtime *runtime.Runtime
 	builder builder.Builder
+	vault   vault.Vault
 
 	Builder  *BuilderService
 	Provider *ProviderService
@@ -47,10 +50,19 @@ func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builde
 }
 
 func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service {
+	vlt, err := rti.InitializeVault(context.Background())
+	if err != nil {
+		panic(fmt.Errorf("failed to initialize vault: %v", err))
+	}
+
 	srv := &Service{
 		rti:      rti,
 		aid:      accountID,
 		cid:      callerID,
+		vault:    vlt,
+		runtime:  nil,
+		builder:  nil,
+		Builder:  nil,
 		Provider: nil,
 		Exec:     nil,
 		SSHKey:   nil,

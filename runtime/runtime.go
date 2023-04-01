@@ -6,6 +6,7 @@ import (
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave/vault"
 )
 
 type Runtime struct {
@@ -64,4 +65,5 @@ type Session interface {
 type Initializer interface {
 	InitializeRuntime(ctx context.Context, userID string, provider types.Provider) (*Runtime, error)
 	InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error)
+	InitializeVault(ctx context.Context) (vault.Vault, error)
 }

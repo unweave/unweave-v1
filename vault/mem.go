@@ -40,3 +40,10 @@ func (m *MemVault) SetSecret(ctx context.Context, secret string, id *string) (st
 	m.store[*id] = secret
 	return *id, nil
 }
+
+func NewMemVault() *MemVault {
+	return &MemVault{
+		store: map[string]string{},
+		mutex: &sync.Mutex{},
+	}
+}

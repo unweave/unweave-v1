@@ -200,10 +200,11 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
-	_, pub, err := generateSSHKeyPair()
+	prv, pub, err := generateSSHKeyPair()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ssh key pair: %w", err)
 	}
+
 	adminKey := types.SSHKey{
 		Name:      "umk-" + random.GenerateRandomAdjectiveNounTriplet(),
 		PublicKey: &pub,
@@ -218,6 +219,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	node, err := rt.Node.InitNode(ctx, keys, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
+	}
+	if _, err := s.srv.vault.SetSecret(ctx, prv, &node.ID); err != nil {
+		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
 
 	specs, err := json.Marshal(node.Specs)
@@ -479,6 +483,10 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	if err = rt.Node.TerminateNode(ctx, sess.NodeID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
+	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", sess.NodeID)
+	}
+
 	params := db.SessionStatusUpdateParams{
 		ID:     sessionID,
 		Status: db.UnweaveSessionStatusTerminated,

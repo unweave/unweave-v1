@@ -13,6 +13,7 @@ import (
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/gonfig"
+	"github.com/unweave/unweave/vault"
 )
 
 // EnvInitializer is only used in development or if you're self-hosting Unweave.
@@ -60,4 +61,8 @@ func (i *EnvInitializer) InitializeBuilder(ctx context.Context, userID string, b
 	}
 	logger := &docker.FsLogger{}
 	return docker.NewBuilder(logger, cfg.RegistryURI), nil
+}
+
+func (i *EnvInitializer) InitializeVault(ctx context.Context) (vault.Vault, error) {
+	return vault.NewMemVault(), nil
 }
