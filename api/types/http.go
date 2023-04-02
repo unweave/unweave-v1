@@ -4,12 +4,48 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 
 	"golang.org/x/crypto/ssh"
 )
 
 const maxBuildContextSize = 1024 * 1024 * 100 // 100MB
+
+func parseContextFile(r *http.Request) (multipart.File, error) {
+	invalidFileErr := &Error{
+		Code:       http.StatusBadRequest,
+		Message:    "Failed to parse build context file",
+		Suggestion: "Make sure the build context is a valid zipped multipart form file called 'context.zip'",
+	}
+
+	if err := r.ParseMultipartForm(maxBuildContextSize); err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to parse multipart form: %w", err)
+		return nil, invalidFileErr
+	}
+
+	// Only allowed to upload a single file called context.zip for now
+	form := r.MultipartForm
+	file, exists := form.File["context"]
+	if !exists {
+		invalidFileErr.Message = "No build context file found"
+		return nil, invalidFileErr
+	}
+	if len(file) != 1 {
+		invalidFileErr.Message = "More than one build context file found"
+		return nil, invalidFileErr
+	}
+	if file[0].Filename != "context.zip" {
+		invalidFileErr.Message = "Invalid build context file name"
+		return nil, invalidFileErr
+	}
+	part, err := file[0].Open()
+	if err != nil {
+		invalidFileErr.Err = fmt.Errorf("failed to open file: %w", err)
+		return nil, invalidFileErr
+	}
+	return part, nil
+}
 
 type BuildsCreateParams struct {
 	Builder      string        `json:"builder"`
@@ -36,36 +72,9 @@ func (i *BuildsCreateParams) Bind(r *http.Request) error {
 	}
 
 	// Validate build context in Multipart Form
-	invalidFileErr := &Error{
-		Code:       http.StatusBadRequest,
-		Message:    "Failed to parse build context file",
-		Suggestion: "Make sure the build context is a valid zipped multipart form file called 'context.zip'",
-	}
-
-	if err := r.ParseMultipartForm(maxBuildContextSize); err != nil {
-		invalidFileErr.Err = fmt.Errorf("failed to parse multipart form: %w", err)
-		return invalidFileErr
-	}
-
-	// Only allowed to upload a single file called context.zip for now
-	form := r.MultipartForm
-	file, exists := form.File["context"]
-	if !exists {
-		invalidFileErr.Message = "No build context file found"
-		return invalidFileErr
-	}
-	if len(file) != 1 {
-		invalidFileErr.Message = "More than one build context file found"
-		return invalidFileErr
-	}
-	if file[0].Filename != "context.zip" {
-		invalidFileErr.Message = "Invalid build context file name"
-		return invalidFileErr
-	}
-	part, err := file[0].Open()
+	part, err := parseContextFile(r)
 	if err != nil {
-		invalidFileErr.Err = fmt.Errorf("failed to open file: %w", err)
-		return invalidFileErr
+		return err
 	}
 	i.BuildContext = part
 
@@ -97,6 +106,15 @@ type ExecCreateParams struct {
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {
+	jsonStr := r.FormValue("params")
+	if err := json.Unmarshal([]byte(jsonStr), s); err != nil {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Failed to parse request body",
+			Suggestion: "Make sure the request body is valid JSON",
+			Err:        err,
+		}
+	}
 	if s.Provider == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
@@ -109,6 +127,15 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 			Message: "Invalid request body: either 'sshKeyName' or 'sshPublicKey' is required",
 		}
 	}
+
+	if s.Ctx.Command != nil {
+		part, err := parseContextFile(r)
+		if err != nil {
+			return err
+		}
+		s.Ctx.Context = part
+	}
+
 	return nil
 }
 

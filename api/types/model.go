@@ -139,5 +139,5 @@ type ExecCtx struct {
 	CommitID *string       `json:"commitID,omitempty"`
 	GitURL   *string       `json:"gitURL,omitempty"`
 	BuildID  *string       `json:"buildID,omitempty"`
-	Context  io.ReadCloser `json:"context,omitempty"`
+	Context  io.ReadCloser `json:"-"`
 }
