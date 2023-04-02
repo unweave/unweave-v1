@@ -183,7 +183,7 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = node.id
+         join unweave.node as n on s.node_id = n.id
 where s.id = $1
 `
 
@@ -237,7 +237,7 @@ select s.id,
        ssh_key.created_at as ssh_key_created_at
 from unweave.session as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = node.id
+         join unweave.node as n on s.node_id = n.id
 where s.project_id = $1
 `
 

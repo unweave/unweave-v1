@@ -164,9 +164,6 @@ func (n *NodeRuntime) getNodeDetails(ctx context.Context, nodeID string) (client
 		return client.Instance{}, errUnknown(instance.StatusCode(), err)
 	}
 
-	if instance.JSON200.Data.Status != client.Active {
-		return client.Instance{}, nil
-	}
 	return instance.JSON200.Data, nil
 }
 

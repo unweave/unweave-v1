@@ -229,6 +229,11 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
 
+	sshKey, err := db.Q.SSHKeysGet(ctx, s.srv.cid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ssh key ids: %w", err)
+	}
+
 	np := db.NodeCreateParams{
 		ID:        node.ID,
 		Provider:  string(rt.Node.GetProvider()),
@@ -236,7 +241,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Spec:      specs,
 		Status:    string(types.StatusInitializing),
 		OwnerID:   s.srv.aid,
-		SshKeyIds: []string{},
+		SshKeyIds: []string{sshKey[0].ID},
 	}
 	if err = db.Q.NodeCreate(ctx, np); err != nil {
 		return nil, fmt.Errorf("failed to create node in db: %w", err)

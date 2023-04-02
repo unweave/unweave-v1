@@ -14,9 +14,9 @@ create table if not exists unweave.node
 
 create table if not exists unweave.node_ssh_key
 (
-    node_id    text             not null references unweave.node (id),
-    ssh_key_id text             not null references unweave.ssh_key (id),
-    created_at timestamptz      not null default now(),
+    node_id    text        not null references unweave.node (id),
+    ssh_key_id text        not null references unweave.ssh_key (id),
+    created_at timestamptz not null default now(),
 
     constraint node_ssh_key_pk primary key (node_id, ssh_key_id)
 );
@@ -32,16 +32,19 @@ create or replace function unweave.insert_node(
 )
     returns void
     language plpgsql
-as $$
+as
+$$
 begin
     insert into unweave.node (id, provider, region, spec, status, owner_id)
     values (v_node_id, v_provider, v_region, v_spec, v_status, v_owner_id);
 
-    for i in 1 .. array_upper(v_ssh_key_ids, 1)
-    loop
-        insert into unweave.node_ssh_key (node_id, ssh_key_id)
-        values (v_node_id, v_ssh_key_ids[i]);
-    end loop;
+    if v_ssh_key_ids is not null and array_upper(v_ssh_key_ids, 1) is not null then
+        for i in 1 .. array_upper(v_ssh_key_ids, 1)
+            loop
+                insert into unweave.node_ssh_key (node_id, ssh_key_id)
+                values (v_node_id, v_ssh_key_ids[i]);
+            end loop;
+    end if;
 end;
 $$;
 comment on function unweave.insert_node(text, text, text, jsonb, text, text, text[]) is
