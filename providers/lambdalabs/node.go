@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,32 @@ import (
 	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
 )
+
+func parseGPUMemory(input string) (int, error) {
+	re := regexp.MustCompile(`\((\d+)\s*GB\)`)
+	matches := re.FindStringSubmatch(input)
+	if len(matches) < 2 {
+		return 0, fmt.Errorf("could not parse the GPU memory from the input string: %q", input)
+	}
+	number, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, fmt.Errorf("error converting the extracted number to an integer: %v", err)
+	}
+	return number, nil
+}
+
+func parseGPUCount(input string) (int, error) {
+	re := regexp.MustCompile(`^gpu_(\d+)x_`)
+	matches := re.FindStringSubmatch(input)
+	if len(matches) < 2 {
+		return 0, fmt.Errorf("could not parse the number of GPUs from the input string: %q", input)
+	}
+	number, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0, fmt.Errorf("error converting the extracted number to an integer: %v", err)
+	}
+	return number, nil
+}
 
 type NodeRuntime struct {
 	client *client.ClientWithResponses
@@ -111,12 +139,10 @@ func (n *NodeRuntime) Exec(ctx context.Context, nodeID string, execID string, pa
 	return fmt.Errorf("not implemented")
 }
 
-func (n *NodeRuntime) GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error) {
-	log.Ctx(ctx).Debug().Msgf("Getting connection info for node %q", nodeID)
-
+func (n *NodeRuntime) getNodeDetails(ctx context.Context, nodeID string) (client.Instance, error) {
 	instance, err := n.client.GetInstanceWithResponse(ctx, nodeID)
 	if err != nil {
-		return types.ConnectionInfo{}, &types.Error{
+		return client.Instance{}, &types.Error{
 			Code:     http.StatusInternalServerError,
 			Message:  "Failed to make request to LambdaLabs API",
 			Provider: types.LambdaLabsProvider,
@@ -127,23 +153,30 @@ func (n *NodeRuntime) GetConnectionInfo(ctx context.Context, nodeID string) (typ
 	if instance.JSON200 == nil {
 		err = fmt.Errorf("failed to get instance")
 		if instance.JSON401 != nil {
-			return types.ConnectionInfo{}, err401(instance.JSON401.Error.Message, err)
+			return client.Instance{}, err401(instance.JSON401.Error.Message, err)
 		}
 		if instance.JSON403 != nil {
-			return types.ConnectionInfo{}, err403(instance.JSON403.Error.Message, err)
+			return client.Instance{}, err403(instance.JSON403.Error.Message, err)
 		}
 		if instance.JSON404 != nil {
-			return types.ConnectionInfo{}, err404(instance.JSON404.Error.Message, err)
+			return client.Instance{}, err404(instance.JSON404.Error.Message, err)
 		}
-		return types.ConnectionInfo{}, errUnknown(instance.StatusCode(), err)
+		return client.Instance{}, errUnknown(instance.StatusCode(), err)
 	}
 
-	if instance.JSON200.Data.Status != client.Active {
-		return types.ConnectionInfo{}, nil
+	return instance.JSON200.Data, nil
+}
+
+func (n *NodeRuntime) GetConnectionInfo(ctx context.Context, nodeID string) (types.ConnectionInfo, error) {
+	log.Ctx(ctx).Debug().Msgf("Getting connection info for node %q", nodeID)
+
+	instance, err := n.getNodeDetails(ctx, nodeID)
+	if err != nil {
+		return types.ConnectionInfo{}, fmt.Errorf("failed to get node details, %w", err)
 	}
 
 	return types.ConnectionInfo{
-		Host: *instance.JSON200.Data.Ip,
+		Host: *instance.Ip,
 		Port: 22,
 		User: "ubuntu",
 	}, nil
@@ -156,6 +189,7 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 }
 
 func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+	log.Ctx(ctx).Debug().Msgf("Executing InitNode for Lambdalabs - no op")
 	if len(sshKey) == 0 {
 		return types.Node{}, &types.Error{
 			Code:    http.StatusInternalServerError,
@@ -205,7 +239,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 
 		// We get a 400 if the instance type is not available. We check for the available
 		// instances and return them in the error message. Since this is not critical, we
-		// can ignore if there'n any errors in the process.
+		// can ignore if there are any errors in the process.
 		if res.JSON400 != nil {
 			suggestion := ""
 			msg := strings.ToLower(res.JSON400.Error.Message)
@@ -239,6 +273,23 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 		return types.Node{}, fmt.Errorf("failed to launch instance")
 	}
 
+	gpuCount, err := parseGPUCount(nodeTypeID)
+	if err != nil {
+		log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse number of GPUs")
+		gpuCount = 0
+	}
+
+	gpuMem, err := parseGPUMemory(nodeTypeID)
+	if err != nil {
+		log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse GPU memory")
+		gpuMem = 0
+	}
+
+	instance, err := n.getNodeDetails(ctx, res.JSON200.Data.InstanceIds[0])
+	if err != nil {
+		return types.Node{}, fmt.Errorf("failed to get node details, %w", err)
+	}
+
 	return types.Node{
 		ID:       res.JSON200.Data.InstanceIds[0],
 		TypeID:   nodeTypeID,
@@ -246,6 +297,13 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 		KeyPair:  sshKey[0],
 		Status:   types.StatusInitializing,
 		Provider: types.LambdaLabsProvider,
+		Specs: types.NodeSpecs{
+			VCPUs:     instance.InstanceType.Specs.Vcpus,
+			Memory:    instance.InstanceType.Specs.MemoryGib,
+			GPUMemory: &gpuMem,
+			GPUCount:  &gpuCount,
+			Storage:   &instance.InstanceType.Specs.StorageGib,
+		},
 	}, nil
 }
 
@@ -327,7 +385,7 @@ func (n *NodeRuntime) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	return keys, nil
 }
 
-func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error) {
+func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error) {
 	log.Ctx(ctx).Debug().Msgf("Getting node status for node %q", nodeID)
 
 	res, err := n.client.GetInstanceWithResponse(ctx, nodeID)
@@ -395,11 +453,11 @@ func (n *NodeRuntime) TerminateNode(ctx context.Context, nodeID string) error {
 	return nil
 }
 
-func (n *NodeRuntime) Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error) {
+func (n *NodeRuntime) Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error) {
 	log.Ctx(ctx).Debug().Msgf("Watching node %q", nodeID)
 
 	currentStatus := types.StatusInitializing
-	statusch, errch := make(chan types.SessionStatus), make(chan error)
+	statusch, errch := make(chan types.NodeStatus), make(chan error)
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)

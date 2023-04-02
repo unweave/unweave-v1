@@ -11,13 +11,14 @@ import (
 type Querier interface {
 	BuildCreate(ctx context.Context, arg BuildCreateParams) (string, error)
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
-	BuildGetUsedBy(ctx context.Context, id string) ([]UnweaveSession, error)
+	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
 	MxSessionGet(ctx context.Context, id string) (MxSessionGetRow, error)
 	MxSessionsGet(ctx context.Context, projectID string) ([]MxSessionsGetRow, error)
+	NodeCreate(ctx context.Context, arg NodeCreateParams) error
 	ProjectGet(ctx context.Context, id string) (string, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)

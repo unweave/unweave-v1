@@ -50,7 +50,7 @@ func generatePublicKey(privateKey *rsa.PublicKey) ([]byte, error) {
 	return ssh.MarshalAuthorizedKey(publicRsaKey), nil
 }
 
-func createSSHKeyPair() (string, string, error) {
+func generateSSHKeyPair() (string, string, error) {
 	privateKey, err := generatePrivateKey()
 	if err != nil {
 		return "", "", err
@@ -111,7 +111,7 @@ func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) e
 }
 
 func (s *SSHKeyService) Generate(ctx context.Context, params types.SSHKeyGenerateParams) (name string, prv string, pub string, err error) {
-	privateKey, publicKey, err := createSSHKeyPair()
+	privateKey, publicKey, err := generateSSHKeyPair()
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to generate ssh key pair: %w", err)
 	}

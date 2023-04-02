@@ -116,7 +116,7 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 					Name:       s.Name,
 					SSHKey:     types.SSHKey{}, // TODO: should we return this here?
 					Connection: nil,            // TODO: should we return this here?
-					Status:     types.SessionStatus(s.Status),
+					Status:     types.NodeStatus(s.Status),
 					CreatedAt:  &s.CreatedAt,
 					NodeTypeID: s.NodeID,
 					Region:     s.Region,

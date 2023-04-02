@@ -48,20 +48,24 @@ func handleSessionError(ctx context.Context, sessionID string, err error, msg st
 	}
 }
 
-func registerCredentials(ctx context.Context, rt *runtime.Runtime, key types.SSHKey) error {
+func registerCredentials(ctx context.Context, rt *runtime.Runtime, keys []types.SSHKey) error {
 	// Check if it exists with the provider and exit early if it does
 	providerKeys, err := rt.Node.ListSSHKeys(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list ssh keys from provider: %w", err)
 	}
-	for _, k := range providerKeys {
-		if k.Name == key.Name {
-			return nil
+
+	for _, key := range keys {
+		for _, k := range providerKeys {
+			if k.Name == key.Name {
+				return nil
+			}
+		}
+		if _, err = rt.Node.AddSSHKey(ctx, key); err != nil {
+			return fmt.Errorf("failed to add ssh key to provider: %w", err)
 		}
 	}
-	if _, err = rt.Node.AddSSHKey(ctx, key); err != nil {
-		return fmt.Errorf("failed to add ssh key to provider: %w", err)
-	}
+
 	return nil
 }
 
@@ -166,7 +170,7 @@ func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, s
 	return nil
 }
 
-func updateExecStatus(ctx context.Context, execID string, status types.SessionStatus) {
+func updateExecStatus(ctx context.Context, execID string, status types.NodeStatus) {
 	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 	params := db.SessionStatusUpdateParams{
 		ID:     execID,
@@ -192,17 +196,55 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Logger().
 		WithContext(ctx)
 
-	sshKey, err := fetchCredentials(ctx, s.srv.cid, params.SSHKeyName, params.SSHPublicKey)
+	userKey, err := fetchCredentials(ctx, s.srv.cid, params.SSHKeyName, params.SSHPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
-	if err = registerCredentials(ctx, rt, sshKey); err != nil {
+	prv, pub, err := generateSSHKeyPair()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate ssh key pair: %w", err)
+	}
+
+	adminKey := types.SSHKey{
+		Name:      "umk-" + random.GenerateRandomAdjectiveNounTriplet(),
+		PublicKey: &pub,
+		CreatedAt: nil,
+	}
+	keys := []types.SSHKey{userKey, adminKey}
+
+	if err = registerCredentials(ctx, rt, keys); err != nil {
 		return nil, fmt.Errorf("failed to register credentials: %w", err)
 	}
 
-	node, err := rt.Node.InitNode(ctx, []types.SSHKey{sshKey}, params.NodeTypeID, params.Region)
+	node, err := rt.Node.InitNode(ctx, keys, params.NodeTypeID, params.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init node: %w", err)
+	}
+	if _, err := s.srv.vault.SetSecret(ctx, prv, &node.ID); err != nil {
+		return nil, fmt.Errorf("failed to store private key: %w", err)
+	}
+
+	specs, err := json.Marshal(node.Specs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
+	}
+
+	sshKey, err := db.Q.SSHKeysGet(ctx, s.srv.cid)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ssh key ids: %w", err)
+	}
+
+	np := db.NodeCreateParams{
+		ID:        node.ID,
+		Provider:  string(rt.Node.GetProvider()),
+		Region:    node.Region,
+		Spec:      specs,
+		Status:    string(types.StatusInitializing),
+		OwnerID:   s.srv.aid,
+		SshKeyIds: []string{sshKey[0].ID},
+	}
+	if err = db.Q.NodeCreate(ctx, np); err != nil {
+		return nil, fmt.Errorf("failed to create node in db: %w", err)
 	}
 
 	connInfo, err := json.Marshal(ConnectionInfoV1{Version: 1})
@@ -214,11 +256,10 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		NodeID:         node.ID,
 		CreatedBy:      s.srv.cid,
 		ProjectID:      projectID,
-		Provider:       params.Provider.String(),
 		Region:         node.Region,
 		Name:           random.GenerateRandomPhrase(4, "-"),
 		ConnectionInfo: connInfo,
-		SshKeyName:     sshKey.Name,
+		SshKeyName:     userKey.Name,
 	}
 	execID, err := db.Q.SessionCreate(ctx, dbp)
 	if err != nil {
@@ -238,7 +279,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
-	if err := rt.Session.Init(ctx, node, []types.SSHKey{sshKey}, imageURI); err != nil {
+	if err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI); err != nil {
 		go handleSessionError(ctx, execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
@@ -293,7 +334,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 			Port: connInfo.Port,
 			User: connInfo.User,
 		},
-		Status:     types.SessionStatus(dbs.Status),
+		Status:     types.NodeStatus(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
@@ -334,7 +375,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 				Port: connInfo.Port,
 				User: connInfo.User,
 			},
-			Status:     types.SessionStatus(s.Status),
+			Status:     types.NodeStatus(s.Status),
 			CreatedAt:  &s.CreatedAt,
 			NodeTypeID: s.NodeID,
 			Region:     s.Region,
@@ -346,7 +387,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 }
 
 func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
-	session, err := db.Q.SessionGet(ctx, sessionID)
+	session, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -421,7 +462,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 }
 
 func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
-	sess, err := db.Q.SessionGet(ctx, sessionID)
+	sess, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -447,6 +488,10 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	if err = rt.Node.TerminateNode(ctx, sess.NodeID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
+	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", sess.NodeID)
+	}
+
 	params := db.SessionStatusUpdateParams{
 		ID:     sessionID,
 		Status: db.UnweaveSessionStatusTerminated,

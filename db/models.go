@@ -120,6 +120,23 @@ type UnweaveBuild struct {
 	MetaData    json.RawMessage    `json:"metaData"`
 }
 
+type UnweaveNode struct {
+	ID        string          `json:"id"`
+	Provider  string          `json:"provider"`
+	Region    string          `json:"region"`
+	Spec      json.RawMessage `json:"spec"`
+	Status    string          `json:"status"`
+	CreatedAt time.Time       `json:"createdAt"`
+	ReadyAt   sql.NullTime    `json:"readyAt"`
+	OwnerID   string          `json:"ownerID"`
+}
+
+type UnweaveNodeSshKey struct {
+	NodeID    string    `json:"nodeID"`
+	SshKeyID  string    `json:"sshKeyID"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 type UnweaveProject struct {
 	ID string `json:"id"`
 }
@@ -135,11 +152,11 @@ type UnweaveSession struct {
 	ExitedAt       sql.NullTime         `json:"exitedAt"`
 	Status         UnweaveSessionStatus `json:"status"`
 	ProjectID      string               `json:"projectID"`
-	Provider       string               `json:"provider"`
-	SshKeyID       string               `json:"sshKeyID"`
+	SshKeyID       sql.NullString       `json:"sshKeyID"`
 	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
 	Error          sql.NullString       `json:"error"`
 	Build          sql.NullString       `json:"build"`
+	Spec           json.RawMessage      `json:"spec"`
 }
 
 type UnweaveSshKey struct {

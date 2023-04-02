@@ -6,6 +6,7 @@ import (
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave/vault"
 )
 
 type Runtime struct {
@@ -40,17 +41,17 @@ type Node interface {
 	// The implementation should choose the level of abstraction this method is
 	// implemented at. For example, it could be implemented at a VM level for a bare-metal
 	// provider, at a container level, batch job level, etc. In each case, the node must
-	// be accessible via SSH.
+	// serve as a host to run containers that are accessible via SSH.
 	InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (node types.Node, err error)
 	// ListSSHKeys returns a list of all SSH keys associated with the provider.
 	ListSSHKeys(ctx context.Context) ([]types.SSHKey, error)
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	// NodeStatus returns the status of the node running a session.
-	NodeStatus(ctx context.Context, nodeID string) (types.SessionStatus, error)
+	NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 	// Watch watches the status of the node running a session.
-	Watch(ctx context.Context, nodeID string) (<-chan types.SessionStatus, <-chan error)
+	Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error)
 }
 
 type Session interface {
@@ -64,4 +65,5 @@ type Session interface {
 type Initializer interface {
 	InitializeRuntime(ctx context.Context, userID string, provider types.Provider) (*Runtime, error)
 	InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error)
+	InitializeVault(ctx context.Context) (vault.Vault, error)
 }
