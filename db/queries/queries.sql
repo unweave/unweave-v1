@@ -17,7 +17,7 @@ select s.*, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build = b.id
-         join unweave.node as n on s.node_id = node.id;
+         join unweave.node as n on s.node_id = n.id;
 
 -- name: BuildUpdate :exec
 update unweave.build
