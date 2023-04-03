@@ -298,7 +298,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		CommitID:       commitID,
 		GitRemoteUrl:   gitRemoteURL,
 		Command:        command,
-		Build:          bid,
+		BuildID:        bid,
 		SshKeyName:     userKey.Name,
 	}
 	execID, err := db.Q.SessionCreate(ctx, dbp)

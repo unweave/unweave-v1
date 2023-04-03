@@ -156,7 +156,7 @@ type UnweaveSession struct {
 	SshKeyID       sql.NullString       `json:"sshKeyID"`
 	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
 	Error          sql.NullString       `json:"error"`
-	Build          sql.NullString       `json:"build"`
+	BuildID        sql.NullString       `json:"buildID"`
 	Spec           json.RawMessage      `json:"spec"`
 	CommitID       sql.NullString       `json:"commitID"`
 	GitRemoteUrl   sql.NullString       `json:"gitRemoteUrl"`
