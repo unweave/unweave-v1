@@ -1,6 +1,7 @@
 package types
 
 import (
+	"io"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -134,6 +135,9 @@ type Exec struct {
 }
 
 type ExecCtx struct {
-	Command []string `json:"command"`
-	BuildID *string  `json:"buildID,omitempty"`
+	Command  []string      `json:"command"`
+	CommitID *string       `json:"commitID,omitempty"`
+	GitURL   *string       `json:"gitURL,omitempty"`
+	BuildID  *string       `json:"buildID,omitempty"`
+	Context  io.ReadCloser `json:"-"`
 }

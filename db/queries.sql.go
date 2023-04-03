@@ -70,11 +70,11 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.connection_info, s.error, s.build, s.spec, n.provider
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.connection_info, s.error, s.build, s.spec, s.commit_id, s.git_remote_url, s.command, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build = b.id
-         join unweave.node as n on s.node_id = node.id
+         join unweave.node as n on s.node_id = n.id
 `
 
 type BuildGetUsedByRow struct {
@@ -93,6 +93,9 @@ type BuildGetUsedByRow struct {
 	Error          sql.NullString       `json:"error"`
 	Build          sql.NullString       `json:"build"`
 	Spec           json.RawMessage      `json:"spec"`
+	CommitID       sql.NullString       `json:"commitID"`
+	GitRemoteUrl   sql.NullString       `json:"gitRemoteUrl"`
+	Command        []string             `json:"command"`
 	Provider       string               `json:"provider"`
 }
 
@@ -121,6 +124,9 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.Error,
 			&i.Build,
 			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
 			&i.Provider,
 		); err != nil {
 			return nil, err
@@ -326,15 +332,16 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 }
 
 const ProjectGet = `-- name: ProjectGet :one
-select id
+select id, default_build_id
 from unweave.project
 where id = $1
 `
 
-func (q *Queries) ProjectGet(ctx context.Context, id string) (string, error) {
+func (q *Queries) ProjectGet(ctx context.Context, id string) (UnweaveProject, error) {
 	row := q.db.QueryRowContext(ctx, ProjectGet, id)
-	err := row.Scan(&id)
-	return id, err
+	var i UnweaveProject
+	err := row.Scan(&i.ID, &i.DefaultBuildID)
+	return i, err
 }
 
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
@@ -443,11 +450,11 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 
 const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info)
+                             region, name, connection_info, commit_id, git_remote_url, command, build)
 values ($1, $2, $3, (select id
                      from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = $7
-                       and owner_id = $2), $4, $5, $6)
+                     where ssh_keys.name = $11
+                       and owner_id = $2), $4, $5, $6, $7, $8, $9, $10)
 returning id
 `
 
@@ -458,6 +465,10 @@ type SessionCreateParams struct {
 	Region         string          `json:"region"`
 	Name           string          `json:"name"`
 	ConnectionInfo json.RawMessage `json:"connectionInfo"`
+	CommitID       sql.NullString  `json:"commitID"`
+	GitRemoteUrl   sql.NullString  `json:"gitRemoteUrl"`
+	Command        []string        `json:"command"`
+	Build          sql.NullString  `json:"build"`
 	SshKeyName     string          `json:"sshKeyName"`
 }
 
@@ -469,6 +480,10 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 		arg.Region,
 		arg.Name,
 		arg.ConnectionInfo,
+		arg.CommitID,
+		arg.GitRemoteUrl,
+		pq.Array(arg.Command),
+		arg.Build,
 		arg.SshKeyName,
 	)
 	var id string
@@ -477,7 +492,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec, commit_id, git_remote_url, command
 from unweave.session
 where id = $1
 `
@@ -501,12 +516,15 @@ func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, er
 		&i.Error,
 		&i.Build,
 		&i.Spec,
+		&i.CommitID,
+		&i.GitRemoteUrl,
+		pq.Array(&i.Command),
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build, spec, commit_id, git_remote_url, command
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -537,6 +555,9 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.Error,
 			&i.Build,
 			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
 		); err != nil {
 			return nil, err
 		}
@@ -570,17 +591,26 @@ func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams
 
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
 update unweave.session
-set status = $2
+set status = $2,
+    ready_at = coalesce($3, ready_at),
+    exited_at = coalesce($4, exited_at)
 where id = $1
 `
 
 type SessionStatusUpdateParams struct {
-	ID     string               `json:"id"`
-	Status UnweaveSessionStatus `json:"status"`
+	ID       string               `json:"id"`
+	Status   UnweaveSessionStatus `json:"status"`
+	ReadyAt  sql.NullTime         `json:"readyAt"`
+	ExitedAt sql.NullTime         `json:"exitedAt"`
 }
 
 func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, SessionStatusUpdate, arg.ID, arg.Status)
+	_, err := q.db.ExecContext(ctx, SessionStatusUpdate,
+		arg.ID,
+		arg.Status,
+		arg.ReadyAt,
+		arg.ExitedAt,
+	)
 	return err
 }
 

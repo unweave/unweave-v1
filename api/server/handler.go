@@ -172,8 +172,8 @@ func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 		ctx := r.Context()
 		log.Ctx(ctx).Info().Msgf("Executing ExecCreate request")
 
-		scr := types.ExecCreateParams{}
-		if err := render.Bind(r, &scr); err != nil {
+		scr := &types.ExecCreateParams{}
+		if err := scr.Bind(r); err != nil {
 			err = fmt.Errorf("failed to read body: %w", err)
 			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
 			return
@@ -185,7 +185,7 @@ func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Exec.Create(ctx, projectID, scr)
+		session, err := srv.Exec.Create(ctx, projectID, *scr)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create session"))
 			return

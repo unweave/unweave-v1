@@ -19,7 +19,7 @@ type Querier interface {
 	MxSessionGet(ctx context.Context, id string) (MxSessionGetRow, error)
 	MxSessionsGet(ctx context.Context, projectID string) ([]MxSessionsGetRow, error)
 	NodeCreate(ctx context.Context, arg NodeCreateParams) error
-	ProjectGet(ctx context.Context, id string) (string, error)
+	ProjectGet(ctx context.Context, id string) (UnweaveProject, error)
 	SSHKeyAdd(ctx context.Context, arg SSHKeyAddParams) error
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)

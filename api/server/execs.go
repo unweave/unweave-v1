@@ -252,6 +252,42 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
 
+	// Set commit details if provided
+	var command []string
+	var commitID, gitRemoteURL sql.NullString
+
+	if params.Ctx.Command != nil {
+		command = params.Ctx.Command
+	}
+	if params.Ctx.CommitID != nil {
+		commitID = sql.NullString{String: *params.Ctx.CommitID, Valid: true}
+	}
+	if params.Ctx.GitURL != nil {
+		gitRemoteURL = sql.NullString{String: *params.Ctx.GitURL, Valid: true}
+	}
+
+	bid := sql.NullString{}
+	imageURI := "ubuntu:latest" // use fallback if no build id is parse (should not happen)
+	buildID := params.Ctx.BuildID
+
+	if buildID == nil {
+		project, err := db.Q.ProjectGet(ctx, projectID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get project: %w", err)
+		}
+		if project.DefaultBuildID.Valid && project.DefaultBuildID.String != "" {
+			buildID = &project.DefaultBuildID.String
+		}
+	}
+	if buildID != nil {
+		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
+		if err != nil {
+			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
+			return nil, fmt.Errorf("failed to get image uri: %w", err)
+		}
+		bid = sql.NullString{String: *buildID, Valid: true}
+	}
+
 	dbp := db.SessionCreateParams{
 		NodeID:         node.ID,
 		CreatedBy:      s.srv.cid,
@@ -259,6 +295,10 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Region:         node.Region,
 		Name:           random.GenerateRandomPhrase(4, "-"),
 		ConnectionInfo: connInfo,
+		CommitID:       commitID,
+		GitRemoteUrl:   gitRemoteURL,
+		Command:        command,
+		Build:          bid,
 		SshKeyName:     userKey.Name,
 	}
 	execID, err := db.Q.SessionCreate(ctx, dbp)
@@ -266,15 +306,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
 	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
-
-	imageURI := "alpine:latest"
-	if params.Ctx.BuildID != nil {
-		var err error
-		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
-		}
-	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
@@ -299,6 +330,12 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		NodeTypeID: node.TypeID,
 		Region:     node.Region,
 		Provider:   node.Provider,
+		Ctx: types.ExecCtx{
+			Command:  command,
+			CommitID: &commitID.String,
+			GitURL:   &gitRemoteURL.String,
+			BuildID:  params.Ctx.BuildID,
+		},
 	}
 
 	return session, nil
@@ -434,6 +471,10 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 				params := db.SessionStatusUpdateParams{
 					ID:     sessionID,
 					Status: db.UnweaveSessionStatus(status),
+					ReadyAt: sql.NullTime{
+						Time:  time.Now(),
+						Valid: true,
+					},
 				}
 				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
 					log.Ctx(ctx).Error().Err(e).Msg("failed to update session status")
@@ -495,6 +536,10 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	params := db.SessionStatusUpdateParams{
 		ID:     sessionID,
 		Status: db.UnweaveSessionStatusTerminated,
+		ExitedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
 	}
 	if err = db.Q.SessionStatusUpdate(ctx, params); err != nil {
 		log.Ctx(ctx).
