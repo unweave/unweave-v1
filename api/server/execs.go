@@ -457,6 +457,10 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 				params := db.SessionStatusUpdateParams{
 					ID:     sessionID,
 					Status: db.UnweaveSessionStatus(status),
+					ReadyAt: sql.NullTime{
+						Time:  time.Now(),
+						Valid: status == types.StatusRunning,
+					},
 				}
 				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
 					log.Ctx(ctx).Error().Err(e).Msg("failed to update session status")
@@ -518,6 +522,10 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	params := db.SessionStatusUpdateParams{
 		ID:     sessionID,
 		Status: db.UnweaveSessionStatusTerminated,
+		ExitedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
 	}
 	if err = db.Q.SessionStatusUpdate(ctx, params); err != nil {
 		log.Ctx(ctx).

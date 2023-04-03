@@ -588,17 +588,26 @@ func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams
 
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
 update unweave.session
-set status = $2
+set status = $2,
+    ready_at = $3,
+    exited_at = $4
 where id = $1
 `
 
 type SessionStatusUpdateParams struct {
-	ID     string               `json:"id"`
-	Status UnweaveSessionStatus `json:"status"`
+	ID       string               `json:"id"`
+	Status   UnweaveSessionStatus `json:"status"`
+	ReadyAt  sql.NullTime         `json:"readyAt"`
+	ExitedAt sql.NullTime         `json:"exitedAt"`
 }
 
 func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, SessionStatusUpdate, arg.ID, arg.Status)
+	_, err := q.db.ExecContext(ctx, SessionStatusUpdate,
+		arg.ID,
+		arg.Status,
+		arg.ReadyAt,
+		arg.ExitedAt,
+	)
 	return err
 }
 

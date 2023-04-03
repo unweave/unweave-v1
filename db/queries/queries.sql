@@ -89,7 +89,9 @@ where id = $1;
 
 -- name: SessionStatusUpdate :exec
 update unweave.session
-set status = $2
+set status = $2,
+    ready_at = $3,
+    exited_at = $4
 where id = $1;
 
 -- name: SSHKeyAdd :exec
