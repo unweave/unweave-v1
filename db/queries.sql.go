@@ -449,11 +449,11 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 
 const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info)
+                             region, name, connection_info, commit_id, git_remote_url, command)
 values ($1, $2, $3, (select id
                      from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = $7
-                       and owner_id = $2), $4, $5, $6)
+                     where ssh_keys.name = $10
+                       and owner_id = $2), $4, $5, $6, $7, $8, $9)
 returning id
 `
 
@@ -464,6 +464,9 @@ type SessionCreateParams struct {
 	Region         string          `json:"region"`
 	Name           string          `json:"name"`
 	ConnectionInfo json.RawMessage `json:"connectionInfo"`
+	CommitID       sql.NullString  `json:"commitID"`
+	GitRemoteUrl   sql.NullString  `json:"gitRemoteUrl"`
+	Command        []string        `json:"command"`
 	SshKeyName     string          `json:"sshKeyName"`
 }
 
@@ -475,6 +478,9 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 		arg.Region,
 		arg.Name,
 		arg.ConnectionInfo,
+		arg.CommitID,
+		arg.GitRemoteUrl,
+		pq.Array(arg.Command),
 		arg.SshKeyName,
 	)
 	var id string

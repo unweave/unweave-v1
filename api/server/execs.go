@@ -252,6 +252,20 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
 
+	// Set commit details if provided
+	var command []string
+	var commitID, gitRemoteURL sql.NullString
+
+	if params.Ctx.Command != nil {
+		command = params.Ctx.Command
+	}
+	if params.Ctx.CommitID != nil {
+		commitID = sql.NullString{String: *params.Ctx.CommitID, Valid: true}
+	}
+	if params.Ctx.GitURL != nil {
+		gitRemoteURL = sql.NullString{String: *params.Ctx.GitURL, Valid: true}
+	}
+
 	dbp := db.SessionCreateParams{
 		NodeID:         node.ID,
 		CreatedBy:      s.srv.cid,
@@ -259,6 +273,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Region:         node.Region,
 		Name:           random.GenerateRandomPhrase(4, "-"),
 		ConnectionInfo: connInfo,
+		CommitID:       commitID,
+		GitRemoteUrl:   gitRemoteURL,
+		Command:        command,
 		SshKeyName:     userKey.Name,
 	}
 	execID, err := db.Q.SessionCreate(ctx, dbp)
@@ -299,6 +316,12 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		NodeTypeID: node.TypeID,
 		Region:     node.Region,
 		Provider:   node.Provider,
+		Ctx: types.ExecCtx{
+			Command:  command,
+			CommitID: &commitID.String,
+			GitURL:   &gitRemoteURL.String,
+			BuildID:  params.Ctx.BuildID,
+		},
 	}
 
 	return session, nil
