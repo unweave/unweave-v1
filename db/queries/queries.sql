@@ -90,8 +90,8 @@ where id = $1;
 -- name: SessionStatusUpdate :exec
 update unweave.session
 set status = $2,
-    ready_at = $3,
-    exited_at = $4
+    ready_at = coalesce(sqlc.narg('ready_at'), ready_at),
+    exited_at = coalesce(sqlc.narg('exited_at'), exited_at)
 where id = $1;
 
 -- name: SSHKeyAdd :exec

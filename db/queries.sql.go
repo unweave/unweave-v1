@@ -589,8 +589,8 @@ func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
 update unweave.session
 set status = $2,
-    ready_at = $3,
-    exited_at = $4
+    ready_at = coalesce($3, ready_at),
+    exited_at = coalesce($4, exited_at)
 where id = $1
 `
 

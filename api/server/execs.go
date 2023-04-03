@@ -459,7 +459,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 					Status: db.UnweaveSessionStatus(status),
 					ReadyAt: sql.NullTime{
 						Time:  time.Now(),
-						Valid: status == types.StatusRunning,
+						Valid: true,
 					},
 				}
 				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
