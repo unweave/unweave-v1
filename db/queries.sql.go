@@ -332,15 +332,16 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 }
 
 const ProjectGet = `-- name: ProjectGet :one
-select id
+select id, default_build_id
 from unweave.project
 where id = $1
 `
 
-func (q *Queries) ProjectGet(ctx context.Context, id string) (string, error) {
+func (q *Queries) ProjectGet(ctx context.Context, id string) (UnweaveProject, error) {
 	row := q.db.QueryRowContext(ctx, ProjectGet, id)
-	err := row.Scan(&id)
-	return id, err
+	var i UnweaveProject
+	err := row.Scan(&i.ID, &i.DefaultBuildID)
+	return i, err
 }
 
 const SSHKeyAdd = `-- name: SSHKeyAdd :exec
@@ -449,11 +450,11 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 
 const SessionCreate = `-- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info, commit_id, git_remote_url, command)
+                             region, name, connection_info, commit_id, git_remote_url, command, build)
 values ($1, $2, $3, (select id
                      from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = $10
-                       and owner_id = $2), $4, $5, $6, $7, $8, $9)
+                     where ssh_keys.name = $11
+                       and owner_id = $2), $4, $5, $6, $7, $8, $9, $10)
 returning id
 `
 
@@ -467,6 +468,7 @@ type SessionCreateParams struct {
 	CommitID       sql.NullString  `json:"commitID"`
 	GitRemoteUrl   sql.NullString  `json:"gitRemoteUrl"`
 	Command        []string        `json:"command"`
+	Build          sql.NullString  `json:"build"`
 	SshKeyName     string          `json:"sshKeyName"`
 }
 
@@ -481,6 +483,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 		arg.CommitID,
 		arg.GitRemoteUrl,
 		pq.Array(arg.Command),
+		arg.Build,
 		arg.SshKeyName,
 	)
 	var id string

@@ -5,6 +5,8 @@ alter table unweave.session
     add column git_remote_url text,
     add column command        text[];
 
+alter table unweave.project
+   add column default_build_id text references unweave.build(id);
 -- +goose StatementEnd
 
 -- +goose Down

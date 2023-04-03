@@ -49,11 +49,11 @@ select unweave.insert_node(
 
 -- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info, commit_id, git_remote_url, command)
+                             region, name, connection_info, commit_id, git_remote_url, command, build)
 values ($1, $2, $3, (select id
                      from unweave.ssh_key as ssh_keys
                      where ssh_keys.name = @ssh_key_name
-                       and owner_id = $2), $4, $5, $6, $7, $8, $9)
+                       and owner_id = $2), $4, $5, $6, $7, $8, $9, $10)
 returning id;
 
 -- name: SessionGet :one

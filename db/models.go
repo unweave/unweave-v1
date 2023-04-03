@@ -138,7 +138,8 @@ type UnweaveNodeSshKey struct {
 }
 
 type UnweaveProject struct {
-	ID string `json:"id"`
+	ID             string         `json:"id"`
+	DefaultBuildID sql.NullString `json:"defaultBuildID"`
 }
 
 type UnweaveSession struct {
