@@ -73,7 +73,7 @@ const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
 select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.connection_info, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
-              on s.build = b.id
+              on s.build_id = b.id
          join unweave.node as n on s.node_id = n.id
 `
 
