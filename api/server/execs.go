@@ -18,6 +18,8 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var DefaultImageURI = "ubuntu:latest"
+
 type ConnectionInfoV1 struct {
 	Version int    `json:"version"`
 	Host    string `json:"host"`
@@ -267,7 +269,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	}
 
 	bid := sql.NullString{}
-	imageURI := "ubuntu:latest" // use fallback if no build id is parse (should not happen)
+	imageURI := DefaultImageURI
 	buildID := params.Ctx.BuildID
 
 	if buildID == nil {
