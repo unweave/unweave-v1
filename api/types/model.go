@@ -96,8 +96,9 @@ type Node struct {
 }
 
 type Project struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID    string `json:"id"`
+	Owner string `json:"owner"`
+	Name  string `json:"name"`
 }
 
 type SSHKey struct {
