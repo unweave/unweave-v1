@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -106,12 +107,29 @@ type ExecCreateParams struct {
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {
+	// Check if header is set, if yes and set to json, parse body as json
+	if r.Header.Get("Content-Type") == "application/json" {
+
+		log.Info().Msg("Content-Type is application/json")
+
+		decoder := json.NewDecoder(r.Body)
+		if err := decoder.Decode(s); err != nil {
+			return &Error{
+				Code:       http.StatusBadRequest,
+				Message:    "Failed to parse request body",
+				Suggestion: "Make sure the request body is valid JSON",
+				Err:        err,
+			}
+		}
+		return nil
+	}
+
 	jsonStr := r.FormValue("params")
 	if err := json.Unmarshal([]byte(jsonStr), s); err != nil {
 		return &Error{
 			Code:       http.StatusBadRequest,
 			Message:    "Failed to parse request body",
-			Suggestion: "Make sure the request body is valid JSON",
+			Suggestion: "Make sure the request body is a valid multipart form or valid JSON",
 			Err:        err,
 		}
 	}
