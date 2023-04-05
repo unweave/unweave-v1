@@ -14,7 +14,7 @@ To avoid having to pass the `--project` flag to every command from the CLI, you 
 directory. This will create a `unweave` subdirectory with a `config.toml` and `.env` file. 
 
 ```bash
-unweave link <project-id> [path]
+unweave link <username>/<project-name> [path]
 ```
 
 Any command you run from the linked directory or any subdirectory will automatically use the
