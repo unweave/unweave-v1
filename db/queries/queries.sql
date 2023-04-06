@@ -47,6 +47,14 @@ select unweave.insert_node(
                @ssh_key_ids :: text[]
            );
 
+-- name: NodeStatusUpdate :exec
+update unweave.node
+set status = $2,
+    ready_at = coalesce(sqlc.narg('ready_at'), ready_at),
+    terminated_at = coalesce(sqlc.narg('terminated_at'), terminated_at)
+where id = $1;
+
+
 -- name: SessionCreate :one
 insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info, commit_id, git_remote_url, command, build_id)

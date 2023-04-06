@@ -1,12 +1,18 @@
 -- +goose Up
 -- +goose StatementBegin
-alter table unweave.node rename column spec to metadata;
+alter table unweave.node
+    rename column spec to metadata;
+
+alter table unweave.node
+    add column terminated_at timestamptz;
 
 drop function if exists unweave.insert_node(text, text, text, jsonb, text, text, text[]);
 
 -- Rename spec parameter
 
-create function unweave.insert_node(v_node_id text, v_provider text, v_region text, v_metadata jsonb, v_status text, v_owner_id text, v_ssh_key_ids text[]) returns void
+create function unweave.insert_node(v_node_id text, v_provider text, v_region text,
+                                    v_metadata jsonb, v_status text, v_owner_id text,
+                                    v_ssh_key_ids text[]) returns void
     language plpgsql
 as
 $$
@@ -30,5 +36,5 @@ comment on function unweave.insert_node(text, text, text, jsonb, text, text, tex
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
+select 'down SQL query';
 -- +goose StatementEnd

@@ -331,6 +331,31 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 	return err
 }
 
+const NodeStatusUpdate = `-- name: NodeStatusUpdate :exec
+update unweave.node
+set status = $2,
+    ready_at = coalesce($3, ready_at),
+    terminated_at = coalesce($4, terminated_at)
+where id = $1
+`
+
+type NodeStatusUpdateParams struct {
+	ID           string       `json:"id"`
+	Status       string       `json:"status"`
+	ReadyAt      sql.NullTime `json:"readyAt"`
+	TerminatedAt sql.NullTime `json:"terminatedAt"`
+}
+
+func (q *Queries) NodeStatusUpdate(ctx context.Context, arg NodeStatusUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, NodeStatusUpdate,
+		arg.ID,
+		arg.Status,
+		arg.ReadyAt,
+		arg.TerminatedAt,
+	)
+	return err
+}
+
 const ProjectGet = `-- name: ProjectGet :one
 select id, default_build_id
 from unweave.project

@@ -33,30 +33,35 @@ type NodeMetadataV1 struct {
 	VPUs           int              `json:"vpus"`
 	Memory         int              `json:"memory"`
 	Storage        int              `json:"storage"`
-	GPUMemory      int              `json:"gpuMemory"`
+	GpuType        string           `json:"gpuType"`
 	GPUCount       int              `json:"gpuCount"`
+	GPUMemory      int              `json:"gpuMemory"`
 	ConnectionInfo ConnectionInfoV1 `json:"connectionInfo"`
 }
 
-func (n NodeMetadataV1) FromNode(node types.Node) {
+func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	gpuMem := 0
 	if node.Specs.GPUMemory != nil {
 		gpuMem = *node.Specs.GPUMemory
 	}
+	n := NodeMetadataV1{
+		ID:        node.ID,
+		Price:     node.Price,
+		VPUs:      node.Specs.VCPUs,
+		Memory:    node.Specs.Memory,
+		Storage:   node.Specs.Storage,
+		GpuType:   node.Specs.GPUType,
+		GPUCount:  node.Specs.GPUCount,
+		GPUMemory: gpuMem,
 
-	n.ID = node.ID
-	n.Price = node.Price
-	n.VPUs = node.Specs.VCPUs
-	n.Memory = node.Specs.Memory
-	n.Storage = node.Specs.Storage
-	n.GPUMemory = gpuMem
-	n.GPUCount = node.Specs.GPUCount
-	n.ConnectionInfo = ConnectionInfoV1{
-		Version: 1,
-		Host:    node.Host,
-		Port:    node.Port,
-		User:    node.User,
+		ConnectionInfo: ConnectionInfoV1{
+			Version: 1,
+			Host:    node.Host,
+			Port:    node.Port,
+			User:    node.User,
+		},
 	}
+	return n
 }
 
 func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
@@ -258,9 +263,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
 
-	metadata := NodeMetadataV1{}
-	metadata.FromNode(node)
-	metadataJSON, err := json.Marshal(metadata)
+	metadata := DBNodeMetadataFromNode(node)
+	fmt.Println(node, metadata)
+	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
@@ -582,6 +587,18 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 			Error().
 			Err(err).
 			Msgf("Failed to set session %q as terminated", sessionID)
+	}
+
+	np := db.NodeStatusUpdateParams{
+		ID:           sess.NodeID,
+		Status:       "terminated",
+		TerminatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+	}
+	if err = db.Q.NodeStatusUpdate(ctx, np); err != nil {
+		log.Ctx(ctx).
+			Error().
+			Err(err).
+			Msgf("Failed to set node %q as terminated", sess.NodeID)
 	}
 	return nil
 }
