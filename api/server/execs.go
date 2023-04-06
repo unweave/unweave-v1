@@ -27,6 +27,43 @@ type ConnectionInfoV1 struct {
 	User    string `json:"user"`
 }
 
+type NodeMetadataV1 struct {
+	ID             string           `json:"id"`
+	Price          int              `json:"price"`
+	VPUs           int              `json:"vpus"`
+	Memory         int              `json:"memory"`
+	Storage        int              `json:"storage"`
+	GpuType        string           `json:"gpuType"`
+	GPUCount       int              `json:"gpuCount"`
+	GPUMemory      int              `json:"gpuMemory"`
+	ConnectionInfo ConnectionInfoV1 `json:"connectionInfo"`
+}
+
+func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
+	gpuMem := 0
+	if node.Specs.GPUMemory != nil {
+		gpuMem = *node.Specs.GPUMemory
+	}
+	n := NodeMetadataV1{
+		ID:        node.ID,
+		Price:     node.Price,
+		VPUs:      node.Specs.VCPUs,
+		Memory:    node.Specs.Memory,
+		Storage:   node.Specs.Storage,
+		GpuType:   node.Specs.GPUType,
+		GPUCount:  node.Specs.GPUCount,
+		GPUMemory: gpuMem,
+
+		ConnectionInfo: ConnectionInfoV1{
+			Version: 1,
+			Host:    node.Host,
+			Port:    node.Port,
+			User:    node.User,
+		},
+	}
+	return n
+}
+
 func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
 	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 
@@ -226,7 +263,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
 
-	specs, err := json.Marshal(node.Specs)
+	metadata := DBNodeMetadataFromNode(node)
+	fmt.Println(node, metadata)
+	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
@@ -240,7 +279,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		ID:        node.ID,
 		Provider:  string(rt.Node.GetProvider()),
 		Region:    node.Region,
-		Spec:      specs,
+		Metadata:  metadataJSON,
 		Status:    string(types.StatusInitializing),
 		OwnerID:   s.srv.aid,
 		SshKeyIds: []string{sshKey[0].ID},
@@ -548,6 +587,18 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 			Error().
 			Err(err).
 			Msgf("Failed to set session %q as terminated", sessionID)
+	}
+
+	np := db.NodeStatusUpdateParams{
+		ID:           sess.NodeID,
+		Status:       "terminated",
+		TerminatedAt: sql.NullTime{Time: time.Now(), Valid: true},
+	}
+	if err = db.Q.NodeStatusUpdate(ctx, np); err != nil {
+		log.Ctx(ctx).
+			Error().
+			Err(err).
+			Msgf("Failed to set node %q as terminated", sess.NodeID)
 	}
 	return nil
 }

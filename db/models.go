@@ -121,14 +121,15 @@ type UnweaveBuild struct {
 }
 
 type UnweaveNode struct {
-	ID        string          `json:"id"`
-	Provider  string          `json:"provider"`
-	Region    string          `json:"region"`
-	Spec      json.RawMessage `json:"spec"`
-	Status    string          `json:"status"`
-	CreatedAt time.Time       `json:"createdAt"`
-	ReadyAt   sql.NullTime    `json:"readyAt"`
-	OwnerID   string          `json:"ownerID"`
+	ID           string          `json:"id"`
+	Provider     string          `json:"provider"`
+	Region       string          `json:"region"`
+	Metadata     json.RawMessage `json:"metadata"`
+	Status       string          `json:"status"`
+	CreatedAt    time.Time       `json:"createdAt"`
+	ReadyAt      sql.NullTime    `json:"readyAt"`
+	OwnerID      string          `json:"ownerID"`
+	TerminatedAt sql.NullTime    `json:"terminatedAt"`
 }
 
 type UnweaveNodeSshKey struct {

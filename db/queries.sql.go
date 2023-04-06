@@ -301,7 +301,7 @@ select unweave.insert_node(
                $1,
                $2,
                $3,
-               $4,
+               $4 :: jsonb,
                $5,
                $6,
                $7 :: text[]
@@ -312,7 +312,7 @@ type NodeCreateParams struct {
 	ID        string          `json:"id"`
 	Provider  string          `json:"provider"`
 	Region    string          `json:"region"`
-	Spec      json.RawMessage `json:"spec"`
+	Metadata  json.RawMessage `json:"metadata"`
 	Status    string          `json:"status"`
 	OwnerID   string          `json:"ownerID"`
 	SshKeyIds []string        `json:"sshKeyIds"`
@@ -323,10 +323,35 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 		arg.ID,
 		arg.Provider,
 		arg.Region,
-		arg.Spec,
+		arg.Metadata,
 		arg.Status,
 		arg.OwnerID,
 		pq.Array(arg.SshKeyIds),
+	)
+	return err
+}
+
+const NodeStatusUpdate = `-- name: NodeStatusUpdate :exec
+update unweave.node
+set status = $2,
+    ready_at = coalesce($3, ready_at),
+    terminated_at = coalesce($4, terminated_at)
+where id = $1
+`
+
+type NodeStatusUpdateParams struct {
+	ID           string       `json:"id"`
+	Status       string       `json:"status"`
+	ReadyAt      sql.NullTime `json:"readyAt"`
+	TerminatedAt sql.NullTime `json:"terminatedAt"`
+}
+
+func (q *Queries) NodeStatusUpdate(ctx context.Context, arg NodeStatusUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, NodeStatusUpdate,
+		arg.ID,
+		arg.Status,
+		arg.ReadyAt,
+		arg.TerminatedAt,
 	)
 	return err
 }
