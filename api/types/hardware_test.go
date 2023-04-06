@@ -13,19 +13,19 @@ func TestParseRange(t *testing.T) {
 	}{
 		{"", HardwareRequestRange{}, nil},
 		{"1", HardwareRequestRange{1, 1}, nil},
-		{"1_3", HardwareRequestRange{1, 3}, nil},
+		{"1-3", HardwareRequestRange{1, 3}, nil},
 		{
-			"1_",
+			"1-",
 			HardwareRequestRange{},
-			fmt.Errorf("invalid range - must be of the form <number> or <number>_<number>"),
+			fmt.Errorf("invalid range - must be of the form <number> or <number>-<number>"),
 		},
 		{
-			"_3",
+			"-3",
 			HardwareRequestRange{},
-			fmt.Errorf("invalid range - must be of the form <number> or <number>_<number>"),
+			fmt.Errorf("invalid range - must be of the form <number> or <number>-<number>"),
 		},
 		{
-			"3_1",
+			"3-1",
 			HardwareRequestRange{},
 			fmt.Errorf("invalid range - max range should be greater than or equal to min range"),
 		},
@@ -50,19 +50,19 @@ func TestParseGPU(t *testing.T) {
 	}{
 		{"", GPU{}, nil},
 		{"1", GPU{HardwareRequestRange{1, 1}, ""}, nil},
-		{"1_2", GPU{HardwareRequestRange{1, 2}, ""}, nil},
-		{"1_2(NVIDIA)", GPU{HardwareRequestRange{1, 2}, "NVIDIA"}, nil},
-		{"1(NVIDIA)", GPU{HardwareRequestRange{1, 1}, "NVIDIA"}, nil},
-		{"(NVIDIA)", GPU{HardwareRequestRange{}, "NVIDIA"}, nil},
+		{"1-2", GPU{HardwareRequestRange{1, 2}, ""}, nil},
+		{"1-2_nvidia", GPU{HardwareRequestRange{1, 2}, "nvidia"}, nil},
+		{"1_nvidia", GPU{HardwareRequestRange{1, 1}, "nvidia"}, nil},
+		{"_nvidia", GPU{HardwareRequestRange{}, "nvidia"}, nil},
 		{
-			"1_2_",
+			"1-2-",
 			GPU{},
-			fmt.Errorf("invalid GPU spec - must be of the form G<number>(<type>)"),
+			fmt.Errorf("invalid GPU spec - must be of the form G<number>_<type>"),
 		},
 		{
-			"1_2_(NVIDIA)",
+			"1-2-nvidia",
 			GPU{},
-			fmt.Errorf("invalid GPU spec - must be of the form G<number>(<type>)"),
+			fmt.Errorf("invalid GPU spec - must be of the form G<number>_<type>"),
 		},
 	}
 
@@ -95,9 +95,9 @@ func TestHardwareSpecParse(t *testing.T) {
 			nil,
 		},
 		{
-			"G1(NVIDIA),C1_2,R1_2,S1_2",
+			"G1_NVIDIA,C1-2,R1-2,S1-2",
 			&HardwareSpec{
-				GPU{HardwareRequestRange{1, 1}, "NVIDIA"},
+				GPU{HardwareRequestRange{1, 1}, "nvidia"},
 				HardwareRequestRange{1, 2},
 				HardwareRequestRange{1, 2},
 				HardwareRequestRange{1, 2},
@@ -107,7 +107,38 @@ func TestHardwareSpecParse(t *testing.T) {
 		{
 			"G,C,R,S",
 			&HardwareSpec{},
-			fmt.Errorf("invalid range - must be of the form <number> or <number>_<number>"),
+			fmt.Errorf("invalid range - must be of the form <number> or <number>-<number>"),
+		},
+		// Test case for positional syntax.
+		{
+			"1,1,1,1",
+			&HardwareSpec{
+				GPU{HardwareRequestRange{1, 1}, ""},
+				HardwareRequestRange{1, 1},
+				HardwareRequestRange{1, 1},
+				HardwareRequestRange{1, 1},
+			},
+			nil,
+		},
+		{
+			"1-3,2,4-9",
+			&HardwareSpec{
+				GPU{HardwareRequestRange{1, 3}, ""},
+				HardwareRequestRange{2, 2},
+				HardwareRequestRange{4, 9},
+				HardwareRequestRange{0, 0},
+			},
+			nil,
+		},
+		{
+			"a100",
+			&HardwareSpec{
+				GPU{HardwareRequestRange{1, 1}, "a100"},
+				HardwareRequestRange{0, 0},
+				HardwareRequestRange{0, 0},
+				HardwareRequestRange{0, 0},
+			},
+			nil,
 		},
 	}
 
