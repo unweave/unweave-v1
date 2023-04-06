@@ -29,7 +29,6 @@ type ConnectionInfoV1 struct {
 
 type NodeMetadataV1 struct {
 	ID             string           `json:"id"`
-	Name           string           `json:"name"`
 	Price          int              `json:"price"`
 	VPUs           int              `json:"vpus"`
 	Memory         int              `json:"memory"`
@@ -40,17 +39,12 @@ type NodeMetadataV1 struct {
 }
 
 func (n NodeMetadataV1) FromNode(node types.Node) {
-	name := ""
-	if node.Name != nil {
-		name = *node.Name
-	}
 	gpuMem := 0
 	if node.Specs.GPUMemory != nil {
 		gpuMem = *node.Specs.GPUMemory
 	}
 
 	n.ID = node.ID
-	n.Name = name
 	n.Price = node.Price
 	n.VPUs = node.Specs.VCPUs
 	n.Memory = node.Specs.Memory
