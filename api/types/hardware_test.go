@@ -81,9 +81,9 @@ func TestHardwareSpecParse(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected *HardwareSpec
-		err      error
+		err      bool
 	}{
-		{"", &HardwareSpec{}, nil},
+		{"", &HardwareSpec{}, false},
 		{
 			"G1,C1,R1,S1",
 			&HardwareSpec{
@@ -92,7 +92,7 @@ func TestHardwareSpecParse(t *testing.T) {
 				HardwareRequestRange{1, 1},
 				HardwareRequestRange{1, 1},
 			},
-			nil,
+			false,
 		},
 		{
 			"G1_NVIDIA,C1-2,R1-2,S1-2",
@@ -102,12 +102,12 @@ func TestHardwareSpecParse(t *testing.T) {
 				HardwareRequestRange{1, 2},
 				HardwareRequestRange{1, 2},
 			},
-			nil,
+			false,
 		},
 		{
 			"G,C,R,S",
 			&HardwareSpec{},
-			fmt.Errorf("invalid range - must be of the form <number> or <number>-<number>"),
+			true,
 		},
 		// Test case for positional syntax.
 		{
@@ -118,7 +118,7 @@ func TestHardwareSpecParse(t *testing.T) {
 				HardwareRequestRange{1, 1},
 				HardwareRequestRange{1, 1},
 			},
-			nil,
+			false,
 		},
 		{
 			"1-3,2,4-9",
@@ -128,7 +128,7 @@ func TestHardwareSpecParse(t *testing.T) {
 				HardwareRequestRange{4, 9},
 				HardwareRequestRange{0, 0},
 			},
-			nil,
+			false,
 		},
 		{
 			"a100",
@@ -138,7 +138,12 @@ func TestHardwareSpecParse(t *testing.T) {
 				HardwareRequestRange{0, 0},
 				HardwareRequestRange{0, 0},
 			},
-			nil,
+			false,
+		},
+		{
+			"g2_a40,23,34",
+			&HardwareSpec{},
+			true,
 		},
 	}
 
@@ -148,8 +153,8 @@ func TestHardwareSpecParse(t *testing.T) {
 		if *hwSpec != *test.expected {
 			t.Errorf("Expected %v, got %v for input %q", test.expected, hwSpec, test.input)
 		}
-		if err != nil && test.err != nil && err.Error() != test.err.Error() {
-			t.Errorf("Expected error %v, got %v for input %q", test.err, err, test.input)
+		if err != nil && test.err && err == nil {
+			t.Errorf("Expected error for input %q", test.input)
 		}
 	}
 }

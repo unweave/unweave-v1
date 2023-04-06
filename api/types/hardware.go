@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -94,6 +95,7 @@ func (h *HardwareSpec) String() string {
 	}
 	if gpu != "" {
 		gpu = fmt.Sprintf("G%s", gpu)
+		parts = append(parts, gpu)
 	}
 
 	cpu := ""
@@ -105,6 +107,7 @@ func (h *HardwareSpec) String() string {
 	}
 	if cpu != "" {
 		cpu = fmt.Sprintf("C%s", cpu)
+		parts = append(parts, cpu)
 	}
 
 	ram := ""
@@ -116,6 +119,7 @@ func (h *HardwareSpec) String() string {
 	}
 	if ram != "" {
 		ram = fmt.Sprintf("R%s", ram)
+		parts = append(parts, ram)
 	}
 
 	storage := ""
@@ -127,9 +131,8 @@ func (h *HardwareSpec) String() string {
 	}
 	if storage != "" {
 		storage = fmt.Sprintf("S%s", storage)
+		parts = append(parts, storage)
 	}
-
-	parts = append(parts, gpu, cpu, ram, storage)
 	return strings.Join(parts, ",")
 }
 
@@ -137,12 +140,17 @@ func (h *HardwareSpec) Parse(spec string) error {
 	spec = strings.ToLower(spec)
 	parts := strings.Split(spec, ",")
 
-	errmsg := fmt.Errorf("invalid hardware spec - must be of the form G<num_gpus>_<gpu_type>,C<num_cpus>,R<ram_gb>,S<storage_gb>")
-	if len(parts) > 4 {
-		return errmsg
-	}
+	errmsg := "Invalid hardware spec."
+	suggestion := "Must be of the form G<num_gpus>_<gpu_type>,C<num_cpus>,R<ram_gb>," +
+		"S<storage_gb>. Example: G1_nvidia,C1,R2,S100"
 
-	validPositionalArgs := true
+	if len(parts) > 4 {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    errmsg,
+			Suggestion: suggestion,
+		}
+	}
 
 	// Match a string that starts with C, R, S, c, r, s and may or may not have a range
 	// Examples:
@@ -151,22 +159,39 @@ func (h *HardwareSpec) Parse(spec string) error {
 	// Match a string that starts with G, g and may or may not have a range and a gpu type
 	// Examples:
 	// G1_nvidia, G1-2_nvidia, g1_nvidia, g1-2_nvidia
-	gpuRe := regexp.MustCompile(`^[gG](\d*)?(?:-(\d+))?(?:_([a-zA-Z]+))?$`)
+	gpuRe := regexp.MustCompile(`^[gG](\d*)?(?:-(\d+))?(?:_(.+))?$`)
+
+	positionalGPU := true
+	positionalRest := true
+	validPositionalArgs := true
 
 	for _, p := range parts {
 		if len(p) == 0 {
-			return errmsg
+			return &Error{
+				Code:       http.StatusBadRequest,
+				Message:    errmsg,
+				Suggestion: suggestion,
+			}
 		}
 
 		if match := re.FindStringSubmatch(p); match != nil {
-			validPositionalArgs = false
-			break
+			positionalRest = false
+			continue
 		}
 		if match := gpuRe.FindStringSubmatch(p); match != nil {
-			validPositionalArgs = false
-			break
+			positionalGPU = false
+			continue
 		}
 	}
+
+	if positionalGPU != positionalRest {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Invalid hardware spec - cannot mix positional and named arguments",
+			Suggestion: suggestion,
+		}
+	}
+	validPositionalArgs = positionalGPU
 
 	var err error
 
