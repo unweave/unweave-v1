@@ -301,7 +301,7 @@ select unweave.insert_node(
                $1,
                $2,
                $3,
-               $4,
+               $4 :: jsonb,
                $5,
                $6,
                $7 :: text[]
@@ -312,7 +312,7 @@ type NodeCreateParams struct {
 	ID        string          `json:"id"`
 	Provider  string          `json:"provider"`
 	Region    string          `json:"region"`
-	Spec      json.RawMessage `json:"spec"`
+	Metadata  json.RawMessage `json:"metadata"`
 	Status    string          `json:"status"`
 	OwnerID   string          `json:"ownerID"`
 	SshKeyIds []string        `json:"sshKeyIds"`
@@ -323,7 +323,7 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 		arg.ID,
 		arg.Provider,
 		arg.Region,
-		arg.Spec,
+		arg.Metadata,
 		arg.Status,
 		arg.OwnerID,
 		pq.Array(arg.SshKeyIds),

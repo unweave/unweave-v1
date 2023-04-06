@@ -301,8 +301,8 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 			VCPUs:     instance.InstanceType.Specs.Vcpus,
 			Memory:    instance.InstanceType.Specs.MemoryGib,
 			GPUMemory: &gpuMem,
-			GPUCount:  &gpuCount,
-			Storage:   &instance.InstanceType.Specs.StorageGib,
+			GPUCount:  gpuCount,
+			Storage:   instance.InstanceType.Specs.StorageGib,
 		},
 	}, nil
 }
@@ -329,17 +329,30 @@ func (n *NodeRuntime) ListNodeTypes(ctx context.Context, filterAvailable bool) (
 	for id, data := range res.JSON200.Data {
 		data := data
 
+		gpuCount, err := parseGPUCount(id)
+		if err != nil {
+			log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse number of GPUs")
+			gpuCount = 0
+		}
+
+		gpuMem, err := parseGPUMemory(id)
+		if err != nil {
+			log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse GPU memory")
+			gpuMem = 0
+		}
+
 		it := types.NodeType{
-			ID:          id,
-			Name:        &data.InstanceType.Description,
-			Regions:     []string{},
-			Price:       &data.InstanceType.PriceCentsPerHour,
-			Description: nil,
-			Provider:    types.LambdaLabsProvider,
+			ID:       id,
+			Name:     &data.InstanceType.Description,
+			Regions:  []string{},
+			Price:    &data.InstanceType.PriceCentsPerHour,
+			Provider: types.LambdaLabsProvider,
 			Specs: types.NodeSpecs{
 				VCPUs:     data.InstanceType.Specs.Vcpus,
 				Memory:    data.InstanceType.Specs.MemoryGib,
-				GPUMemory: nil,
+				Storage:   data.InstanceType.Specs.StorageGib,
+				GPUMemory: &gpuMem,
+				GPUCount:  gpuCount,
 			},
 		}
 

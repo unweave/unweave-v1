@@ -41,7 +41,7 @@ select unweave.insert_node(
                @id,
                @provider,
                @region,
-               @spec,
+               @metadata :: jsonb,
                @status,
                @owner_id,
                @ssh_key_ids :: text[]

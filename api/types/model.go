@@ -68,31 +68,37 @@ type NodeSpecs struct {
 	// Memory is the RAM in GB
 	Memory int `json:"memory"`
 	// Storage is the storage in GB
-	Storage *int `json:"storage"`
+	Storage int `json:"storage"`
+	// GPUType is the type of GPU
+	GPUType string `json:"gpuType"`
+	// GPUCount is the number of GPUs
+	GPUCount int `json:"gpuCount"`
 	// GPUMemory is the GPU RAM in GB
 	GPUMemory *int `json:"gpuMemory"`
-	// GPUCount is the number of GPUs
-	GPUCount *int `json:"gpuCount"`
 }
 
 type NodeType struct {
-	ID          string    `json:"id"`
-	Name        *string   `json:"name"`
-	Price       *int      `json:"price"`
-	Regions     []string  `json:"regions"`
-	Description *string   `json:"description"`
-	Provider    Provider  `json:"provider"`
-	Specs       NodeSpecs `json:"specs"`
+	ID       string    `json:"id"`
+	Name     *string   `json:"name"`
+	Price    *int      `json:"price"`
+	Regions  []string  `json:"regions"`
+	Provider Provider  `json:"provider"`
+	Specs    NodeSpecs `json:"specs"`
 }
 
 type Node struct {
 	ID       string     `json:"id"`
 	TypeID   string     `json:"typeID"`
+	Name     *string    `json:"name"`
+	Price    int        `json:"price"`
 	Region   string     `json:"region"`
 	KeyPair  SSHKey     `json:"sshKeyPair"`
 	Status   NodeStatus `json:"status"`
 	Provider Provider   `json:"provider"`
 	Specs    NodeSpecs  `json:"specs"`
+	Host     string     `json:"host"`
+	User     string     `json:"user"`
+	Port     int        `json:"port"`
 }
 
 type Project struct {
