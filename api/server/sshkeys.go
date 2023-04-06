@@ -80,34 +80,34 @@ type SSHKeyService struct {
 	srv *Service
 }
 
-func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) error {
+func (s *SSHKeyService) Add(ctx context.Context, params types.SSHKeyAddParams) (string, error) {
 	if params.Name != nil {
 		p := db.SSHKeyGetByNameParams{Name: *params.Name, OwnerID: s.srv.cid}
 		k, err := db.Q.SSHKeyGetByName(ctx, p)
 		if err == nil {
 			// Check if it is the same key. If yes, then this is a no-op.
 			if k.PublicKey == params.PublicKey {
-				return nil
+				return k.Name, nil
 			}
-			return &types.Error{
+			return "", &types.Error{
 				Code:    http.StatusConflict,
 				Message: fmt.Sprintf("SSH key already exists with name: %q", k.Name),
 			}
 		}
 		if err != nil && err != sql.ErrNoRows {
-			return fmt.Errorf("failed to get ssh key from db: %w", err)
+			return "", fmt.Errorf("failed to get ssh key from db: %w", err)
 		}
 	} else {
 		// This should most like never collide with an existing key, but it is possible.
 		// In the future, we should check to see if the key already exists before
 		// creating it.
-		params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
+		params.Name = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-") + ".pub")
 	}
 
 	if err := saveSSHKey(ctx, s.srv.cid, *params.Name, params.PublicKey); err != nil {
-		return fmt.Errorf("failed to save ssh key: %w", err)
+		return "", fmt.Errorf("failed to save ssh key: %w", err)
 	}
-	return nil
+	return *params.Name, nil
 }
 
 func (s *SSHKeyService) Generate(ctx context.Context, params types.SSHKeyGenerateParams) (name string, prv string, pub string, err error) {

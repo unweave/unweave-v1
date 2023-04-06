@@ -294,11 +294,17 @@ func SSHKeyAdd(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		if err := srv.SSHKey.Add(ctx, params); err != nil {
+		name, err := srv.SSHKey.Add(ctx, params)
+		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to add SSH key"))
 			return
 		}
-		render.JSON(w, r, &types.SSHKeyAddResponse{Success: true})
+		res := types.SSHKeyResponse{
+			Name:       name,
+			PublicKey:  params.PublicKey,
+			PrivateKey: "",
+		}
+		render.JSON(w, r, &res)
 	}
 }
 
@@ -325,7 +331,7 @@ func SSHKeyGenerate(rti runtime.Initializer) http.HandlerFunc {
 			return
 		}
 
-		res := types.SSHKeyGenerateResponse{
+		res := types.SSHKeyResponse{
 			Name:       name,
 			PublicKey:  pub,
 			PrivateKey: prv,
