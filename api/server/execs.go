@@ -329,7 +329,13 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		bid = sql.NullString{String: *buildID, Valid: true}
 	}
 
+	sessionID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI)
+	if err != nil {
+		go handleSessionError(ctx, sessionID, err, "failed to init session")
+		return nil, fmt.Errorf("failed to init session: %w", err)
+	}
 	dbp := db.SessionCreateParams{
+		ID:             sessionID,
 		NodeID:         node.ID,
 		CreatedBy:      s.srv.cid,
 		ProjectID:      projectID,
@@ -342,27 +348,24 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		BuildID:        bid,
 		SshKeyName:     userKey.Name,
 	}
-	execID, err := db.Q.SessionCreate(ctx, dbp)
-	if err != nil {
+
+	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
-	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
+	ctx = log.With().Str(SessionIDCtxKey, sessionID).Logger().WithContext(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
-	if err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI); err != nil {
-		go handleSessionError(ctx, execID, err, "failed to init session")
-		return nil, fmt.Errorf("failed to init session: %w", err)
-	}
-	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
-		go handleSessionError(ctx, execID, err, "failed to run exec")
+
+	if err := rt.Session.Exec(ctx, node.ID, sessionID, params.Ctx, true); err != nil {
+		go handleSessionError(ctx, sessionID, err, "failed to run exec")
 		return nil, fmt.Errorf("failed to to run exec: %w", err)
 	}
 
 	createdAt := time.Now()
 	session := &types.Exec{
-		ID:         execID,
+		ID:         sessionID,
 		Name:       dbp.Name,
 		SSHKey:     node.KeyPair,
 		Connection: nil,

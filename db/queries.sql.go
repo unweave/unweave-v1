@@ -473,17 +473,17 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 	return items, nil
 }
 
-const SessionCreate = `-- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
+const SessionCreate = `-- name: SessionCreate :exec
+insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info, commit_id, git_remote_url, command, build_id)
-values ($1, $2, $3, (select id
+values ($1, $2, $3, $4, (select id
                      from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = $11
-                       and owner_id = $2), $4, $5, $6, $7, $8, $9, $10)
-returning id
+                     where ssh_keys.name = $12
+                       and owner_id = $3), $5, $6, $7, $8, $9, $10, $11)
 `
 
 type SessionCreateParams struct {
+	ID             string          `json:"id"`
 	NodeID         string          `json:"nodeID"`
 	CreatedBy      string          `json:"createdBy"`
 	ProjectID      string          `json:"projectID"`
@@ -497,8 +497,9 @@ type SessionCreateParams struct {
 	SshKeyName     string          `json:"sshKeyName"`
 }
 
-func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, SessionCreate,
+func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
+	_, err := q.db.ExecContext(ctx, SessionCreate,
+		arg.ID,
 		arg.NodeID,
 		arg.CreatedBy,
 		arg.ProjectID,
@@ -511,9 +512,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) (s
 		arg.BuildID,
 		arg.SshKeyName,
 	)
-	var id string
-	err := row.Scan(&id)
-	return id, err
+	return err
 }
 
 const SessionGet = `-- name: SessionGet :one

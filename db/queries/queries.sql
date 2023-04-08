@@ -55,14 +55,13 @@ set status = $2,
 where id = $1;
 
 
--- name: SessionCreate :one
-insert into unweave.session (node_id, created_by, project_id, ssh_key_id,
+-- name: SessionCreate :exec
+insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
                              region, name, connection_info, commit_id, git_remote_url, command, build_id)
-values ($1, $2, $3, (select id
+values ($1, $2, $3, $4, (select id
                      from unweave.ssh_key as ssh_keys
                      where ssh_keys.name = @ssh_key_name
-                       and owner_id = $2), $4, $5, $6, $7, $8, $9, $10)
-returning id;
+                       and owner_id = $3), $5, $6, $7, $8, $9, $10, $11);
 
 -- name: SessionGet :one
 select *

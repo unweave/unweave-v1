@@ -25,7 +25,7 @@ type Querier interface {
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
-	SessionCreate(ctx context.Context, arg SessionCreateParams) (string, error)
+	SessionCreate(ctx context.Context, arg SessionCreateParams) error
 	SessionGet(ctx context.Context, id string) (UnweaveSession, error)
 	SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error)
 	SessionSetError(ctx context.Context, arg SessionSetErrorParams) error
