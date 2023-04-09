@@ -18,10 +18,29 @@ import (
 	"github.com/unweave/unweave/tools/random"
 )
 
+var gpuMemoryMap = map[string]int{
+	"gpu_1x_a100":           40,
+	"gpu_1x_a100_sxm4":      40,
+	"gpu_8x_a100":           40,
+	"gpu_4x_a6000":          48,
+	"gpu_8x_v100":           16,
+	"gpu_8x_a100_80gb_sxm4": 80,
+	"gpu_1x_rtx6000":        24,
+	"gpu_2x_a6000":          48,
+	"gpu_2x_a100":           40,
+	"gpu_4x_a100":           40,
+	"gpu_1x_a6000":          48,
+	"gpu_1x_a10":            24,
+}
+
 func parseGPUMemory(input string) (int, error) {
-	re := regexp.MustCompile(`\((\d+)\s*GB\)`)
+	re := regexp.MustCompile(`\((\d+)\s*gb\)`)
 	matches := re.FindStringSubmatch(input)
 	if len(matches) < 2 {
+		// Look for the memory in the map
+		if memory, ok := gpuMemoryMap[input]; ok {
+			return memory, nil
+		}
 		return 0, fmt.Errorf("could not parse the GPU memory from the input string: %q", input)
 	}
 	number, err := strconv.Atoi(matches[1])

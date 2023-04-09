@@ -64,8 +64,11 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	return n
 }
 
-func handleSessionError(ctx context.Context, sessionID string, err error, msg string) {
-	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
+func handleSessionError(sessionID string, err error, msg string) {
+	// Make sure this doesn't fail because of a parent cancelled context
+	ctx := context.Background()
+	ctx = log.With().Logger().WithContext(ctx)
+	ctx = log.Ctx(ctx).With().Str(SessionIDCtxKey, sessionID).Logger().WithContext(ctx)
 
 	var e *types.Error
 	if errors.As(err, &e) {
@@ -188,19 +191,21 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}, nil
 }
 
-func updateConnectionInfo(ctx context.Context, rt runtime.Node, nodeID string, sessionID string) error {
-	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
-	connInfo, err := rt.GetConnectionInfo(ctx, nodeID)
+func updateConnectionInfo(rt runtime.Session, nodeID string, execID string) error {
+	// New ctx to make sure this doesn't fail because of a parent cancelled context
+	ctx := context.Background()
+	connInfo, err := rt.GetConnectionInfo(ctx, execID)
 	if err != nil {
 		return fmt.Errorf("failed to get connection info: %w", err)
 	}
 
+	log.Info().Str("node_id", nodeID).Str("exec_id", execID).Msgf("Updating connection info %v", connInfo)
 	connInfoJSON, err := json.Marshal(connInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection info: %w", err)
 	}
 	params := db.SessionUpdateConnectionInfoParams{
-		ID:             sessionID,
+		ID:             execID,
 		ConnectionInfo: connInfoJSON,
 	}
 	if e := db.Q.SessionUpdateConnectionInfo(ctx, params); e != nil {
@@ -331,7 +336,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 
 	sessionID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI)
 	if err != nil {
-		go handleSessionError(ctx, sessionID, err, "failed to init session")
+		go handleSessionError(sessionID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	dbp := db.SessionCreateParams{
@@ -359,7 +364,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	}
 
 	if err := rt.Session.Exec(ctx, node.ID, sessionID, params.Ctx, true); err != nil {
-		go handleSessionError(ctx, sessionID, err, "failed to run exec")
+		go handleSessionError(sessionID, err, "failed to run exec")
 		return nil, fmt.Errorf("failed to to run exec: %w", err)
 	}
 
@@ -485,7 +490,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	statusch, errch := rt.Node.Watch(ctx, session.NodeID)
+	statusch, errch := rt.Session.Watch(ctx, session.ID)
 
 	log.Ctx(ctx).Info().Msgf("Starting to watch session %s", sessionID)
 
@@ -494,6 +499,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 		for {
 			select {
 			case <-ctx.Done():
+				log.Ctx(ctx).Info().Msgf("Ctx Done. Stopping to watch session %s", sessionID)
 				return
 			case status := <-statusch:
 				log.Ctx(ctx).
@@ -502,11 +508,17 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 					Msg("session status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(ctx, rt.Node, session.NodeID, sessionID); e != nil {
-						// We mark the error in the DB but don't terminate the node. This
-						// is left to the user to do manually. Perhaps this should be
-						// changed in the future but for now, it might help debugging.
-						handleSessionError(ctx, sessionID, e, "Failed to update connection info")
+					if e := updateConnectionInfo(rt.Session, session.NodeID, sessionID); e != nil {
+						// Use new context to make sure terminate is not cancelled
+						terminateCtx := context.Background()
+						terminateCtx = log.With().Logger().WithContext(terminateCtx)
+
+						if terminateErr := s.Terminate(terminateCtx, sessionID); terminateErr != nil {
+							log.Error().
+								Err(terminateErr).
+								Msgf("failed to terminate session %q on failure to watch", sessionID)
+						}
+						handleSessionError(sessionID, e, "Failed to update connection info")
 						// TODO: we should perhaps do some retries here
 						return
 					}
@@ -537,7 +549,7 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 				if err := s.Terminate(ctx, sessionID); err != nil {
 					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate session on failure to watch")
 				}
-				handleSessionError(ctx, sessionID, e, "Failed to watch session")
+				handleSessionError(sessionID, e, "Failed to watch session")
 				return
 			}
 		}
@@ -570,7 +582,7 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 		Logger().
 		WithContext(ctx)
 
-	if err = rt.Node.TerminateNode(ctx, sess.NodeID); err != nil {
+	if err = rt.Session.Terminate(ctx, sess.ID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
 	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {

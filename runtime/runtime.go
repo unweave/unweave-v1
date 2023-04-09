@@ -50,7 +50,7 @@ type Node interface {
 	// NodeStatus returns the status of the node running a session.
 	NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error)
 	TerminateNode(ctx context.Context, nodeID string) error
-	// Watch watches the status of the node running a session.
+	// Watch watches the status of the node.
 	Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error)
 }
 
@@ -60,8 +60,12 @@ type Session interface {
 	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string) (sessionID string, err error)
 	// Exec is a code execution request.
 	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
+	// GetConnectionInfo returns the connection information for exec.
+	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
 	// Terminate terminates a session.
-	Terminate(ctx context.Context, sessionID string) error
+	Terminate(ctx context.Context, execID string) error
+	// Watch watches the status of the exec.
+	Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error)
 }
 
 type Initializer interface {
