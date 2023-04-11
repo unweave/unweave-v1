@@ -57,7 +57,7 @@ where id = $1;
 
 -- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info, commit_id, git_remote_url, command, build_id)
+                             region, name, metadata, commit_id, git_remote_url, command, build_id)
 values ($1, $2, $3, $4, (select id
                      from unweave.ssh_key as ssh_keys
                      where ssh_keys.name = @ssh_key_name
@@ -76,7 +76,7 @@ where status = 'initializing'
 
 -- name: SessionUpdateConnectionInfo :exec
 update unweave.session
-set connection_info = $2
+set metadata = jsonb_set(metadata, '{connection_info}', @connection_info::jsonb)
 where id = $1;
 
 -- name: SessionsGet :many
@@ -135,7 +135,7 @@ select s.id,
        n.provider,
        s.region,
        s.created_at,
-       s.connection_info,
+       s.metadata,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -152,7 +152,7 @@ select s.id,
        n.provider,
        s.region,
        s.created_at,
-       s.connection_info,
+       s.metadata,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at

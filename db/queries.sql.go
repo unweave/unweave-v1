@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.connection_info, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, n.provider
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build_id = b.id
@@ -78,25 +78,25 @@ from (select id from unweave.build as ub where ub.id = $1) as b
 `
 
 type BuildGetUsedByRow struct {
-	ID             string               `json:"id"`
-	Name           string               `json:"name"`
-	NodeID         string               `json:"nodeID"`
-	Region         string               `json:"region"`
-	CreatedBy      string               `json:"createdBy"`
-	CreatedAt      time.Time            `json:"createdAt"`
-	ReadyAt        sql.NullTime         `json:"readyAt"`
-	ExitedAt       sql.NullTime         `json:"exitedAt"`
-	Status         UnweaveSessionStatus `json:"status"`
-	ProjectID      string               `json:"projectID"`
-	SshKeyID       sql.NullString       `json:"sshKeyID"`
-	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
-	Error          sql.NullString       `json:"error"`
-	BuildID        sql.NullString       `json:"buildID"`
-	Spec           json.RawMessage      `json:"spec"`
-	CommitID       sql.NullString       `json:"commitID"`
-	GitRemoteUrl   sql.NullString       `json:"gitRemoteUrl"`
-	Command        []string             `json:"command"`
-	Provider       string               `json:"provider"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	NodeID       string               `json:"nodeID"`
+	Region       string               `json:"region"`
+	CreatedBy    string               `json:"createdBy"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	ReadyAt      sql.NullTime         `json:"readyAt"`
+	ExitedAt     sql.NullTime         `json:"exitedAt"`
+	Status       UnweaveSessionStatus `json:"status"`
+	ProjectID    string               `json:"projectID"`
+	SshKeyID     sql.NullString       `json:"sshKeyID"`
+	Error        sql.NullString       `json:"error"`
+	BuildID      sql.NullString       `json:"buildID"`
+	Spec         json.RawMessage      `json:"spec"`
+	CommitID     sql.NullString       `json:"commitID"`
+	GitRemoteUrl sql.NullString       `json:"gitRemoteUrl"`
+	Command      []string             `json:"command"`
+	Metadata     json.RawMessage      `json:"metadata"`
+	Provider     string               `json:"provider"`
 }
 
 func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error) {
@@ -120,13 +120,13 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.Status,
 			&i.ProjectID,
 			&i.SshKeyID,
-			&i.ConnectionInfo,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
 			&i.CommitID,
 			&i.GitRemoteUrl,
 			pq.Array(&i.Command),
+			&i.Metadata,
 			&i.Provider,
 		); err != nil {
 			return nil, err
@@ -183,7 +183,7 @@ select s.id,
        n.provider,
        s.region,
        s.created_at,
-       s.connection_info,
+       s.metadata,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -201,7 +201,7 @@ type MxSessionGetRow struct {
 	Provider        string               `json:"provider"`
 	Region          string               `json:"region"`
 	CreatedAt       time.Time            `json:"createdAt"`
-	ConnectionInfo  json.RawMessage      `json:"connectionInfo"`
+	Metadata        json.RawMessage      `json:"metadata"`
 	SshKeyName      string               `json:"sshKeyName"`
 	PublicKey       string               `json:"publicKey"`
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
@@ -221,7 +221,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 		&i.Provider,
 		&i.Region,
 		&i.CreatedAt,
-		&i.ConnectionInfo,
+		&i.Metadata,
 		&i.SshKeyName,
 		&i.PublicKey,
 		&i.SshKeyCreatedAt,
@@ -237,7 +237,7 @@ select s.id,
        n.provider,
        s.region,
        s.created_at,
-       s.connection_info,
+       s.metadata,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -255,7 +255,7 @@ type MxSessionsGetRow struct {
 	Provider        string               `json:"provider"`
 	Region          string               `json:"region"`
 	CreatedAt       time.Time            `json:"createdAt"`
-	ConnectionInfo  json.RawMessage      `json:"connectionInfo"`
+	Metadata        json.RawMessage      `json:"metadata"`
 	SshKeyName      string               `json:"sshKeyName"`
 	PublicKey       string               `json:"publicKey"`
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
@@ -278,7 +278,7 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 			&i.Provider,
 			&i.Region,
 			&i.CreatedAt,
-			&i.ConnectionInfo,
+			&i.Metadata,
 			&i.SshKeyName,
 			&i.PublicKey,
 			&i.SshKeyCreatedAt,
@@ -475,7 +475,7 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 
 const SessionCreate = `-- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, connection_info, commit_id, git_remote_url, command, build_id)
+                             region, name, metadata, commit_id, git_remote_url, command, build_id)
 values ($1, $2, $3, $4, (select id
                      from unweave.ssh_key as ssh_keys
                      where ssh_keys.name = $12
@@ -483,18 +483,18 @@ values ($1, $2, $3, $4, (select id
 `
 
 type SessionCreateParams struct {
-	ID             string          `json:"id"`
-	NodeID         string          `json:"nodeID"`
-	CreatedBy      string          `json:"createdBy"`
-	ProjectID      string          `json:"projectID"`
-	Region         string          `json:"region"`
-	Name           string          `json:"name"`
-	ConnectionInfo json.RawMessage `json:"connectionInfo"`
-	CommitID       sql.NullString  `json:"commitID"`
-	GitRemoteUrl   sql.NullString  `json:"gitRemoteUrl"`
-	Command        []string        `json:"command"`
-	BuildID        sql.NullString  `json:"buildID"`
-	SshKeyName     string          `json:"sshKeyName"`
+	ID           string          `json:"id"`
+	NodeID       string          `json:"nodeID"`
+	CreatedBy    string          `json:"createdBy"`
+	ProjectID    string          `json:"projectID"`
+	Region       string          `json:"region"`
+	Name         string          `json:"name"`
+	Metadata     json.RawMessage `json:"metadata"`
+	CommitID     sql.NullString  `json:"commitID"`
+	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
+	Command      []string        `json:"command"`
+	BuildID      sql.NullString  `json:"buildID"`
+	SshKeyName   string          `json:"sshKeyName"`
 }
 
 func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
@@ -505,7 +505,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 		arg.ProjectID,
 		arg.Region,
 		arg.Name,
-		arg.ConnectionInfo,
+		arg.Metadata,
 		arg.CommitID,
 		arg.GitRemoteUrl,
 		pq.Array(arg.Command),
@@ -516,7 +516,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build_id, spec, commit_id, git_remote_url, command
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata
 from unweave.session
 where id = $1
 `
@@ -536,19 +536,19 @@ func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, er
 		&i.Status,
 		&i.ProjectID,
 		&i.SshKeyID,
-		&i.ConnectionInfo,
 		&i.Error,
 		&i.BuildID,
 		&i.Spec,
 		&i.CommitID,
 		&i.GitRemoteUrl,
 		pq.Array(&i.Command),
+		&i.Metadata,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, connection_info, error, build_id, spec, commit_id, git_remote_url, command
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -575,13 +575,13 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.Status,
 			&i.ProjectID,
 			&i.SshKeyID,
-			&i.ConnectionInfo,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
 			&i.CommitID,
 			&i.GitRemoteUrl,
 			pq.Array(&i.Command),
+			&i.Metadata,
 		); err != nil {
 			return nil, err
 		}
@@ -640,7 +640,7 @@ func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpda
 
 const SessionUpdateConnectionInfo = `-- name: SessionUpdateConnectionInfo :exec
 update unweave.session
-set connection_info = $2
+set metadata = jsonb_set(metadata, '{connection_info}', $2::jsonb)
 where id = $1
 `
 

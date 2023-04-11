@@ -144,24 +144,24 @@ type UnweaveProject struct {
 }
 
 type UnweaveSession struct {
-	ID             string               `json:"id"`
-	Name           string               `json:"name"`
-	NodeID         string               `json:"nodeID"`
-	Region         string               `json:"region"`
-	CreatedBy      string               `json:"createdBy"`
-	CreatedAt      time.Time            `json:"createdAt"`
-	ReadyAt        sql.NullTime         `json:"readyAt"`
-	ExitedAt       sql.NullTime         `json:"exitedAt"`
-	Status         UnweaveSessionStatus `json:"status"`
-	ProjectID      string               `json:"projectID"`
-	SshKeyID       sql.NullString       `json:"sshKeyID"`
-	ConnectionInfo json.RawMessage      `json:"connectionInfo"`
-	Error          sql.NullString       `json:"error"`
-	BuildID        sql.NullString       `json:"buildID"`
-	Spec           json.RawMessage      `json:"spec"`
-	CommitID       sql.NullString       `json:"commitID"`
-	GitRemoteUrl   sql.NullString       `json:"gitRemoteUrl"`
-	Command        []string             `json:"command"`
+	ID           string               `json:"id"`
+	Name         string               `json:"name"`
+	NodeID       string               `json:"nodeID"`
+	Region       string               `json:"region"`
+	CreatedBy    string               `json:"createdBy"`
+	CreatedAt    time.Time            `json:"createdAt"`
+	ReadyAt      sql.NullTime         `json:"readyAt"`
+	ExitedAt     sql.NullTime         `json:"exitedAt"`
+	Status       UnweaveSessionStatus `json:"status"`
+	ProjectID    string               `json:"projectID"`
+	SshKeyID     sql.NullString       `json:"sshKeyID"`
+	Error        sql.NullString       `json:"error"`
+	BuildID      sql.NullString       `json:"buildID"`
+	Spec         json.RawMessage      `json:"spec"`
+	CommitID     sql.NullString       `json:"commitID"`
+	GitRemoteUrl sql.NullString       `json:"gitRemoteUrl"`
+	Command      []string             `json:"command"`
+	Metadata     json.RawMessage      `json:"metadata"`
 }
 
 type UnweaveSshKey struct {

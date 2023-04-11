@@ -260,8 +260,8 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 		return fmt.Errorf("failed to save build context: %w", err)
 	}
 
-	imageURI := fmt.Sprintf("uw-provisional:%s", buildID) // until tagged
-	logsch, errch, err := buildImage(ctx, dir, imageURI, "")
+	imageName := fmt.Sprintf("uw-provisional:%s", buildID) // until tagged
+	logsch, errch, err := buildImage(ctx, dir, imageName, "")
 	if err != nil {
 		return fmt.Errorf("failed to build image: %w", err)
 	}

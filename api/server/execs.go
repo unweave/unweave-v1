@@ -30,13 +30,13 @@ type ConnectionInfoV1 struct {
 type NodeMetadataV1 struct {
 	ID             string           `json:"id"`
 	Price          int              `json:"price"`
-	VPUs           int              `json:"vpus"`
+	VCPUs          int              `json:"vcpus"`
 	Memory         int              `json:"memory"`
 	Storage        int              `json:"storage"`
 	GpuType        string           `json:"gpuType"`
 	GPUCount       int              `json:"gpuCount"`
 	GPUMemory      int              `json:"gpuMemory"`
-	ConnectionInfo ConnectionInfoV1 `json:"connectionInfo"`
+	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
 }
 
 func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
@@ -47,7 +47,7 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	n := NodeMetadataV1{
 		ID:        node.ID,
 		Price:     node.Price,
-		VPUs:      node.Specs.VCPUs,
+		VCPUs:     node.Specs.VCPUs,
 		Memory:    node.Specs.Memory,
 		Storage:   node.Specs.Storage,
 		GpuType:   node.Specs.GPUType,
@@ -269,7 +269,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	}
 
 	metadata := DBNodeMetadataFromNode(node)
-	fmt.Println(node, metadata)
 	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
@@ -291,11 +290,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	}
 	if err = db.Q.NodeCreate(ctx, np); err != nil {
 		return nil, fmt.Errorf("failed to create node in db: %w", err)
-	}
-
-	connInfo, err := json.Marshal(ConnectionInfoV1{Version: 1})
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
 	}
 
 	// Set commit details if provided
@@ -340,18 +334,18 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	dbp := db.SessionCreateParams{
-		ID:             sessionID,
-		NodeID:         node.ID,
-		CreatedBy:      s.srv.cid,
-		ProjectID:      projectID,
-		Region:         node.Region,
-		Name:           random.GenerateRandomPhrase(4, "-"),
-		ConnectionInfo: connInfo,
-		CommitID:       commitID,
-		GitRemoteUrl:   gitRemoteURL,
-		Command:        command,
-		BuildID:        bid,
-		SshKeyName:     userKey.Name,
+		ID:           sessionID,
+		NodeID:       node.ID,
+		CreatedBy:    s.srv.cid,
+		ProjectID:    projectID,
+		Region:       node.Region,
+		Name:         random.GenerateRandomPhrase(4, "-"),
+		Metadata:     metadataJSON,
+		CommitID:     commitID,
+		GitRemoteUrl: gitRemoteURL,
+		Command:      command,
+		BuildID:      bid,
+		SshKeyName:   userKey.Name,
 	}
 
 	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
@@ -402,8 +396,8 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 		return nil, fmt.Errorf("failed to get session from db: %w", err)
 	}
 
-	connInfo := &ConnectionInfoV1{}
-	if err := json.Unmarshal(dbs.ConnectionInfo, connInfo); err != nil {
+	metadata := &NodeMetadataV1{}
+	if err := json.Unmarshal(dbs.Metadata, metadata); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 	}
 
@@ -416,9 +410,9 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 			CreatedAt: &dbs.SshKeyCreatedAt,
 		},
 		Connection: &types.ConnectionInfo{
-			Host: connInfo.Host,
-			Port: connInfo.Port,
-			User: connInfo.User,
+			Host: metadata.ConnectionInfo.Host,
+			Port: metadata.ConnectionInfo.Port,
+			User: metadata.ConnectionInfo.User,
 		},
 		Status:     types.NodeStatus(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
@@ -444,8 +438,8 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 		if !listTerminated && s.Status == db.UnweaveSessionStatusTerminated {
 			continue
 		}
-		connInfo := &ConnectionInfoV1{}
-		if err := json.Unmarshal(s.ConnectionInfo, connInfo); err != nil {
+		metadata := &NodeMetadataV1{}
+		if err := json.Unmarshal(s.Metadata, metadata); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
 		session := types.Exec{
@@ -457,9 +451,9 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 				CreatedAt: &s.SshKeyCreatedAt,
 			},
 			Connection: &types.ConnectionInfo{
-				Host: connInfo.Host,
-				Port: connInfo.Port,
-				User: connInfo.User,
+				Host: metadata.ConnectionInfo.Host,
+				Port: metadata.ConnectionInfo.Port,
+				User: metadata.ConnectionInfo.User,
 			},
 			Status:     types.NodeStatus(s.Status),
 			CreatedAt:  &s.CreatedAt,
