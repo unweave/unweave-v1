@@ -89,6 +89,7 @@ type NodeType struct {
 type Node struct {
 	ID       string     `json:"id"`
 	TypeID   string     `json:"typeID"`
+	OwnerID  string     `json:"ownerID"`
 	Price    int        `json:"price"`
 	Region   string     `json:"region"`
 	KeyPair  SSHKey     `json:"sshKeyPair"`
