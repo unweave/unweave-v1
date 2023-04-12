@@ -229,7 +229,7 @@ type ExecService struct {
 	srv *Service
 }
 
-func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams) (*types.Exec, error) {
+func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams, persistFS bool) (*types.Exec, error) {
 	rt, err := s.srv.InitializeRuntime(ctx, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
@@ -328,13 +328,13 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		bid = sql.NullString{String: *buildID, Valid: true}
 	}
 
-	sessionID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI)
+	execID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI, persistFS)
 	if err != nil {
-		go handleSessionError(sessionID, err, "failed to init session")
+		go handleSessionError(execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
 	}
 	dbp := db.SessionCreateParams{
-		ID:           sessionID,
+		ID:           execID,
 		NodeID:       node.ID,
 		CreatedBy:    s.srv.cid,
 		ProjectID:    projectID,
@@ -351,20 +351,20 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
-	ctx = log.With().Str(SessionIDCtxKey, sessionID).Logger().WithContext(ctx)
+	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
 	}
 
-	if err := rt.Session.Exec(ctx, node.ID, sessionID, params.Ctx, true); err != nil {
-		go handleSessionError(sessionID, err, "failed to run exec")
+	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
+		go handleSessionError(execID, err, "failed to run exec")
 		return nil, fmt.Errorf("failed to to run exec: %w", err)
 	}
 
 	createdAt := time.Now()
 	session := &types.Exec{
-		ID:         sessionID,
+		ID:         execID,
 		Name:       dbp.Name,
 		SSHKey:     node.KeyPair,
 		Connection: nil,
@@ -373,12 +373,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		NodeTypeID: node.TypeID,
 		Region:     node.Region,
 		Provider:   node.Provider,
-		Ctx: types.ExecCtx{
-			Command:  command,
-			CommitID: &commitID.String,
-			GitURL:   &gitRemoteURL.String,
-			BuildID:  params.Ctx.BuildID,
-		},
 	}
 
 	return session, nil
@@ -419,7 +413,6 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
 		Provider:   types.Provider(dbs.Provider),
-		Ctx:        types.ExecCtx{},
 	}
 	return session, nil
 }
@@ -466,8 +459,8 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 	return res, nil
 }
 
-func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
-	session, err := db.Q.MxSessionGet(ctx, sessionID)
+func (s *ExecService) Watch(ctx context.Context, execID string) error {
+	exec, err := db.Q.MxSessionGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -475,51 +468,51 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 				Message: "Session not found",
 			}
 		}
-		return fmt.Errorf("failed to get session from db: %w", err)
+		return fmt.Errorf("failed to get exec from db: %w", err)
 	}
 
-	rt, err := s.srv.InitializeRuntime(ctx, types.Provider(session.Provider))
+	rt, err := s.srv.InitializeRuntime(ctx, types.Provider(exec.Provider))
 	if err != nil {
 		return fmt.Errorf("failed to initialize runtime: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	statusch, errch := rt.Session.Watch(ctx, session.ID)
+	statusch, errch := rt.Session.Watch(ctx, exec.ID)
 
-	log.Ctx(ctx).Info().Msgf("Starting to watch session %s", sessionID)
+	log.Ctx(ctx).Info().Msgf("Starting to watch exec %s", execID)
 
 	go func() {
 		defer cancel()
 		for {
 			select {
 			case <-ctx.Done():
-				log.Ctx(ctx).Info().Msgf("Ctx Done. Stopping to watch session %s", sessionID)
+				log.Ctx(ctx).Info().Msgf("Ctx Done. Stopping to watch exec %s", execID)
 				return
 			case status := <-statusch:
 				log.Ctx(ctx).
 					Info().
 					Str(SessionStatusCtxKey, string(status)).
-					Msg("session status changed")
+					Msg("exec status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(rt.Session, session.NodeID, sessionID); e != nil {
+					if e := updateConnectionInfo(rt.Session, exec.NodeID, execID); e != nil {
 						// Use new context to make sure terminate is not cancelled
 						terminateCtx := context.Background()
 						terminateCtx = log.With().Logger().WithContext(terminateCtx)
 
-						if terminateErr := s.Terminate(terminateCtx, sessionID); terminateErr != nil {
+						if terminateErr := s.Terminate(terminateCtx, execID); terminateErr != nil {
 							log.Error().
 								Err(terminateErr).
-								Msgf("failed to terminate session %q on failure to watch", sessionID)
+								Msgf("failed to terminate exec %q on failure to watch", execID)
 						}
-						handleSessionError(sessionID, e, "Failed to update connection info")
+						handleSessionError(execID, e, "Failed to update connection info")
 						// TODO: we should perhaps do some retries here
 						return
 					}
 				}
 
 				params := db.SessionStatusUpdateParams{
-					ID:     sessionID,
+					ID:     execID,
 					Status: db.UnweaveSessionStatus(status),
 					ReadyAt: sql.NullTime{
 						Time:  time.Now(),
@@ -527,23 +520,35 @@ func (s *ExecService) Watch(ctx context.Context, sessionID string) error {
 					},
 				}
 				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
-					log.Ctx(ctx).Error().Err(e).Msg("failed to update session status")
+					log.Ctx(ctx).Error().Err(e).Msg("failed to update exec status")
 					return
 				}
+
 				if status == types.StatusTerminated {
+					log.Ctx(ctx).Info().Msgf("Exec %q exited", exec)
+					// Use new context to make sure terminate is not cancelled
+					terminateCtx := context.Background()
+					terminateCtx = log.With().Logger().WithContext(terminateCtx)
+
+					// Clean up before returning. This will should be a no-op if the pod was
+					// already deleted. This is particularly going to happen when a pod is
+					// naturally terminated at end of exec.
+					if err = s.Terminate(terminateCtx, execID); err != nil {
+						log.Warn().Err(err).Msgf("Failed to terminate exec %q", execID)
+					}
 					return
 				}
 			case e := <-errch:
-				log.Ctx(ctx).Error().Err(e).Msg("Error while watching session")
+				log.Ctx(ctx).Error().Err(e).Msg("Error while watching exec")
 
-				// This means we failed to watch the session. This should ideally never
+				// This means we failed to watch the exec. This should ideally never
 				// happen. Since we don't know the cause of this error, let's play it safe
 				// and terminate the node. This will mean the user will lose their work
 				// but the alternative is to have a runaway node that drains all their credit.
-				if err := s.Terminate(ctx, sessionID); err != nil {
-					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate session on failure to watch")
+				if err := s.Terminate(ctx, execID); err != nil {
+					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate exec on failure to watch")
 				}
-				handleSessionError(sessionID, e, "Failed to watch session")
+				handleSessionError(execID, e, "Failed to watch exec")
 				return
 			}
 		}

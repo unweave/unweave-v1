@@ -119,26 +119,17 @@ type ConnectionInfo struct {
 	User string `json:"user"`
 }
 
-type Session struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	SSHKeys    []SSHKey        `json:"sshKeys"`
-	Connection *ConnectionInfo `json:"connection,omitempty"`
-	Status     NodeStatus      `json:"status"`
-	NodeID     string          `json:"nodeID"`
-}
-
 type Exec struct {
-	ID         string          `json:"id"`
-	Name       string          `json:"name"`
-	SSHKey     SSHKey          `json:"sshKey"`
-	Connection *ConnectionInfo `json:"connection,omitempty"`
-	Status     NodeStatus      `json:"status"`
-	CreatedAt  *time.Time      `json:"createdAt,omitempty"`
-	NodeTypeID string          `json:"nodeTypeID"`
-	Region     string          `json:"region"`
-	Provider   Provider        `json:"provider"`
-	Ctx        ExecCtx         `json:"ctx"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	SSHKey       SSHKey          `json:"sshKey"`
+	Connection   *ConnectionInfo `json:"connection,omitempty"`
+	Status       NodeStatus      `json:"status"`
+	CreatedAt    *time.Time      `json:"createdAt,omitempty"`
+	NodeTypeID   string          `json:"nodeTypeID"`
+	Region       string          `json:"region"`
+	Provider     Provider        `json:"provider"`
+	PersistentFS bool            `json:"persistentFS"`
 }
 
 type ExecCtx struct {

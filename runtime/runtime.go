@@ -57,11 +57,17 @@ type Node interface {
 type Session interface {
 	// Init initializes a new session on a node. It creates environment the users code
 	// will in with the provided build and configures ssh keys for interactive access.
-	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string) (sessionID string, err error)
+	// If the persistentFS flag is set, the session will be initialized with a persistent
+	// file system. The call to Terminate is still required to handle the lifecycle of
+	// the persistent file system. The flag just ensures the file system is capable of
+	// being persisted.
+	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, persistentFS bool) (sessionID string, err error)
 	// Exec is a code execution request.
 	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
 	// GetConnectionInfo returns the connection information for exec.
 	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
+	// SnapshotFS snapshots the file system of the exec.
+	SnapshotFS(ctx context.Context, execID string) error
 	// Terminate terminates a session.
 	Terminate(ctx context.Context, execID string) error
 	// Watch watches the status of the exec.
