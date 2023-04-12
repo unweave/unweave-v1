@@ -97,6 +97,7 @@ type NodeTypesListResponse struct {
 }
 
 type ExecCreateParams struct {
+	Name          string   `json:"name,omitempty"`
 	Provider      Provider `json:"provider"`
 	NodeTypeID    string   `json:"nodeTypeID,omitempty"`
 	Region        *string  `json:"region,omitempty"`

@@ -162,6 +162,7 @@ type UnweaveSession struct {
 	GitRemoteUrl sql.NullString       `json:"gitRemoteUrl"`
 	Command      []string             `json:"command"`
 	Metadata     json.RawMessage      `json:"metadata"`
+	PersistFs    bool                 `json:"persistFs"`
 }
 
 type UnweaveSshKey struct {

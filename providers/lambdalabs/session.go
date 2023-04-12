@@ -30,7 +30,7 @@ func (e *ExecRuntime) SnapshotFS(ctx context.Context, execID string) error {
 	return nil
 }
 
-func (e *ExecRuntime) Terminate(ctx context.Context, execID string) error {
+func (e *ExecRuntime) Terminate(ctx context.Context, execID string, snapshotFS bool) error {
 	// Session and Node ID are the same for LambdaLabs (for now)
 	log.Ctx(ctx).Debug().Str("sessionID", execID).Msg("terminating session")
 	return e.node.TerminateNode(ctx, execID)

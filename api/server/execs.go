@@ -557,8 +557,8 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 	return nil
 }
 
-func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
-	sess, err := db.Q.MxSessionGet(ctx, sessionID)
+func (s *ExecService) Terminate(ctx context.Context, execID string) error {
+	sess, err := db.Q.MxSessionGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -567,7 +567,7 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 				Suggestion: "Make sure the session id is valid",
 			}
 		}
-		return fmt.Errorf("failed to fetch session from db %q: %w", sessionID, err)
+		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
 	}
 
 	provider := types.Provider(sess.Provider)
@@ -581,7 +581,7 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 		Logger().
 		WithContext(ctx)
 
-	if err = rt.Session.Terminate(ctx, sess.ID); err != nil {
+	if err = rt.Session.Terminate(ctx, sess.ID, sess.PersistFs); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
 	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {
@@ -589,7 +589,7 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 	}
 
 	params := db.SessionStatusUpdateParams{
-		ID:     sessionID,
+		ID:     execID,
 		Status: db.UnweaveSessionStatusTerminated,
 		ExitedAt: sql.NullTime{
 			Time:  time.Now(),
@@ -600,7 +600,7 @@ func (s *ExecService) Terminate(ctx context.Context, sessionID string) error {
 		log.Ctx(ctx).
 			Error().
 			Err(err).
-			Msgf("Failed to set session %q as terminated", sessionID)
+			Msgf("Failed to set session %q as terminated", execID)
 	}
 
 	np := db.NodeStatusUpdateParams{

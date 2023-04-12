@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, n.provider
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.persist_fs, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build_id = b.id
@@ -96,6 +96,7 @@ type BuildGetUsedByRow struct {
 	GitRemoteUrl sql.NullString       `json:"gitRemoteUrl"`
 	Command      []string             `json:"command"`
 	Metadata     json.RawMessage      `json:"metadata"`
+	PersistFs    bool                 `json:"persistFs"`
 	Provider     string               `json:"provider"`
 }
 
@@ -127,6 +128,7 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.GitRemoteUrl,
 			pq.Array(&i.Command),
 			&i.Metadata,
+			&i.PersistFs,
 			&i.Provider,
 		); err != nil {
 			return nil, err
@@ -184,6 +186,7 @@ select s.id,
        s.region,
        s.created_at,
        s.metadata,
+       s.persist_fs,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -202,6 +205,7 @@ type MxSessionGetRow struct {
 	Region          string               `json:"region"`
 	CreatedAt       time.Time            `json:"createdAt"`
 	Metadata        json.RawMessage      `json:"metadata"`
+	PersistFs       bool                 `json:"persistFs"`
 	SshKeyName      string               `json:"sshKeyName"`
 	PublicKey       string               `json:"publicKey"`
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
@@ -222,6 +226,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 		&i.Region,
 		&i.CreatedAt,
 		&i.Metadata,
+		&i.PersistFs,
 		&i.SshKeyName,
 		&i.PublicKey,
 		&i.SshKeyCreatedAt,
@@ -238,6 +243,7 @@ select s.id,
        s.region,
        s.created_at,
        s.metadata,
+       s.persist_fs,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
@@ -256,6 +262,7 @@ type MxSessionsGetRow struct {
 	Region          string               `json:"region"`
 	CreatedAt       time.Time            `json:"createdAt"`
 	Metadata        json.RawMessage      `json:"metadata"`
+	PersistFs       bool                 `json:"persistFs"`
 	SshKeyName      string               `json:"sshKeyName"`
 	PublicKey       string               `json:"publicKey"`
 	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
@@ -279,6 +286,7 @@ func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSess
 			&i.Region,
 			&i.CreatedAt,
 			&i.Metadata,
+			&i.PersistFs,
 			&i.SshKeyName,
 			&i.PublicKey,
 			&i.SshKeyCreatedAt,
@@ -516,7 +524,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs
 from unweave.session
 where id = $1
 `
@@ -543,12 +551,13 @@ func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, er
 		&i.GitRemoteUrl,
 		pq.Array(&i.Command),
 		&i.Metadata,
+		&i.PersistFs,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -582,6 +591,7 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			&i.GitRemoteUrl,
 			pq.Array(&i.Command),
 			&i.Metadata,
+			&i.PersistFs,
 		); err != nil {
 			return nil, err
 		}

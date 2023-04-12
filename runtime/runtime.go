@@ -69,7 +69,7 @@ type Session interface {
 	// SnapshotFS snapshots the file system of the exec.
 	SnapshotFS(ctx context.Context, execID string) error
 	// Terminate terminates a session.
-	Terminate(ctx context.Context, execID string) error
+	Terminate(ctx context.Context, execID string, snapshotFS bool) error
 	// Watch watches the status of the exec.
 	Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error)
 }
