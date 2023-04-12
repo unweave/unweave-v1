@@ -21,7 +21,7 @@ const (
 	AccountIDCtxKey     = "accountID"
 	BuildIDCtxKey       = "buildID"
 	ProjectIDCtxKey     = "projectID"
-	SessionIDCtxKey     = "sessionID"
+	ExecIDCtxKey        = "execID"
 	SessionStatusCtxKey = "sessionStatus"
 )
 
@@ -68,11 +68,11 @@ func GetProjectIDFromContext(ctx context.Context) string {
 }
 
 func SetSessionIDInContext(ctx context.Context, sessionID string) context.Context {
-	return context.WithValue(ctx, SessionIDCtxKey, sessionID)
+	return context.WithValue(ctx, ExecIDCtxKey, sessionID)
 }
 
 func GetSessionIDFromContext(ctx context.Context) string {
-	sessionID, ok := ctx.Value(SessionIDCtxKey).(string)
+	sessionID, ok := ctx.Value(ExecIDCtxKey).(string)
 	if !ok || sessionID == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("session not found in context")
@@ -148,8 +148,8 @@ func withSessionCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, SessionIDCtxKey, session)
-		ctx = log.With().Str(SessionIDCtxKey, session.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, ExecIDCtxKey, session)
+		ctx = log.With().Str(ExecIDCtxKey, session.ID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

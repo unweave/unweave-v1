@@ -196,7 +196,7 @@ func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 			c = log.With().
 				Str(UserIDCtxKey, userID).
 				Str(ProjectIDCtxKey, projectID).
-				Str(SessionIDCtxKey, session.ID).
+				Str(ExecIDCtxKey, session.ID).
 				Logger().WithContext(c)
 
 			if e := srv.Exec.Watch(c, session.ID); e != nil {

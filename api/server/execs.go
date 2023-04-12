@@ -64,11 +64,11 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	return n
 }
 
-func handleSessionError(sessionID string, err error, msg string) {
+func handleSessionError(execID string, err error, msg string) {
 	// Make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
-	ctx = log.Ctx(ctx).With().Str(SessionIDCtxKey, sessionID).Logger().WithContext(ctx)
+	ctx = log.Ctx(ctx).With().Str(ExecIDCtxKey, execID).Logger().WithContext(ctx)
 
 	var e *types.Error
 	if errors.As(err, &e) {
@@ -79,7 +79,7 @@ func handleSessionError(sessionID string, err error, msg string) {
 	log.Ctx(ctx).Error().Err(err).Msg(msg)
 
 	params := db.SessionSetErrorParams{
-		ID: sessionID,
+		ID: execID,
 		Error: sql.NullString{
 			String: msg,
 			Valid:  true,
@@ -351,7 +351,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
 		return nil, fmt.Errorf("failed to create session in db: %w", err)
 	}
-	ctx = log.With().Str(SessionIDCtxKey, execID).Logger().WithContext(ctx)
+	ctx = log.With().Str(ExecIDCtxKey, execID).Logger().WithContext(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
