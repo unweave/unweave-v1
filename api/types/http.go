@@ -104,6 +104,7 @@ type ExecCreateParams struct {
 	SSHKeyName    *string  `json:"sshKeyName"`
 	SSHPublicKey  *string  `json:"sshPublicKey"`
 	IsInteractive bool     `json:"isInteractive"`
+	PersistentFS  bool     `json:"persistentFS"`
 	Ctx           ExecCtx  `json:"ctx,omitempty"`
 }
 

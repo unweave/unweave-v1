@@ -267,6 +267,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	if _, err := s.srv.vault.SetSecret(ctx, prv, &node.ID); err != nil {
 		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
+	node.OwnerID = s.srv.aid
 
 	metadata := DBNodeMetadataFromNode(node)
 	metadataJSON, err := json.Marshal(&metadata)
@@ -319,7 +320,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 			buildID = &project.DefaultBuildID.String
 		}
 	}
-	if buildID != nil {
+	if buildID != nil && *buildID != "" {
 		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
 		if err != nil {
 			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
@@ -525,7 +526,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 				}
 
 				if status == types.StatusTerminated {
-					log.Ctx(ctx).Info().Msgf("Exec %q exited", exec)
+					log.Ctx(ctx).Info().Msgf("Exec %q exited", execID)
 					// Use new context to make sure terminate is not cancelled
 					terminateCtx := context.Background()
 					terminateCtx = log.With().Logger().WithContext(terminateCtx)
