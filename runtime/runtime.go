@@ -68,7 +68,7 @@ type Session interface {
 	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
 	// SnapshotFS snapshots the file system of the exec. If filesystemID is not nil,
 	// the snapshot will be an incremental on based on the filesystem with the given ID.
-	SnapshotFS(ctx context.Context, execID string, filesystemID string) error
+	SnapshotFS(ctx context.Context, execID string, filesystemID string) (<-chan error, error)
 	// Terminate terminates a session.
 	Terminate(ctx context.Context, execID string, filesystemID *string) error
 	// Watch watches the status of the exec.
