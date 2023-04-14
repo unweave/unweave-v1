@@ -346,6 +346,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		GitRemoteUrl: gitRemoteURL,
 		Command:      command,
 		BuildID:      bid,
+		PersistFs:    filesystemID != nil,
 		SshKeyName:   userKey.Name,
 	}
 
@@ -506,7 +507,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 				log.Ctx(ctx).
 					Info().
 					Str(SessionStatusCtxKey, string(status)).
-					Msg("exec status changed")
+					Msg("Exec status changed")
 
 				if status == types.StatusRunning {
 					if e := updateConnectionInfo(rt.Session, exec.NodeID, execID); e != nil {
