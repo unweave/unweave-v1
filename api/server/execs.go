@@ -229,7 +229,7 @@ type ExecService struct {
 	srv *Service
 }
 
-func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams, persistFS bool) (*types.Exec, error) {
+func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams, filesystemID *string) (*types.Exec, error) {
 	rt, err := s.srv.InitializeRuntime(ctx, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
@@ -329,7 +329,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		bid = sql.NullString{String: *buildID, Valid: true}
 	}
 
-	execID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI, persistFS)
+	execID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI, filesystemID)
 	if err != nil {
 		go handleSessionError(execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
@@ -375,6 +375,19 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Region:     node.Region,
 		Provider:   node.Provider,
 	}
+
+	go func() {
+		c := context.Background()
+		c = log.With().
+			Str(UserIDCtxKey, s.srv.cid).
+			Str(ProjectIDCtxKey, projectID).
+			Str(ExecIDCtxKey, session.ID).
+			Logger().WithContext(c)
+
+		if e := s.srv.Exec.Watch(c, session.ID); e != nil {
+			log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
+		}
+	}()
 
 	return session, nil
 }
@@ -582,7 +595,14 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		Logger().
 		WithContext(ctx)
 
-	if err = rt.Session.Terminate(ctx, sess.ID, sess.PersistFs); err != nil {
+	var filesystemID *string
+
+	if sess.PersistFs {
+		// TODO: fetch filesystemID from db
+		filesystemID = nil
+	}
+
+	if err = rt.Session.Terminate(ctx, sess.ID, filesystemID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
 	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {

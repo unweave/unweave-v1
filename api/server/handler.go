@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -185,25 +184,11 @@ func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Exec.Create(ctx, projectID, *scr, false)
+		session, err := srv.Exec.Create(ctx, projectID, *scr, nil)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create session"))
 			return
 		}
-
-		go func() {
-			c := context.Background()
-			c = log.With().
-				Str(UserIDCtxKey, userID).
-				Str(ProjectIDCtxKey, projectID).
-				Str(ExecIDCtxKey, session.ID).
-				Logger().WithContext(c)
-
-			if e := srv.Exec.Watch(c, session.ID); e != nil {
-				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
-			}
-		}()
-
 		render.JSON(w, r, session)
 	}
 }

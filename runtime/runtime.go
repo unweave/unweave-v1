@@ -61,15 +61,16 @@ type Session interface {
 	// file system. The call to Terminate is still required to handle the lifecycle of
 	// the persistent file system. The flag just ensures the file system is capable of
 	// being persisted.
-	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, persistentFS bool) (sessionID string, err error)
+	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, filesystemID *string) (sessionID string, err error)
 	// Exec is a code execution request.
 	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
 	// GetConnectionInfo returns the connection information for exec.
 	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
-	// SnapshotFS snapshots the file system of the exec.
-	SnapshotFS(ctx context.Context, execID string) error
+	// SnapshotFS snapshots the file system of the exec. If filesystemID is not nil,
+	// the snapshot will be an incremental on based on the filesystem with the given ID.
+	SnapshotFS(ctx context.Context, execID string, filesystemID *string) error
 	// Terminate terminates a session.
-	Terminate(ctx context.Context, execID string, snapshotFS bool) error
+	Terminate(ctx context.Context, execID string, filesystemID *string) error
 	// Watch watches the status of the exec.
 	Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error)
 }
