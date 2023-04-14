@@ -31,6 +31,45 @@ set status      = $2,
             finished_at)
 where id = $1;
 
+
+-- name: FilesystemCreate :one
+insert into unweave.filesystem (name, project_id, owner_id, exec_id)
+values ($1, $2, $3, $4)
+returning *;
+
+-- name: FilesystemCreateVersion :one
+select *
+from unweave.insert_filesystem_version(@filesystem_id, @exec_id);
+
+-- name: FilesystemGet :one
+select *
+from unweave.filesystem
+where id = $1;
+
+-- name: FilesystemGetByProject :one
+select *
+from unweave.filesystem
+where project_id = @project_id
+  and (name = @name_or_id or id = @name_or_id);
+
+-- name: FilesystemGetByExecID :one
+select b.*
+from (select filesystem_id
+      from unweave.filesystem_version
+      where filesystem_version.exec_id = $1) as bv
+         join unweave.filesystem b on b.id = filesystem_id;
+
+-- name: FilesystemVersionGet :one
+select *
+from unweave.filesystem_version
+where exec_id = $1;
+
+-- name: FilesystemVersionAddBuildID :exec
+update unweave.filesystem_version
+set build_id = $2
+where exec_id = $1;
+
+
 -- name: ProjectGet :one
 select *
 from unweave.project
@@ -49,19 +88,20 @@ select unweave.insert_node(
 
 -- name: NodeStatusUpdate :exec
 update unweave.node
-set status = $2,
-    ready_at = coalesce(sqlc.narg('ready_at'), ready_at),
+set status        = $2,
+    ready_at      = coalesce(sqlc.narg('ready_at'), ready_at),
     terminated_at = coalesce(sqlc.narg('terminated_at'), terminated_at)
 where id = $1;
 
 
 -- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, metadata, commit_id, git_remote_url, command, build_id)
+                             region, name, metadata, commit_id, git_remote_url, command,
+                             build_id)
 values ($1, $2, $3, $4, (select id
-                     from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = @ssh_key_name
-                       and owner_id = $3), $5, $6, $7, $8, $9, $10, $11);
+                         from unweave.ssh_key as ssh_keys
+                         where ssh_keys.name = @ssh_key_name
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11);
 
 -- name: SessionGet :one
 select *
@@ -96,8 +136,8 @@ where id = $1;
 
 -- name: SessionStatusUpdate :exec
 update unweave.session
-set status = $2,
-    ready_at = coalesce(sqlc.narg('ready_at'), ready_at),
+set status    = $2,
+    ready_at  = coalesce(sqlc.narg('ready_at'), ready_at),
     exited_at = coalesce(sqlc.narg('exited_at'), exited_at)
 where id = $1;
 

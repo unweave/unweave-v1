@@ -13,6 +13,13 @@ type Querier interface {
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
+	FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error)
+	FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error)
+	FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error)
+	FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error)
+	FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error)
+	FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error
+	FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------

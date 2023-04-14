@@ -598,8 +598,13 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	var filesystemID *string
 
 	if sess.PersistFs {
-		// TODO: fetch filesystemID from db
-		filesystemID = nil
+		fs, e := db.Q.FilesystemGetByExecID(ctx, execID)
+		if e != nil {
+			// Log and continue. We don't want to fail the termination because of this.
+			log.Ctx(ctx).Error().Err(e).Msgf("Failed to get filesystem for exec %q", execID)
+		} else {
+			filesystemID = &fs.ID
+		}
 	}
 
 	if err = rt.Session.Terminate(ctx, sess.ID, filesystemID); err != nil {

@@ -25,7 +25,7 @@ func (e *ExecRuntime) GetConnectionInfo(ctx context.Context, execID string) (typ
 	return e.node.GetConnectionInfo(ctx, execID)
 }
 
-func (e *ExecRuntime) SnapshotFS(ctx context.Context, execID string, filesystemID *string) error {
+func (e *ExecRuntime) SnapshotFS(ctx context.Context, execID string, filesystemID string) error {
 	// noop - not implemented
 	return nil
 }

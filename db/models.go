@@ -15,12 +15,13 @@ import (
 type UnweaveBuildStatus string
 
 const (
-	UnweaveBuildStatusInitializing UnweaveBuildStatus = "initializing"
-	UnweaveBuildStatusBuilding     UnweaveBuildStatus = "building"
-	UnweaveBuildStatusSuccess      UnweaveBuildStatus = "success"
-	UnweaveBuildStatusFailed       UnweaveBuildStatus = "failed"
-	UnweaveBuildStatusError        UnweaveBuildStatus = "error"
-	UnweaveBuildStatusCanceled     UnweaveBuildStatus = "canceled"
+	UnweaveBuildStatusInitializing    UnweaveBuildStatus = "initializing"
+	UnweaveBuildStatusBuilding        UnweaveBuildStatus = "building"
+	UnweaveBuildStatusSuccess         UnweaveBuildStatus = "success"
+	UnweaveBuildStatusFailed          UnweaveBuildStatus = "failed"
+	UnweaveBuildStatusError           UnweaveBuildStatus = "error"
+	UnweaveBuildStatusCanceled        UnweaveBuildStatus = "canceled"
+	UnweaveBuildStatusSyncingSnapshot UnweaveBuildStatus = "syncing_snapshot"
 )
 
 func (e *UnweaveBuildStatus) Scan(src interface{}) error {
@@ -65,6 +66,7 @@ const (
 	UnweaveSessionStatusRunning      UnweaveSessionStatus = "running"
 	UnweaveSessionStatusTerminated   UnweaveSessionStatus = "terminated"
 	UnweaveSessionStatusError        UnweaveSessionStatus = "error"
+	UnweaveSessionStatusSnapshotting UnweaveSessionStatus = "snapshotting"
 )
 
 func (e *UnweaveSessionStatus) Scan(src interface{}) error {
@@ -118,6 +120,23 @@ type UnweaveBuild struct {
 	FinishedAt  sql.NullTime       `json:"finishedAt"`
 	UpdatedAt   time.Time          `json:"updatedAt"`
 	MetaData    json.RawMessage    `json:"metaData"`
+}
+
+type UnweaveFilesystem struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	ProjectID string    `json:"projectID"`
+	ExecID    string    `json:"execID"`
+	OwnerID   string    `json:"ownerID"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type UnweaveFilesystemVersion struct {
+	FilesystemID string         `json:"filesystemID"`
+	ExecID       string         `json:"execID"`
+	Version      int32          `json:"version"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	BuildID      sql.NullString `json:"buildID"`
 }
 
 type UnweaveNode struct {

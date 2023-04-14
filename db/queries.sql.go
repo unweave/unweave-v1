@@ -176,6 +176,164 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 	return err
 }
 
+const FilesystemCreate = `-- name: FilesystemCreate :one
+insert into unweave.filesystem (name, project_id, owner_id, exec_id)
+values ($1, $2, $3, $4)
+returning id, name, project_id, exec_id, owner_id, created_at
+`
+
+type FilesystemCreateParams struct {
+	Name      string `json:"name"`
+	ProjectID string `json:"projectID"`
+	OwnerID   string `json:"ownerID"`
+	ExecID    string `json:"execID"`
+}
+
+func (q *Queries) FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemCreate,
+		arg.Name,
+		arg.ProjectID,
+		arg.OwnerID,
+		arg.ExecID,
+	)
+	var i UnweaveFilesystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ProjectID,
+		&i.ExecID,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const FilesystemCreateVersion = `-- name: FilesystemCreateVersion :one
+select filesystem_id, exec_id, version, created_at, build_id
+from unweave.insert_filesystem_version($1, $2)
+`
+
+type FilesystemCreateVersionParams struct {
+	FilesystemID string `json:"filesystemID"`
+	ExecID       string `json:"execID"`
+}
+
+func (q *Queries) FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemCreateVersion, arg.FilesystemID, arg.ExecID)
+	var i UnweaveFilesystemVersion
+	err := row.Scan(
+		&i.FilesystemID,
+		&i.ExecID,
+		&i.Version,
+		&i.CreatedAt,
+		&i.BuildID,
+	)
+	return i, err
+}
+
+const FilesystemGet = `-- name: FilesystemGet :one
+select id, name, project_id, exec_id, owner_id, created_at
+from unweave.filesystem
+where id = $1
+`
+
+func (q *Queries) FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemGet, id)
+	var i UnweaveFilesystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ProjectID,
+		&i.ExecID,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const FilesystemGetByExecID = `-- name: FilesystemGetByExecID :one
+select b.id, b.name, b.project_id, b.exec_id, b.owner_id, b.created_at
+from (select filesystem_id
+      from unweave.filesystem_version
+      where filesystem_version.exec_id = $1) as bv
+         join unweave.filesystem b on b.id = filesystem_id
+`
+
+func (q *Queries) FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemGetByExecID, execID)
+	var i UnweaveFilesystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ProjectID,
+		&i.ExecID,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const FilesystemGetByProject = `-- name: FilesystemGetByProject :one
+select id, name, project_id, exec_id, owner_id, created_at
+from unweave.filesystem
+where project_id = $1
+  and (name = $2 or id = $2)
+`
+
+type FilesystemGetByProjectParams struct {
+	ProjectID string `json:"projectID"`
+	NameOrID  string `json:"nameOrID"`
+}
+
+func (q *Queries) FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemGetByProject, arg.ProjectID, arg.NameOrID)
+	var i UnweaveFilesystem
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ProjectID,
+		&i.ExecID,
+		&i.OwnerID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const FilesystemVersionAddBuildID = `-- name: FilesystemVersionAddBuildID :exec
+update unweave.filesystem_version
+set build_id = $2
+where exec_id = $1
+`
+
+type FilesystemVersionAddBuildIDParams struct {
+	ExecID  string         `json:"execID"`
+	BuildID sql.NullString `json:"buildID"`
+}
+
+func (q *Queries) FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error {
+	_, err := q.db.ExecContext(ctx, FilesystemVersionAddBuildID, arg.ExecID, arg.BuildID)
+	return err
+}
+
+const FilesystemVersionGet = `-- name: FilesystemVersionGet :one
+select filesystem_id, exec_id, version, created_at, build_id
+from unweave.filesystem_version
+where exec_id = $1
+`
+
+func (q *Queries) FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemVersionGet, execID)
+	var i UnweaveFilesystemVersion
+	err := row.Scan(
+		&i.FilesystemID,
+		&i.ExecID,
+		&i.Version,
+		&i.CreatedAt,
+		&i.BuildID,
+	)
+	return i, err
+}
+
 const MxSessionGet = `-- name: MxSessionGet :one
 
 select s.id,
@@ -341,8 +499,8 @@ func (q *Queries) NodeCreate(ctx context.Context, arg NodeCreateParams) error {
 
 const NodeStatusUpdate = `-- name: NodeStatusUpdate :exec
 update unweave.node
-set status = $2,
-    ready_at = coalesce($3, ready_at),
+set status        = $2,
+    ready_at      = coalesce($3, ready_at),
     terminated_at = coalesce($4, terminated_at)
 where id = $1
 `
@@ -483,11 +641,12 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 
 const SessionCreate = `-- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, metadata, commit_id, git_remote_url, command, build_id)
+                             region, name, metadata, commit_id, git_remote_url, command,
+                             build_id)
 values ($1, $2, $3, $4, (select id
-                     from unweave.ssh_key as ssh_keys
-                     where ssh_keys.name = $12
-                       and owner_id = $3), $5, $6, $7, $8, $9, $10, $11)
+                         from unweave.ssh_key as ssh_keys
+                         where ssh_keys.name = $12
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11)
 `
 
 type SessionCreateParams struct {
@@ -625,8 +784,8 @@ func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams
 
 const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
 update unweave.session
-set status = $2,
-    ready_at = coalesce($3, ready_at),
+set status    = $2,
+    ready_at  = coalesce($3, ready_at),
     exited_at = coalesce($4, exited_at)
 where id = $1
 `
