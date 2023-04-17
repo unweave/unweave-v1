@@ -9,7 +9,6 @@ import (
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
-	"github.com/unweave/unweave/builder/docker"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/tools/gonfig"
@@ -52,15 +51,15 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, userID string, p
 	}
 }
 
-func (i *EnvInitializer) InitializeBuilder(ctx context.Context, userID string, builder string) (builder.Builder, error) {
+func (i *EnvInitializer) InitializeBuilder(ctx context.Context, userID string, builderType string) (builder.Builder, error) {
 	var cfg builderConfig
 	gonfig.GetFromEnvVariables(&cfg)
 
-	if builder != "docker" {
-		return nil, fmt.Errorf("%q builder not supported in the env initializer", builder)
+	if builderType != "docker" {
+		return nil, fmt.Errorf("%q builder not supported in the env initializer", builderType)
 	}
-	logger := &docker.FsLogger{}
-	return docker.NewBuilder(logger, cfg.RegistryURI), nil
+	logger := &builder.FsLogger{}
+	return builder.NewBuilder(logger, cfg.RegistryURI), nil
 }
 
 func (i *EnvInitializer) InitializeVault(ctx context.Context) (vault.Vault, error) {

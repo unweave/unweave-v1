@@ -25,7 +25,8 @@ type LogDriver interface {
 type Builder interface {
 	// Build builds a container image from a build context.
 	// The build context is a zip file containing the source code and any other files
-	// needed to build the image.
+	// needed to build the image. The buildCtx can be nil as long as it has been
+	// uploaded with the Upload method.
 	Build(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
 	// GetBuilder returns the name of the builder.
 	GetBuilder() string
@@ -36,4 +37,6 @@ type Builder interface {
 	// Push pushes an image to the container registry. The buildID is used as the tag.
 	// If you want to use a different tag, use the Tag method instead.
 	Push(ctx context.Context, buildID, namespace, reponame string) error
+	// Upload uploads a build context to the builder.
+	Upload(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
 }

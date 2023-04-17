@@ -15,6 +15,37 @@ import (
 	"github.com/unweave/unweave/tools/random"
 )
 
+func handleBuildErr(ctx context.Context, buildID string, err error) {
+	p := db.BuildUpdateParams{
+		ID:     buildID,
+		Status: "building",
+	}
+
+	var e *types.Error
+	var errmeta string
+	if errors.As(err, &e) && e.Code == http.StatusBadRequest {
+		log.Ctx(ctx).Warn().Err(err).Msg("User build failed")
+		p.Status = db.UnweaveBuildStatusFailed
+		errmeta = fmt.Sprintf("Build failed: %v", e.Message)
+	} else {
+		log.Ctx(ctx).Error().Err(err).Msg("Failed to build image")
+		p.Status = db.UnweaveBuildStatusError
+		errmeta = fmt.Sprintf("Build error: Something went wrong. Please contact us for support.")
+	}
+	meta, merr := json.Marshal(BuildMetaDataV1{
+		Version: 1,
+		Error:   errmeta,
+	})
+	if merr != nil {
+		log.Ctx(ctx).Error().Err(merr).Msg("Failed to marshal build metadata")
+	}
+	p.MetaData = meta
+
+	if derr := db.Q.BuildUpdate(ctx, p); derr != nil {
+		log.Ctx(ctx).Error().Err(derr).Msg("Failed to set build error in DB")
+	}
+}
+
 // BuildMetaDataV1 versions the metadata for a build stored in the DB.
 type BuildMetaDataV1 struct {
 	Version int16  `json:"version"`
@@ -52,67 +83,26 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		c := context.Background()
 		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
 
-		// Build
-
-		err := builder.Build(c, buildID, params.BuildContext)
-		if err != nil {
-			log.Ctx(c).Error().Err(err).Msg("Failed to build image")
-
-			p := db.BuildUpdateParams{
-				ID:     buildID,
-				Status: "building",
-			}
-
-			var e *types.Error
-			var errmeta string
-			if errors.As(err, &e) && e.Code == http.StatusBadRequest {
-				log.Ctx(c).Warn().Err(err).Msg("User build failed")
-				p.Status = db.UnweaveBuildStatusFailed
-				errmeta = fmt.Sprintf("Build failed: %v", e.Message)
-			} else {
-				log.Ctx(c).Error().Err(err).Msg("Failed to build image")
-				p.Status = db.UnweaveBuildStatusError
-				errmeta = fmt.Sprintf("Build error: Something went wrong. Please contact us for support.")
-			}
-
-			meta, merr := json.Marshal(BuildMetaDataV1{
-				Version: 1,
-				Error:   errmeta,
-			})
-			if merr != nil {
-				log.Ctx(c).Error().Err(merr).Msg("Failed to marshal build metadata")
-			}
-			p.MetaData = meta
-
-			if derr := db.Q.BuildUpdate(c, p); derr != nil {
-				log.Ctx(c).Error().Err(derr).Msg("Failed to set build error in DB")
-			}
+		// Upload context to S3
+		if e := builder.Upload(c, buildID, params.BuildContext); e != nil {
+			log.Ctx(c).Error().Err(e).Msgf("Failed to upload build context for build %q", buildID)
+			handleBuildErr(c, buildID, e)
 			return
 		}
 
-		// Push
+		if e := builder.Build(c, buildID, params.BuildContext); e != nil {
+			log.Ctx(c).Error().Err(e).Msgf("Failed to build image for build %q", buildID)
+			handleBuildErr(c, buildID, e)
+			return
+		}
 
-		reponame := strings.ToLower(projectID) // reponame must be lowercase for dockerhub
+		// Reponame must be lowercase for dockerhub
+		reponame := strings.ToLower(projectID)
 		namespace := strings.ToLower(b.srv.aid)
-		err = builder.Push(c, buildID, namespace, reponame)
-		if err != nil {
-			log.Ctx(c).Error().Err(err).Msg("Failed to push image")
 
-			meta, e := json.Marshal(BuildMetaDataV1{
-				Version: 1,
-				Error:   fmt.Sprintf("Builc push failed: %v", err.Error()),
-			})
-			if e != nil {
-				log.Ctx(c).Error().Err(e).Msg("Failed to marshal build metadata")
-			}
-			p := db.BuildUpdateParams{
-				ID:       buildID,
-				Status:   db.UnweaveBuildStatusError,
-				MetaData: meta,
-			}
-			if e := db.Q.BuildUpdate(c, p); e != nil {
-				log.Ctx(c).Error().Err(e).Msg("Failed to set build error in DB")
-			}
+		if e := builder.Push(c, buildID, namespace, reponame); e != nil {
+			log.Ctx(c).Error().Err(e).Msgf("Failed to push image for build %q", buildID)
+			handleBuildErr(c, buildID, e)
 			return
 		}
 

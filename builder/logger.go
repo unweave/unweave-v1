@@ -1,4 +1,4 @@
-package docker
+package builder
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/builder"
 )
 
 // FsLogger is a FileSystem logger that implements the builder.LogDriver interface.
@@ -27,7 +26,7 @@ func (l *FsLogger) GetLogs(ctx context.Context, buildID string) ([]types.LogEntr
 	if err != nil {
 		return nil, fmt.Errorf("failed to read build log file: %w", err)
 	}
-	var data builder.BuildLogsV1
+	var data BuildLogsV1
 	if err := json.Unmarshal(contents, &data); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal build logs: %w", err)
 	}
@@ -45,7 +44,7 @@ func (l *FsLogger) SaveLogs(ctx context.Context, buildID string, logs []types.Lo
 		return fmt.Errorf("failed to create build log file: %w", err)
 	}
 
-	data := builder.BuildLogsV1{
+	data := BuildLogsV1{
 		Version: 1,
 		Logs:    logs,
 	}

@@ -1,4 +1,4 @@
-package docker
+package builder
 
 import (
 	"archive/zip"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/builder"
 )
 
 const (
@@ -222,27 +221,27 @@ func tagImage(ctx context.Context, source, target string) (string, error) {
 	return string(data), err
 }
 
-// Builder is a Docker builder that implements the builder.Builder interface.
-type Builder struct {
-	logger      builder.LogDriver
+// DockerBuilder is a Docker builder that implements the builder.Builder interface.
+type DockerBuilder struct {
+	logger      LogDriver
 	registryURI string
 }
 
-func (b *Builder) GetBuilder() string {
+func (b *DockerBuilder) GetBuilder() string {
 	return "docker"
 }
 
-func (b *Builder) GetImageURI(ctx context.Context, buildID, namespace, reponame string) string {
+func (b *DockerBuilder) GetImageURI(ctx context.Context, buildID, namespace, reponame string) string {
 	return fmt.Sprintf("%s/%s/%s:%s", b.registryURI, namespace, reponame, buildID)
 }
 
-func (b *Builder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
+func (b *DockerBuilder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
 	ctx = log.With().Str("builder", b.GetBuilder()).Str("buildID", buildID).Logger().WithContext(ctx)
 	log.Ctx(ctx).Info().Msg("Executing logs request")
 	return b.logger.GetLogs(ctx, buildID)
 }
 
-func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader) error {
+func (b *DockerBuilder) Build(ctx context.Context, buildID string, buildCtx io.Reader) error {
 	ctx = log.With().
 		Str("builder", b.GetBuilder()).
 		Str("buildID", buildID).
@@ -254,6 +253,19 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 	buildBytes, err := io.ReadAll(buildCtx)
 	if err != nil {
 		return fmt.Errorf("failed to read build context: %w", err)
+	}
+
+	if buildCtx == nil {
+		// Ensure build context has been pre-uploaded
+		if _, err := os.Stat(dir); err != nil {
+			err = fmt.Errorf("build context not found: %w", err)
+			return &types.Error{
+				Code:       http.StatusBadRequest,
+				Message:    "Build context not found for build ID: " + buildID,
+				Suggestion: "Make sure you have uploaded your build context before building",
+				Err:        err,
+			}
+		}
 	}
 
 	if err := saveContext(dir, buildBytes); err != nil {
@@ -293,7 +305,7 @@ func (b *Builder) Build(ctx context.Context, buildID string, buildCtx io.Reader)
 	}
 }
 
-func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string) error {
+func (b *DockerBuilder) Push(ctx context.Context, buildID, namespace, reponame string) error {
 	ctx = log.With().
 		Str("builder", b.GetBuilder()).
 		Str("buildID", buildID).
@@ -330,6 +342,27 @@ func (b *Builder) Push(ctx context.Context, buildID, namespace, reponame string)
 	return nil
 }
 
-func NewBuilder(logger builder.LogDriver, registryURI string) *Builder {
-	return &Builder{logger: logger, registryURI: registryURI}
+func (b *DockerBuilder) Upload(ctx context.Context, buildID string, buildCtx io.Reader) (err error) {
+	ctx = log.With().
+		Str("builder", "docker").
+		Str("buildID", buildID).
+		Logger().WithContext(ctx)
+
+	log.Ctx(ctx).Info().Msg("Executing upload request")
+
+	dir := filepath.Join(buildCtxDir, buildID)
+	buildBytes, err := io.ReadAll(buildCtx)
+	if err != nil {
+		return fmt.Errorf("failed to read build context: %w", err)
+	}
+
+	if err := saveContext(dir, buildBytes); err != nil {
+		return fmt.Errorf("failed to save build context: %w", err)
+	}
+
+	return nil
+}
+
+func NewBuilder(logger LogDriver, registryURI string) *DockerBuilder {
+	return &DockerBuilder{logger: logger, registryURI: registryURI}
 }
