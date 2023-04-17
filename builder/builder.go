@@ -27,7 +27,10 @@ type Builder interface {
 	// The build context is a zip file containing the source code and any other files
 	// needed to build the image. The buildCtx can be nil as long as it has been
 	// uploaded with the Upload method.
-	Build(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
+	Build(ctx context.Context, buildID string, buildCtx io.Reader) error
+	// BuildAndPush builds a container image from a build context and pushes it to the
+	// container registry. This combines the functionality of the Build and Push methods.
+	BuildAndPush(ctx context.Context, buildID, namespace, reponame string, buildCtx io.Reader) error
 	// GetBuilder returns the name of the builder.
 	GetBuilder() string
 	// GetImageURI returns the URI of the image in the container registry.

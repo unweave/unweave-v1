@@ -90,18 +90,12 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 			return
 		}
 
-		if e := builder.Build(c, buildID, params.BuildContext); e != nil {
-			log.Ctx(c).Error().Err(e).Msgf("Failed to build image for build %q", buildID)
-			handleBuildErr(c, buildID, e)
-			return
-		}
-
 		// Reponame must be lowercase for dockerhub
 		reponame := strings.ToLower(projectID)
 		namespace := strings.ToLower(b.srv.aid)
 
-		if e := builder.Push(c, buildID, namespace, reponame); e != nil {
-			log.Ctx(c).Error().Err(e).Msgf("Failed to push image for build %q", buildID)
+		if e := builder.BuildAndPush(c, buildID, namespace, reponame, params.BuildContext); e != nil {
+			log.Ctx(c).Error().Err(e).Msgf("Failed to build and push image for build %q", buildID)
 			handleBuildErr(c, buildID, e)
 			return
 		}

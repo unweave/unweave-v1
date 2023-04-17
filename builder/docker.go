@@ -305,6 +305,13 @@ func (b *DockerBuilder) Build(ctx context.Context, buildID string, buildCtx io.R
 	}
 }
 
+func (b *DockerBuilder) BuildAndPush(ctx context.Context, buildID, namespace, reponame string, buildCtx io.Reader) error {
+	if err := b.Build(ctx, buildID, buildCtx); err != nil {
+		return err
+	}
+	return b.Push(ctx, buildID, namespace, reponame)
+}
+
 func (b *DockerBuilder) Push(ctx context.Context, buildID, namespace, reponame string) error {
 	ctx = log.With().
 		Str("builder", b.GetBuilder()).
