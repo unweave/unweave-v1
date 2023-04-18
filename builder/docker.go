@@ -235,6 +235,10 @@ func (b *DockerBuilder) GetImageURI(ctx context.Context, buildID, namespace, rep
 	return fmt.Sprintf("%s/%s/%s:%s", b.registryURI, namespace, reponame, buildID)
 }
 
+func (b *DockerBuilder) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
 func (b *DockerBuilder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
 	ctx = log.With().Str("builder", b.GetBuilder()).Str("buildID", buildID).Logger().WithContext(ctx)
 	log.Ctx(ctx).Info().Msg("Executing logs request")

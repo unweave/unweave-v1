@@ -35,11 +35,13 @@ type Builder interface {
 	GetBuilder() string
 	// GetImageURI returns the URI of the image in the container registry.
 	GetImageURI(ctx context.Context, buildID, namespace, reponame string) string
+	// HealthCheck returns an error if the builder is not healthy.
+	HealthCheck(ctx context.Context) error
 	// Logs returns the logs for a build.
 	Logs(ctx context.Context, buildID string) (logs []types.LogEntry, err error)
 	// Push pushes an image to the container registry. The buildID is used as the tag.
 	// If you want to use a different tag, use the Tag method instead.
 	Push(ctx context.Context, buildID, namespace, reponame string) error
-	// Upload uploads a build context to the builder.
+	// Upload uploads a build context to the builder. Must be a tar.gz file.
 	Upload(ctx context.Context, buildID string, buildCtx io.Reader) (err error)
 }

@@ -41,9 +41,10 @@ func copyFile(src, dst string) error {
 
 type Store interface {
 	List(ctx context.Context, prefix string) ([]string, error)
-	Download(ctx context.Context, key, localDir string, localFileHashes map[string]string) error
+	DownloadToPath(ctx context.Context, key, localDir string, localFileHashes map[string]string) error
 	RemoteObjectMD5(ctx context.Context, key string) (string, error)
-	Upload(ctx context.Context, key, localPath string) error
+	Upload(ctx context.Context, key string, content io.Reader) error
+	UploadFromPath(ctx context.Context, key, localPath string) error
 }
 
 type BlobStore struct {
@@ -79,7 +80,7 @@ func (b *BlobStore) List(ctx context.Context, prefix string) ([]string, error) {
 	return objectKeys, nil
 }
 
-func (b *BlobStore) Download(ctx context.Context, key, localDir string, localFileHashes map[string]string) error {
+func (b *BlobStore) DownloadToPath(ctx context.Context, key, localDir string, localFileHashes map[string]string) error {
 	localPath := filepath.Join(localDir, filepath.FromSlash(key))
 	dir := filepath.Dir(localPath)
 
@@ -143,7 +144,23 @@ func (b *BlobStore) RemoteObjectMD5(ctx context.Context, key string) (string, er
 	return remoteMd5, nil
 }
 
-func (b *BlobStore) Upload(ctx context.Context, key, localPath string) error {
+func (b *BlobStore) Upload(ctx context.Context, key string, content io.Reader) error {
+	log.Ctx(ctx).Info().Msgf("Uploading '%s' to '%s/%s'", key, b.bucket, key)
+
+	input := &s3.PutObjectInput{
+		Bucket: &b.bucket,
+		Key:    aws.String(key),
+		Body:   content,
+	}
+
+	_, err := b.uploader.Upload(context.Background(), input)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (b *BlobStore) UploadFromPath(ctx context.Context, key, localPath string) error {
 	file, err := os.Open(localPath)
 	if err != nil {
 		return err
@@ -155,18 +172,11 @@ func (b *BlobStore) Upload(ctx context.Context, key, localPath string) error {
 	}
 	key = filepath.ToSlash(key)
 
-	input := &s3.PutObjectInput{
-		Bucket: &b.bucket,
-		Key:    aws.String(key),
-		Body:   file,
-	}
-
-	_, err = b.uploader.Upload(context.Background(), input)
-	if err != nil {
+	if err := b.Upload(ctx, key, file); err != nil {
 		return err
 	}
-
 	log.Ctx(ctx).Info().Msgf("Successfully uploaded '%s' to '%s/%s'", localPath, b.bucket, key)
+
 	return nil
 }
 

@@ -1,11 +1,17 @@
 package server
 
 import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -46,6 +52,70 @@ func handleBuildErr(ctx context.Context, buildID string, err error) {
 	}
 }
 
+func convertZipToTarGz(zipReader io.Reader) (io.Reader, error) {
+	zipData, err := io.ReadAll(zipReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read zip file: %w", err)
+	}
+
+	zipFileReader, err := zip.NewReader(bytes.NewReader(zipData), int64(len(zipData)))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create zip reader: %w", err)
+	}
+
+	foundDockerfile := false
+
+	var tarGzBuffer bytes.Buffer
+	gzipWriter := gzip.NewWriter(&tarGzBuffer)
+	tarWriter := tar.NewWriter(gzipWriter)
+
+	defer gzipWriter.Close()
+	defer tarWriter.Close()
+
+	for _, zipFile := range zipFileReader.File {
+		fileReader, err := zipFile.Open()
+		if err != nil {
+			return nil, fmt.Errorf("failed to open file from zip: %w", err)
+		}
+
+		header := &tar.Header{
+			Name:     filepath.ToSlash(zipFile.Name),
+			Mode:     int64(zipFile.Mode()),
+			Size:     int64(zipFile.UncompressedSize64),
+			ModTime:  zipFile.Modified,
+			Typeflag: tar.TypeReg,
+		}
+		if zipFile.FileInfo().IsDir() {
+			header.Typeflag = tar.TypeDir
+			header.Name = strings.TrimSuffix(header.Name, "/") + "/"
+		}
+
+		if header.Name == "Dockerfile" {
+			foundDockerfile = true
+		}
+
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return nil, fmt.Errorf("failed to write tar header: %w", err)
+		}
+		if _, err := io.Copy(tarWriter, fileReader); err != nil {
+			return nil, fmt.Errorf("failed to copy file contents to tar: %w", err)
+		}
+
+		fileReader.Close()
+	}
+
+	if !foundDockerfile {
+		return nil, &types.Error{
+			Code:       http.StatusBadRequest,
+			Message:    "No Dockerfile found in build context",
+			Suggestion: "Make sure your build context contains a Dockerfile",
+			Err:        fmt.Errorf("no Dockerfile found in build context"),
+		}
+	}
+
+	return bytes.NewReader(tarGzBuffer.Bytes()), nil
+}
+
 // BuildMetaDataV1 versions the metadata for a build stored in the DB.
 type BuildMetaDataV1 struct {
 	Version int16  `json:"version"`
@@ -74,6 +144,11 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		CreatedBy:   b.srv.cid,
 	}
 
+	buildContext, err := convertZipToTarGz(params.BuildContext)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert build context: %w", err)
+	}
+
 	buildID, err := db.Q.BuildCreate(ctx, bcp)
 	if err != nil {
 		return "", fmt.Errorf("failed to create build record: %v", err)
@@ -84,7 +159,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
 
 		// Upload context to S3
-		if e := builder.Upload(c, buildID, params.BuildContext); e != nil {
+		if e := builder.Upload(c, buildID, buildContext); e != nil {
 			log.Ctx(c).Error().Err(e).Msgf("Failed to upload build context for build %q", buildID)
 			handleBuildErr(c, buildID, e)
 			return
