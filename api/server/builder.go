@@ -65,8 +65,8 @@ func convertZipToTarGz(zipReader io.Reader) (io.Reader, error) {
 
 	foundDockerfile := false
 
-	var tarGzBuffer bytes.Buffer
-	gzipWriter := gzip.NewWriter(&tarGzBuffer)
+	tarGzBuffer := &bytes.Buffer{}
+	gzipWriter := gzip.NewWriter(tarGzBuffer)
 	tarWriter := tar.NewWriter(gzipWriter)
 
 	defer gzipWriter.Close()
@@ -113,7 +113,7 @@ func convertZipToTarGz(zipReader io.Reader) (io.Reader, error) {
 		}
 	}
 
-	return bytes.NewReader(tarGzBuffer.Bytes()), nil
+	return tarGzBuffer, nil
 }
 
 // BuildMetaDataV1 versions the metadata for a build stored in the DB.
