@@ -59,7 +59,9 @@ type PairingTokenExchangeResponse struct {
 }
 
 type ProjectCreateRequestParams struct {
-	Name string `json:"name"`
+	Name       string   `json:"name"`
+	Tags       []string `json:"tags"`
+	Visibility *string  `json:"visibility"`
 }
 
 type ProjectCreateResponse struct {
@@ -82,6 +84,10 @@ func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
 		}
 	}
 
+	if p.Visibility == nil {
+		visibility := "private"
+		p.Visibility = &visibility
+	}
 	return nil
 }
 
