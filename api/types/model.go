@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -61,6 +62,11 @@ type Build struct {
 type LogEntry struct {
 	TimeStamp time.Time `json:"timestamp"`
 	Message   string    `json:"message"`
+	Level     string    `json:"level"`
+}
+
+func (l LogEntry) String() string {
+	return fmt.Sprintf("%s %s %s", l.TimeStamp.Format(time.RFC3339), l.Level, l.Message)
 }
 
 type NodeSpecs struct {
