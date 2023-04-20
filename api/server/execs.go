@@ -191,7 +191,7 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}, nil
 }
 
-func updateConnectionInfo(rt runtime.Session, nodeID string, execID string) error {
+func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 	// New ctx to make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	connInfo, err := rt.GetConnectionInfo(ctx, execID)
@@ -329,7 +329,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		bid = sql.NullString{String: *buildID, Valid: true}
 	}
 
-	execID, err := rt.Session.Init(ctx, node, []types.SSHKey{userKey}, imageURI, filesystemID)
+	execID, err := rt.Exec.Init(ctx, node, []types.SSHKey{userKey}, imageURI, filesystemID)
 	if err != nil {
 		go handleSessionError(execID, err, "failed to init session")
 		return nil, fmt.Errorf("failed to init session: %w", err)
@@ -357,11 +357,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
-	}
-
-	if err := rt.Session.Exec(ctx, node.ID, execID, params.Ctx, true); err != nil {
-		go handleSessionError(execID, err, "failed to run exec")
-		return nil, fmt.Errorf("failed to to run exec: %w", err)
 	}
 
 	createdAt := time.Now()
@@ -492,7 +487,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
-	statusch, errch := rt.Session.Watch(ctx, exec.ID)
+	statusch, errch := rt.Exec.Watch(ctx, exec.ID)
 
 	log.Ctx(ctx).Info().Msgf("Starting to watch exec %s", execID)
 
@@ -510,7 +505,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 					Msg("Exec status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(rt.Session, exec.NodeID, execID); e != nil {
+					if e := updateConnectionInfo(rt.Exec, exec.NodeID, execID); e != nil {
 						// Use new context to make sure terminate is not cancelled
 						terminateCtx := context.Background()
 						terminateCtx = log.With().Logger().WithContext(terminateCtx)
@@ -608,7 +603,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		}
 	}
 
-	if err = rt.Session.Terminate(ctx, sess.ID, filesystemID); err != nil {
+	if err = rt.Exec.Terminate(ctx, sess.ID, filesystemID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
 	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {

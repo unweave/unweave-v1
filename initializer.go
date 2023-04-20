@@ -44,7 +44,7 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, userID string, p
 			return nil, err
 		}
 
-		return &runtime.Runtime{Node: node, Session: sess}, nil
+		return &runtime.Runtime{Node: node, Exec: sess}, nil
 
 	default:
 		return nil, fmt.Errorf("%q provider not supported in the env initializer", provider)

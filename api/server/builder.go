@@ -170,7 +170,6 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		namespace := strings.ToLower(b.srv.aid)
 
 		if e := builder.BuildAndPush(c, buildID, namespace, reponame, params.BuildContext); e != nil {
-			log.Ctx(c).Error().Err(e).Msgf("Failed to build and push image for build %q", buildID)
 			handleBuildErr(c, buildID, e)
 			return
 		}

@@ -10,8 +10,8 @@ import (
 )
 
 type Runtime struct {
-	Node    Node
-	Session Session
+	Node Node
+	Exec Exec
 }
 
 // Node represents an interactive session on a node. You can connect to it via SSH and
@@ -54,16 +54,14 @@ type Node interface {
 	Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error)
 }
 
-type Session interface {
-	// Init initializes a new session on a node. It creates environment the users code
+type Exec interface {
+	// Init initializes a new exec on a node. It creates environment the users code
 	// will in with the provided build and configures ssh keys for interactive access.
-	// If the persistentFS flag is set, the session will be initialized with a persistent
+	// If the persistentFS flag is set, the exec will be initialized with a persistent
 	// file system. The call to Terminate is still required to handle the lifecycle of
 	// the persistent file system. The flag just ensures the file system is capable of
 	// being persisted.
 	Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, filesystemID *string) (sessionID string, err error)
-	// Exec is a code execution request.
-	Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error
 	// GetConnectionInfo returns the connection information for exec.
 	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
 	// SnapshotFS snapshots the file system of the exec. If filesystemID is not nil,

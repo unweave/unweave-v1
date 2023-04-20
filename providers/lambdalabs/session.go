@@ -12,13 +12,8 @@ type ExecRuntime struct {
 }
 
 func (e *ExecRuntime) Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, filesystemID *string) (string, error) {
-	// Session and Node ID are the same for LambdaLabs (for now)
+	// Exec and Node ID are the same for LambdaLabs (for now)
 	return node.ID, nil
-}
-
-func (e *ExecRuntime) Exec(ctx context.Context, session string, execID string, params types.ExecCtx, isInteractive bool) error {
-	// noop - not implemented
-	return nil
 }
 
 func (e *ExecRuntime) GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error) {
@@ -31,13 +26,13 @@ func (e *ExecRuntime) SnapshotFS(ctx context.Context, execID string, filesystemI
 }
 
 func (e *ExecRuntime) Terminate(ctx context.Context, execID string, filesystemID *string) error {
-	// Session and Node ID are the same for LambdaLabs (for now)
+	// Exec and Node ID are the same for LambdaLabs (for now)
 	log.Ctx(ctx).Debug().Str("sessionID", execID).Msg("terminating session")
 	return e.node.TerminateNode(ctx, execID)
 }
 
 func (e *ExecRuntime) Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error) {
-	// Session and Node ID are the same for LambdaLabs (for now)
+	// Exec and Node ID are the same for LambdaLabs (for now)
 	log.Ctx(ctx).Debug().Str("execID", execID).Msg("watching exec")
 	return e.node.Watch(ctx, execID)
 }
