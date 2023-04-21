@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -39,19 +40,33 @@ func copyFile(src, dst string) error {
 	return nil
 }
 
+type Downloader interface {
+	Download(ctx context.Context, w io.WriterAt, input *s3.GetObjectInput, options ...func(*manager.Downloader)) (n int64, err error)
+}
+
+type Uploader interface {
+	Upload(ctx context.Context, input *s3.PutObjectInput, options ...func(*manager.Uploader)) (output *manager.UploadOutput, err error)
+}
+
+// S3Client is an interface defining a subset of the S3 client methods used by BlobStore.
+type S3Client interface {
+	ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
+	HeadObject(ctx context.Context, params *s3.HeadObjectInput, optFns ...func(*s3.Options)) (*s3.HeadObjectOutput, error)
+}
+
 type Store interface {
+	Download(ctx context.Context, key, localDir string, overwrite bool) error
 	List(ctx context.Context, prefix string) ([]string, error)
-	DownloadToPath(ctx context.Context, key, localDir string, localFileHashes map[string]string) error
 	RemoteObjectMD5(ctx context.Context, key string) (string, error)
-	Upload(ctx context.Context, key string, content io.Reader) error
-	UploadFromPath(ctx context.Context, key, localPath string) error
+	Upload(ctx context.Context, key string, content io.Reader, overwrite bool) error
+	UploadFromPath(ctx context.Context, key, localPath string, overwrite bool) error
 }
 
 type BlobStore struct {
-	client     *s3.Client
+	client     S3Client
 	bucket     string
-	downloader *manager.Downloader
-	uploader   *manager.Uploader
+	downloader Downloader
+	uploader   Uploader
 }
 
 func (b *BlobStore) List(ctx context.Context, prefix string) ([]string, error) {
@@ -80,32 +95,33 @@ func (b *BlobStore) List(ctx context.Context, prefix string) ([]string, error) {
 	return objectKeys, nil
 }
 
-func (b *BlobStore) DownloadToPath(ctx context.Context, key, localDir string, localFileHashes map[string]string) error {
-	localPath := filepath.Join(localDir, filepath.FromSlash(key))
-	dir := filepath.Dir(localPath)
-
-	err := os.MkdirAll(dir, os.ModePerm)
+func (b *BlobStore) Download(ctx context.Context, key, localDir string, overwrite bool) error {
+	isDir, err := b.isRemoteKeyDir(ctx, key)
 	if err != nil {
 		return err
 	}
-
-	remoteMd5, err := b.RemoteObjectMD5(ctx, key)
-	if err != nil {
-		log.Ctx(ctx).Error().Err(err).Msgf("Error getting remote object MD5 for '%s/%s'", b.bucket, key)
+	if isDir {
+		return b.downloadDirectory(ctx, key, localDir, overwrite)
 	}
 
-	// Check if the file exists locally with the same content
-	existingLocalPath, exists := localFileHashes[remoteMd5]
-	if exists {
-		err := copyFile(existingLocalPath, localPath)
-		if err != nil {
-			return err
+	log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, key, localDir)
+
+	path := filepath.Join(localDir, filepath.FromSlash(key))
+	dir := filepath.Dir(path)
+
+	if err = os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+
+	if !overwrite {
+		// Check if file with the name already exists
+		if _, err := os.Stat(path); err == nil {
+			log.Info().Msgf("File '%s' already exists, skipping download", path)
+			return nil
 		}
-		log.Ctx(ctx).Info().Msgf("Copied existing local file '%s' to '%s'", existingLocalPath, localPath)
-		return nil
 	}
 
-	file, err := os.Create(localPath)
+	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -118,11 +134,53 @@ func (b *BlobStore) DownloadToPath(ctx context.Context, key, localDir string, lo
 
 	_, err = b.downloader.Download(ctx, file, input)
 	if err != nil {
+		if e := os.Remove(path); e != nil {
+			log.Error().Err(e).Msgf("Failed to remove file '%s'", path)
+		}
 		return err
 	}
-	log.Ctx(ctx).Info().Msgf("Successfully downloaded '%s/%s' to '%s'", b.bucket, key, localPath)
+	log.Info().Msgf("Successfully downloaded '%s/%s' to '%s'", b.bucket, key, path)
 
 	return nil
+}
+
+func (b *BlobStore) downloadDirectory(ctx context.Context, key, localDir string, overwrite bool) error {
+	log.Info().Msgf("Downloading directory '%s/%s' to '%s'", b.bucket, key, localDir)
+
+	if err := os.MkdirAll(localDir, os.ModePerm); err != nil {
+		return err
+	}
+
+	paths, err := b.List(ctx, key)
+	if err != nil {
+		return fmt.Errorf("failed to list objects, %v", err)
+	}
+
+	for _, path := range paths {
+		log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, path, localDir)
+		if err := b.Download(ctx, path, localDir, overwrite); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (b *BlobStore) isRemoteKeyDir(ctx context.Context, key string) (bool, error) {
+	if strings.HasSuffix(key, "/") {
+		return true, nil
+	}
+
+	// It might be that the key is a directory, but the user forgot to add the trailing
+	// slash. Let's make sure
+	keys, err := b.List(ctx, key)
+	if err != nil {
+		return false, fmt.Errorf("failed to list objects at key %q, %v", key, err)
+	}
+	if len(keys) > 1 {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (b *BlobStore) RemoteObjectMD5(ctx context.Context, key string) (string, error) {
@@ -144,8 +202,8 @@ func (b *BlobStore) RemoteObjectMD5(ctx context.Context, key string) (string, er
 	return remoteMd5, nil
 }
 
-func (b *BlobStore) Upload(ctx context.Context, key string, content io.Reader) error {
-	log.Ctx(ctx).Info().Msgf("Uploading '%s' to '%s/%s'", key, b.bucket, key)
+func (b *BlobStore) Upload(ctx context.Context, key string, content io.Reader, overwrite bool) error {
+	log.Info().Msgf("Uploading '%s' to '%s/%s'", key, b.bucket, key)
 
 	input := &s3.PutObjectInput{
 		Bucket: &b.bucket,
@@ -153,14 +211,86 @@ func (b *BlobStore) Upload(ctx context.Context, key string, content io.Reader) e
 		Body:   content,
 	}
 
-	_, err := b.uploader.Upload(context.Background(), input)
+	if !overwrite {
+		existing, err := b.List(ctx, key)
+		if err != nil {
+			return err
+		}
+		if len(existing) > 0 {
+			log.Info().Msgf("File '%s' already exists, skipping upload", key)
+			return nil
+		}
+	}
+
+	_, err := b.uploader.Upload(ctx, input)
 	if err != nil {
 		return err
 	}
+	log.Info().Msgf("Successfully uploaded file to '%s/%s'", b.bucket, key)
+
 	return nil
 }
 
-func (b *BlobStore) UploadFromPath(ctx context.Context, key, localPath string) error {
+func (b *BlobStore) uploadDirectory(ctx context.Context, key, localDir string, overwrite bool) error {
+	log.Info().Msgf("Uploading directory '%s' to '%s/%s'", localDir, b.bucket, key)
+
+	keys, err := b.List(ctx, key)
+	if err != nil {
+		return fmt.Errorf("failed to list objects, %v", err)
+	}
+
+	err = filepath.Walk(localDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, err := filepath.Rel(localDir, path)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		if !overwrite {
+			// Check if file with the name already exists
+			for _, k := range keys {
+				if k == relPath {
+					log.Info().Msgf("File '%s' already exists, skipping upload", relPath)
+					return nil
+				}
+			}
+		}
+
+		go func() {
+			file, err := os.Open(path)
+			if err != nil {
+				log.Error().Err(err).Msgf("Failed to open file '%s'", relPath)
+				return
+			}
+			defer file.Close()
+			if e := b.Upload(ctx, relPath, file, false); e != nil {
+				log.Error().Err(e).Msgf("Failed to upload file '%s'", relPath)
+			}
+		}()
+
+		return nil
+	})
+
+	return err
+}
+
+func (b *BlobStore) UploadFromPath(ctx context.Context, key, localPath string, overwrite bool) error {
+	stat, err := os.Stat(localPath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("path '%s' does not exist", localPath)
+	}
+	if stat.IsDir() {
+		return b.uploadDirectory(ctx, key, localPath, overwrite)
+	}
+	log.Info().Msgf("Uploading '%s' to '%s/%s'", localPath, b.bucket, key)
+
 	file, err := os.Open(localPath)
 	if err != nil {
 		return err
@@ -172,10 +302,9 @@ func (b *BlobStore) UploadFromPath(ctx context.Context, key, localPath string) e
 	}
 	key = filepath.ToSlash(key)
 
-	if err := b.Upload(ctx, key, file); err != nil {
+	if err := b.Upload(ctx, key, file, overwrite); err != nil {
 		return err
 	}
-	log.Ctx(ctx).Info().Msgf("Successfully uploaded '%s' to '%s/%s'", localPath, b.bucket, key)
 
 	return nil
 }

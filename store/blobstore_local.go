@@ -39,7 +39,7 @@ func (l *LocalBlobStore) List(ctx context.Context, prefix string) ([]string, err
 	return objectKeys, nil
 }
 
-func (l *LocalBlobStore) DownloadToPath(ctx context.Context, key, localDir string, localFileHashes map[string]string) error {
+func (l *LocalBlobStore) Download(ctx context.Context, key, localDir string, overwrite bool) error {
 	localPath := filepath.Join(localDir, filepath.FromSlash(key))
 	remotePath := filepath.Join(l.rootDir, key)
 	dir := filepath.Dir(localPath)
@@ -76,7 +76,7 @@ func (l *LocalBlobStore) RemoteObjectMD5(ctx context.Context, key string) (strin
 	return remoteMd5, nil
 }
 
-func (l *LocalBlobStore) Upload(ctx context.Context, key string, content io.Reader) error {
+func (l *LocalBlobStore) Upload(ctx context.Context, key string, content io.Reader, overwrite bool) error {
 	dst := filepath.Join(l.rootDir, key)
 
 	dstFile, err := os.Create(dst)
@@ -98,13 +98,13 @@ func (l *LocalBlobStore) Upload(ctx context.Context, key string, content io.Read
 	return nil
 }
 
-func (l *LocalBlobStore) UploadFromPath(ctx context.Context, remoteDir, localPath string) error {
+func (l *LocalBlobStore) UploadFromPath(ctx context.Context, key, localPath string, overwrite bool) error {
 	relPath, err := filepath.Rel(localPath, l.rootDir)
 	if err != nil {
 		return err
 	}
 
-	dst := filepath.Join(remoteDir, relPath)
+	dst := filepath.Join(key, relPath)
 
 	err = copyFile(localPath, dst)
 	if err != nil {
