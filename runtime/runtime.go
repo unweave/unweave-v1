@@ -68,7 +68,7 @@ type Exec interface {
 	// the snapshot will be an incremental on based on the filesystem with the given ID.
 	SnapshotFS(ctx context.Context, execID string, filesystemID string) error
 	// Terminate terminates a session.
-	Terminate(ctx context.Context, execID string, filesystemID *string) error
+	Terminate(ctx context.Context, execID string) error
 	// Watch watches the status of the exec.
 	Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error)
 }

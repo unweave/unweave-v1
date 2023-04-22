@@ -25,7 +25,7 @@ func (e *ExecRuntime) SnapshotFS(ctx context.Context, execID string, filesystemI
 	return nil
 }
 
-func (e *ExecRuntime) Terminate(ctx context.Context, execID string, filesystemID *string) error {
+func (e *ExecRuntime) Terminate(ctx context.Context, execID string) error {
 	// Exec and Node ID are the same for LambdaLabs (for now)
 	log.Ctx(ctx).Debug().Str("sessionID", execID).Msg("terminating session")
 	return e.node.TerminateNode(ctx, execID)

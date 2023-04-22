@@ -33,8 +33,8 @@ where id = $1;
 
 
 -- name: FilesystemCreate :one
-insert into unweave.filesystem (name, project_id, owner_id, exec_id)
-values ($1, $2, $3, $4)
+insert into unweave.filesystem (name, project_id, owner_id, exec_id, src_path)
+values ($1, $2, $3, $4, $5)
 returning *;
 
 -- name: FilesystemCreateVersion :one

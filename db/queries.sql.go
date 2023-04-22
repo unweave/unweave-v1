@@ -177,9 +177,9 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 }
 
 const FilesystemCreate = `-- name: FilesystemCreate :one
-insert into unweave.filesystem (name, project_id, owner_id, exec_id)
-values ($1, $2, $3, $4)
-returning id, name, project_id, exec_id, owner_id, created_at
+insert into unweave.filesystem (name, project_id, owner_id, exec_id, src_path)
+values ($1, $2, $3, $4, $5)
+returning id, name, project_id, exec_id, owner_id, created_at, src_path
 `
 
 type FilesystemCreateParams struct {
@@ -187,6 +187,7 @@ type FilesystemCreateParams struct {
 	ProjectID string `json:"projectID"`
 	OwnerID   string `json:"ownerID"`
 	ExecID    string `json:"execID"`
+	SrcPath   string `json:"srcPath"`
 }
 
 func (q *Queries) FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error) {
@@ -195,6 +196,7 @@ func (q *Queries) FilesystemCreate(ctx context.Context, arg FilesystemCreatePara
 		arg.ProjectID,
 		arg.OwnerID,
 		arg.ExecID,
+		arg.SrcPath,
 	)
 	var i UnweaveFilesystem
 	err := row.Scan(
@@ -204,6 +206,7 @@ func (q *Queries) FilesystemCreate(ctx context.Context, arg FilesystemCreatePara
 		&i.ExecID,
 		&i.OwnerID,
 		&i.CreatedAt,
+		&i.SrcPath,
 	)
 	return i, err
 }
@@ -232,7 +235,7 @@ func (q *Queries) FilesystemCreateVersion(ctx context.Context, arg FilesystemCre
 }
 
 const FilesystemGet = `-- name: FilesystemGet :one
-select id, name, project_id, exec_id, owner_id, created_at
+select id, name, project_id, exec_id, owner_id, created_at, src_path
 from unweave.filesystem
 where id = $1
 `
@@ -247,12 +250,13 @@ func (q *Queries) FilesystemGet(ctx context.Context, id string) (UnweaveFilesyst
 		&i.ExecID,
 		&i.OwnerID,
 		&i.CreatedAt,
+		&i.SrcPath,
 	)
 	return i, err
 }
 
 const FilesystemGetByExecID = `-- name: FilesystemGetByExecID :one
-select b.id, b.name, b.project_id, b.exec_id, b.owner_id, b.created_at
+select b.id, b.name, b.project_id, b.exec_id, b.owner_id, b.created_at, b.src_path
 from (select filesystem_id
       from unweave.filesystem_version
       where filesystem_version.exec_id = $1) as bv
@@ -269,12 +273,13 @@ func (q *Queries) FilesystemGetByExecID(ctx context.Context, execID string) (Unw
 		&i.ExecID,
 		&i.OwnerID,
 		&i.CreatedAt,
+		&i.SrcPath,
 	)
 	return i, err
 }
 
 const FilesystemGetByProject = `-- name: FilesystemGetByProject :one
-select id, name, project_id, exec_id, owner_id, created_at
+select id, name, project_id, exec_id, owner_id, created_at, src_path
 from unweave.filesystem
 where project_id = $1
   and (name = $2 or id = $2)
@@ -295,6 +300,7 @@ func (q *Queries) FilesystemGetByProject(ctx context.Context, arg FilesystemGetB
 		&i.ExecID,
 		&i.OwnerID,
 		&i.CreatedAt,
+		&i.SrcPath,
 	)
 	return i, err
 }

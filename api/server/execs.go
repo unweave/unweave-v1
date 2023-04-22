@@ -388,6 +388,11 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	return session, nil
 }
 
+func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, filesystemID string) error {
+	// TODO: if filesystem is not a root filesystem, return error
+	return nil
+}
+
 func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, error) {
 	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
 	if err != nil {
@@ -567,8 +572,8 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 	return nil
 }
 
-func (s *ExecService) Terminate(ctx context.Context, execID string) error {
-	sess, err := db.Q.MxSessionGet(ctx, execID)
+func (s *ExecService) Snapshot(ctx context.Context, execID string) error {
+	exec, err := db.Q.MxSessionGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
@@ -580,10 +585,47 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
 	}
 
-	provider := types.Provider(sess.Provider)
+	if !exec.PersistFs {
+		log.Ctx(ctx).Info().Msgf("Exec %q is not configured to persist filesystem. No-op.", execID)
+		return nil
+	}
+
+	fs, e := db.Q.FilesystemGetByExecID(ctx, execID)
+	if e != nil {
+		return fmt.Errorf("failed to get filesystem for exec %q: %w", execID, e)
+	}
+
+	provider := types.Provider(exec.Provider)
 	rt, err := s.srv.InitializeRuntime(ctx, provider)
 	if err != nil {
-		return fmt.Errorf("failed to create runtime %q: %w", sess.Provider, err)
+		return fmt.Errorf("failed to create runtime %q: %w", exec.Provider, err)
+	}
+
+	err = rt.Exec.SnapshotFS(ctx, execID, fs.ID)
+	if err != nil {
+		return fmt.Errorf("failed to snapshot filesystem: %w", err)
+	}
+
+	return nil
+}
+
+func (s *ExecService) Terminate(ctx context.Context, execID string) error {
+	exec, err := db.Q.MxSessionGet(ctx, execID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:       http.StatusNotFound,
+				Message:    "Session not found",
+				Suggestion: "Make sure the session id is valid",
+			}
+		}
+		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
+	}
+
+	provider := types.Provider(exec.Provider)
+	rt, err := s.srv.InitializeRuntime(ctx, provider)
+	if err != nil {
+		return fmt.Errorf("failed to create runtime %q: %w", exec.Provider, err)
 	}
 
 	ctx = log.With().
@@ -591,23 +633,15 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		Logger().
 		WithContext(ctx)
 
-	var filesystemID *string
-
-	if sess.PersistFs {
-		fs, e := db.Q.FilesystemGetByExecID(ctx, execID)
-		if e != nil {
-			// Log and continue. We don't want to fail the termination because of this.
-			log.Ctx(ctx).Error().Err(e).Msgf("Failed to get filesystem for exec %q", execID)
-		} else {
-			filesystemID = &fs.ID
-		}
+	if err = s.Snapshot(ctx, execID); err != nil {
+		// We don't want to fail the termination because of this. Log and continue.
+		log.Ctx(ctx).Error().Err(err).Msgf("Failed to snapshot filesystem for exec %q", execID)
 	}
-
-	if err = rt.Exec.Terminate(ctx, sess.ID, filesystemID); err != nil {
+	if err = rt.Exec.Terminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
-	if err = s.srv.vault.DeleteSecret(ctx, sess.NodeID); err != nil {
-		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", sess.NodeID)
+	if err = s.srv.vault.DeleteSecret(ctx, exec.NodeID); err != nil {
+		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", exec.NodeID)
 	}
 
 	params := db.SessionStatusUpdateParams{
@@ -626,7 +660,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	}
 
 	np := db.NodeStatusUpdateParams{
-		ID:           sess.NodeID,
+		ID:           exec.NodeID,
 		Status:       "terminated",
 		TerminatedAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
@@ -634,7 +668,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		log.Ctx(ctx).
 			Error().
 			Err(err).
-			Msgf("Failed to set node %q as terminated", sess.NodeID)
+			Msgf("Failed to set node %q as terminated", exec.NodeID)
 	}
 	return nil
 }

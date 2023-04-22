@@ -129,6 +129,7 @@ type UnweaveFilesystem struct {
 	ExecID    string    `json:"execID"`
 	OwnerID   string    `json:"ownerID"`
 	CreatedAt time.Time `json:"createdAt"`
+	SrcPath   string    `json:"srcPath"`
 }
 
 type UnweaveFilesystemVersion struct {
