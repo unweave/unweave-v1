@@ -312,9 +312,15 @@ func (b *BlobStore) UploadFromPath(ctx context.Context, key, localPath string, o
 func NewBlobStore(bucket string, s3Cfg aws.Config) *BlobStore {
 	client := s3.NewFromConfig(s3Cfg)
 	return &BlobStore{
-		client:     client,
-		bucket:     bucket,
-		downloader: manager.NewDownloader(client),
-		uploader:   manager.NewUploader(client),
+		client: client,
+		bucket: bucket,
+		downloader: manager.NewDownloader(client, func(d *manager.Downloader) {
+			d.PartSize = 64 * 1024 * 1024
+			d.Concurrency = 10
+		}),
+		uploader: manager.NewUploader(client, func(u *manager.Uploader) {
+			u.PartSize = 64 * 1024 * 1024
+			u.Concurrency = 10
+		}),
 	}
 }
