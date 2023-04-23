@@ -622,6 +622,15 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
 	}
 
+	if string(exec.Status) == string(types.StatusTerminated) {
+		log.Ctx(ctx).Info().Msgf("Exec %q is already terminated. No-op.", execID)
+		return nil
+	}
+
+	// Use new context to make sure we terminate the pod even if the context is cancelled
+	ctx = context.Background()
+	ctx = log.With().Str("execID", execID).Logger().WithContext(ctx)
+
 	provider := types.Provider(exec.Provider)
 	rt, err := s.srv.InitializeRuntime(ctx, provider)
 	if err != nil {
