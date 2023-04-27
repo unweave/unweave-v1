@@ -18,6 +18,7 @@ type Querier interface {
 	FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error)
 	FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error)
 	FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error)
+	FilesystemGetLatestVersion(ctx context.Context, filesystemID string) (UnweaveFilesystemVersion, error)
 	FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error
 	FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error)
 	//-----------------------------------------------------------------

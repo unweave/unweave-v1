@@ -46,6 +46,13 @@ select *
 from unweave.filesystem
 where id = $1;
 
+-- name: FilesystemGetLatestVersion :one
+select *
+from unweave.filesystem_version
+where filesystem_id = $1
+order by version desc
+limit 1;
+
 -- name: FilesystemGetByProject :one
 select *
 from unweave.filesystem

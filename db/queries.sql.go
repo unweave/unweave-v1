@@ -305,6 +305,27 @@ func (q *Queries) FilesystemGetByProject(ctx context.Context, arg FilesystemGetB
 	return i, err
 }
 
+const FilesystemGetLatestVersion = `-- name: FilesystemGetLatestVersion :one
+select filesystem_id, exec_id, version, created_at, build_id
+from unweave.filesystem_version
+where filesystem_id = $1
+order by version desc
+limit 1
+`
+
+func (q *Queries) FilesystemGetLatestVersion(ctx context.Context, filesystemID string) (UnweaveFilesystemVersion, error) {
+	row := q.db.QueryRowContext(ctx, FilesystemGetLatestVersion, filesystemID)
+	var i UnweaveFilesystemVersion
+	err := row.Scan(
+		&i.FilesystemID,
+		&i.ExecID,
+		&i.Version,
+		&i.CreatedAt,
+		&i.BuildID,
+	)
+	return i, err
+}
+
 const FilesystemVersionAddBuildID = `-- name: FilesystemVersionAddBuildID :exec
 update unweave.filesystem_version
 set build_id = $2
