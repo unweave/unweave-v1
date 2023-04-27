@@ -22,7 +22,7 @@ func (s *CASStore) List(ctx context.Context, prefix string) ([]string, error) {
 	return s.blobstore.List(ctx, prefix)
 }
 
-func (s *CASStore) Download(ctx context.Context, key, localDir string, overwrite bool) error {
+func (s *CASStore) Download(ctx context.Context, remoteDir, remoteKey, localDir string, overwrite bool) error {
 	return nil
 }
 

@@ -55,7 +55,7 @@ type S3Client interface {
 }
 
 type Store interface {
-	Download(ctx context.Context, key, localDir string, overwrite bool) error
+	Download(ctx context.Context, remoteDir, remoteKey, localDir string, overwrite bool) error
 	List(ctx context.Context, prefix string) ([]string, error)
 	RemoteObjectMD5(ctx context.Context, key string) (string, error)
 	Upload(ctx context.Context, key string, content io.Reader, overwrite bool) error
@@ -95,18 +95,23 @@ func (b *BlobStore) List(ctx context.Context, prefix string) ([]string, error) {
 	return objectKeys, nil
 }
 
-func (b *BlobStore) Download(ctx context.Context, key, localDir string, overwrite bool) error {
-	isDir, err := b.isRemoteKeyDir(ctx, key)
+func (b *BlobStore) Download(ctx context.Context, remoteDir, remoteKey, localDir string, overwrite bool) error {
+	isDir, err := b.isRemoteKeyDir(ctx, remoteKey)
 	if err != nil {
 		return err
 	}
 	if isDir {
-		return b.downloadDirectory(ctx, key, localDir, overwrite)
+		return b.downloadDirectory(ctx, remoteKey, localDir, overwrite)
 	}
 
-	log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, key, localDir)
+	log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, remoteKey, localDir)
 
-	path := filepath.Join(localDir, filepath.FromSlash(key))
+	rel, err := filepath.Rel(remoteDir, remoteKey)
+	if err != nil {
+		return fmt.Errorf("invalid remoteDir %q for remoteKey %q: %v", remoteDir, remoteKey, err)
+	}
+
+	path := filepath.Join(localDir, rel)
 	dir := filepath.Dir(path)
 
 	if err = os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -129,7 +134,7 @@ func (b *BlobStore) Download(ctx context.Context, key, localDir string, overwrit
 
 	input := &s3.GetObjectInput{
 		Bucket: &b.bucket,
-		Key:    &key,
+		Key:    &remoteKey,
 	}
 
 	_, err = b.downloader.Download(ctx, file, input)
@@ -139,26 +144,26 @@ func (b *BlobStore) Download(ctx context.Context, key, localDir string, overwrit
 		}
 		return err
 	}
-	log.Info().Msgf("Successfully downloaded '%s/%s' to '%s'", b.bucket, key, path)
+	log.Info().Msgf("Successfully downloaded '%s/%s' to '%s'", b.bucket, remoteKey, path)
 
 	return nil
 }
 
-func (b *BlobStore) downloadDirectory(ctx context.Context, key, localDir string, overwrite bool) error {
-	log.Info().Msgf("Downloading directory '%s/%s' to '%s'", b.bucket, key, localDir)
+func (b *BlobStore) downloadDirectory(ctx context.Context, remoteDir, localDir string, overwrite bool) error {
+	log.Info().Msgf("Downloading directory '%s/%s' to '%s'", b.bucket, remoteDir, localDir)
 
 	if err := os.MkdirAll(localDir, os.ModePerm); err != nil {
 		return err
 	}
 
-	paths, err := b.List(ctx, key)
+	keys, err := b.List(ctx, remoteDir)
 	if err != nil {
 		return fmt.Errorf("failed to list objects, %v", err)
 	}
 
-	for _, path := range paths {
-		log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, path, localDir)
-		if err := b.Download(ctx, path, localDir, overwrite); err != nil {
+	for _, key := range keys {
+		log.Info().Msgf("Downloading '%s/%s' to '%s'", b.bucket, key, localDir)
+		if err := b.Download(ctx, remoteDir, key, localDir, overwrite); err != nil {
 			return err
 		}
 	}

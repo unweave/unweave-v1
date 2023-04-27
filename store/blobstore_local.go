@@ -39,9 +39,9 @@ func (l *LocalBlobStore) List(ctx context.Context, prefix string) ([]string, err
 	return objectKeys, nil
 }
 
-func (l *LocalBlobStore) Download(ctx context.Context, key, localDir string, overwrite bool) error {
-	localPath := filepath.Join(localDir, filepath.FromSlash(key))
-	remotePath := filepath.Join(l.rootDir, key)
+func (l *LocalBlobStore) Download(ctx context.Context, remoteDir, remoteKey, localDir string, overwrite bool) error {
+	localPath := filepath.Join(localDir, filepath.FromSlash(remoteKey))
+	remotePath := filepath.Join(l.rootDir, remoteKey)
 	dir := filepath.Dir(localPath)
 
 	err := os.MkdirAll(dir, os.ModePerm)

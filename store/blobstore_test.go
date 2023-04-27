@@ -147,7 +147,7 @@ func TestBlobStore_Download(t *testing.T) {
 				t.Fatalf("Failed to create local files: %v", err)
 			}
 
-			err := store.Download(context.Background(), tt.key, localDir, tt.overwrite)
+			err := store.Download(context.Background(), "", tt.key, localDir, tt.overwrite)
 
 			if err != nil && tt.expectedErr != nil && err.Error() != tt.expectedErr.Error() {
 				t.Errorf("Expected error: %v, got: %v", tt.expectedErr, err)
