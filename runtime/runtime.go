@@ -48,10 +48,10 @@ type Node interface {
 	// ListNodeTypes returns a list of all node types available on the provider.
 	ListNodeTypes(ctx context.Context, filterAvailable bool) ([]types.NodeType, error)
 	// NodeStatus returns the status of the node running a session.
-	NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error)
+	NodeStatus(ctx context.Context, nodeID string) (types.Status, error)
 	TerminateNode(ctx context.Context, nodeID string) error
 	// Watch watches the status of the node.
-	Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error)
+	Watch(ctx context.Context, nodeID string) (<-chan types.Status, <-chan error)
 }
 
 type Exec interface {
@@ -70,7 +70,7 @@ type Exec interface {
 	// Terminate terminates a session.
 	Terminate(ctx context.Context, execID string) error
 	// Watch watches the status of the exec.
-	Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error)
+	Watch(ctx context.Context, execID string) (<-chan types.Status, <-chan error)
 }
 
 type Initializer interface {

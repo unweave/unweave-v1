@@ -214,7 +214,7 @@ func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 	return nil
 }
 
-func updateExecStatus(ctx context.Context, execID string, status types.NodeStatus) {
+func updateExecStatus(ctx context.Context, execID string, status types.Status) {
 	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
 	params := db.SessionStatusUpdateParams{
 		ID:     execID,
@@ -423,7 +423,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 			Port: metadata.ConnectionInfo.Port,
 			User: metadata.ConnectionInfo.User,
 		},
-		Status:     types.NodeStatus(dbs.Status),
+		Status:     types.Status(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
 		NodeTypeID: dbs.NodeID,
 		Region:     dbs.Region,
@@ -463,7 +463,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 				Port: metadata.ConnectionInfo.Port,
 				User: metadata.ConnectionInfo.User,
 			},
-			Status:     types.NodeStatus(s.Status),
+			Status:     types.Status(s.Status),
 			CreatedAt:  &s.CreatedAt,
 			NodeTypeID: s.NodeID,
 			Region:     s.Region,

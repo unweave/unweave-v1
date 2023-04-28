@@ -417,7 +417,7 @@ func (n *NodeRuntime) ListSSHKeys(ctx context.Context) ([]types.SSHKey, error) {
 	return keys, nil
 }
 
-func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.NodeStatus, error) {
+func (n *NodeRuntime) NodeStatus(ctx context.Context, nodeID string) (types.Status, error) {
 	log.Ctx(ctx).Debug().Msgf("Getting node status for node %q", nodeID)
 
 	res, err := n.client.GetInstanceWithResponse(ctx, nodeID)
@@ -485,11 +485,11 @@ func (n *NodeRuntime) TerminateNode(ctx context.Context, nodeID string) error {
 	return nil
 }
 
-func (n *NodeRuntime) Watch(ctx context.Context, nodeID string) (<-chan types.NodeStatus, <-chan error) {
+func (n *NodeRuntime) Watch(ctx context.Context, nodeID string) (<-chan types.Status, <-chan error) {
 	log.Ctx(ctx).Debug().Msgf("Watching node %q", nodeID)
 
 	currentStatus := types.StatusInitializing
-	statusch, errch := make(chan types.NodeStatus), make(chan error)
+	statusch, errch := make(chan types.Status), make(chan error)
 
 	go func() {
 		ticker := time.NewTicker(5 * time.Second)

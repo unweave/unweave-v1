@@ -31,7 +31,7 @@ func (e *ExecRuntime) Terminate(ctx context.Context, execID string) error {
 	return e.node.TerminateNode(ctx, execID)
 }
 
-func (e *ExecRuntime) Watch(ctx context.Context, execID string) (<-chan types.NodeStatus, <-chan error) {
+func (e *ExecRuntime) Watch(ctx context.Context, execID string) (<-chan types.Status, <-chan error) {
 	// Exec and Node ID are the same for LambdaLabs (for now)
 	log.Ctx(ctx).Debug().Str("execID", execID).Msg("watching exec")
 	return e.node.Watch(ctx, execID)

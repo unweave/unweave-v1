@@ -8,14 +8,17 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type NodeStatus string
+type Status string
 
 const (
-	RuntimeProviderKey            = "Provider"
-	StatusInitializing NodeStatus = "initializing"
-	StatusRunning      NodeStatus = "running"
-	StatusTerminated   NodeStatus = "terminated"
-	StatusError        NodeStatus = "error"
+	RuntimeProviderKey        = "Provider"
+	StatusInitializing Status = "initializing"
+	StatusRunning      Status = "running"
+	StatusTerminated   Status = "terminated"
+	StatusError        Status = "error"
+	StatusFailed       Status = "failed"
+	StatusSuccess      Status = "success"
+	StatusSnapshotting Status = "snapshotting"
 )
 
 type NoOpLogHook struct{}
@@ -93,18 +96,18 @@ type NodeType struct {
 }
 
 type Node struct {
-	ID       string     `json:"id"`
-	TypeID   string     `json:"typeID"`
-	OwnerID  string     `json:"ownerID"`
-	Price    int        `json:"price"`
-	Region   string     `json:"region"`
-	KeyPair  SSHKey     `json:"sshKeyPair"`
-	Status   NodeStatus `json:"status"`
-	Provider Provider   `json:"provider"`
-	Specs    NodeSpecs  `json:"specs"`
-	Host     string     `json:"host"`
-	User     string     `json:"user"`
-	Port     int        `json:"port"`
+	ID       string    `json:"id"`
+	TypeID   string    `json:"typeID"`
+	OwnerID  string    `json:"ownerID"`
+	Price    int       `json:"price"`
+	Region   string    `json:"region"`
+	KeyPair  SSHKey    `json:"sshKeyPair"`
+	Status   Status    `json:"status"`
+	Provider Provider  `json:"provider"`
+	Specs    NodeSpecs `json:"specs"`
+	Host     string    `json:"host"`
+	User     string    `json:"user"`
+	Port     int       `json:"port"`
 }
 
 type Project struct {
@@ -130,7 +133,7 @@ type Exec struct {
 	Name         string          `json:"name"`
 	SSHKey       SSHKey          `json:"sshKey"`
 	Connection   *ConnectionInfo `json:"connection,omitempty"`
-	Status       NodeStatus      `json:"status"`
+	Status       Status          `json:"status"`
 	CreatedAt    *time.Time      `json:"createdAt,omitempty"`
 	NodeTypeID   string          `json:"nodeTypeID"`
 	Region       string          `json:"region"`
