@@ -29,6 +29,7 @@ type ConnectionInfoV1 struct {
 
 type NodeMetadataV1 struct {
 	ID             string           `json:"id"`
+	TypeID         string           `json:"typeID"`
 	Price          int              `json:"price"`
 	VCPUs          int              `json:"vcpus"`
 	Memory         int              `json:"memory"`
@@ -46,6 +47,7 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	}
 	n := NodeMetadataV1{
 		ID:        node.ID,
+		TypeID:    node.TypeID,
 		Price:     node.Price,
 		VCPUs:     node.Specs.VCPUs,
 		Memory:    node.Specs.Memory,
@@ -341,7 +343,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		ProjectID:    projectID,
 		Region:       node.Region,
 		Name:         random.GenerateRandomPhrase(4, "-"),
-		Metadata:     metadataJSON,
+		Metadata:     metadataJSON, // This is currently the same as the node metadata. Will change in the future.
 		CommitID:     commitID,
 		GitRemoteUrl: gitRemoteURL,
 		Command:      command,
@@ -425,7 +427,7 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 		},
 		Status:     types.Status(dbs.Status),
 		CreatedAt:  &dbs.CreatedAt,
-		NodeTypeID: dbs.NodeID,
+		NodeTypeID: metadata.TypeID,
 		Region:     dbs.Region,
 		Provider:   types.Provider(dbs.Provider),
 	}
@@ -465,7 +467,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 			},
 			Status:     types.Status(s.Status),
 			CreatedAt:  &s.CreatedAt,
-			NodeTypeID: s.NodeID,
+			NodeTypeID: metadata.TypeID,
 			Region:     s.Region,
 			Provider:   types.Provider(s.Provider),
 		}
