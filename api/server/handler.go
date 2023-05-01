@@ -200,11 +200,11 @@ func ExecsGet(rti runtime.Initializer) http.HandlerFunc {
 
 		userID := GetUserIDFromContext(ctx)
 		accountID := GetAccountIDFromContext(ctx)
-		sessionID := GetSessionIDFromContext(ctx)
+		execID := GetExecIDFromContext(ctx)
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Exec.Get(ctx, sessionID)
+		session, err := srv.Exec.Get(ctx, execID)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to get session"))
 			return
@@ -243,12 +243,12 @@ func ExecsTerminate(rti runtime.Initializer) http.HandlerFunc {
 			Info().
 			Msgf("Executing ExecsTerminate request")
 
-		sessionID := GetSessionIDFromContext(ctx)
+		execID := GetExecIDFromContext(ctx)
 		accountID := GetAccountIDFromContext(ctx)
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		if err := srv.Exec.Terminate(ctx, sessionID); err != nil {
+		if err := srv.Exec.Terminate(ctx, execID); err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to terminate session"))
 			return
 		}

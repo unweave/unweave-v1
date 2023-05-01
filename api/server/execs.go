@@ -393,8 +393,8 @@ func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, 
 	return nil
 }
 
-func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, error) {
-	dbs, err := db.Q.MxSessionGet(ctx, sessionID)
+func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, error) {
+	dbs, err := db.Q.MxSessionGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &types.Error{
@@ -411,7 +411,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 	}
 
 	session := &types.Exec{
-		ID:   sessionID,
+		ID:   execID,
 		Name: dbs.Name,
 		SSHKey: types.SSHKey{
 			Name:      dbs.SshKeyName,
@@ -432,7 +432,7 @@ func (s *ExecService) Get(ctx context.Context, sessionID string) (*types.Exec, e
 	return session, nil
 }
 
-func (s *ExecService) List(ctx context.Context, projectID string, listTerminated bool) ([]types.Exec, error) {
+func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) ([]types.Exec, error) {
 	sessions, err := db.Q.MxSessionsGet(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to get sessions from db: %w", err)
@@ -443,7 +443,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listTerminated
 
 	for _, s := range sessions {
 		s := s
-		if !listTerminated && s.Status == db.UnweaveSessionStatusTerminated {
+		if !listAll && (s.Status == db.UnweaveSessionStatusTerminated || s.Status == db.UnweaveSessionStatusError) {
 			continue
 		}
 		metadata := &NodeMetadataV1{}

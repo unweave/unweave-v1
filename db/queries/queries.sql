@@ -113,7 +113,7 @@ values ($1, $2, $3, $4, (select id
 -- name: SessionGet :one
 select *
 from unweave.session
-where id = $1;
+where id = @id_or_name or name = @id_or_name;
 
 -- name: SessionGetAllActive :many
 select *

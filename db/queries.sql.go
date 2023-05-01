@@ -714,11 +714,11 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 const SessionGet = `-- name: SessionGet :one
 select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs
 from unweave.session
-where id = $1
+where id = $1 or name = $1
 `
 
-func (q *Queries) SessionGet(ctx context.Context, id string) (UnweaveSession, error) {
-	row := q.db.QueryRowContext(ctx, SessionGet, id)
+func (q *Queries) SessionGet(ctx context.Context, idOrName string) (UnweaveSession, error) {
+	row := q.db.QueryRowContext(ctx, SessionGet, idOrName)
 	var i UnweaveSession
 	err := row.Scan(
 		&i.ID,

@@ -67,18 +67,18 @@ func GetProjectIDFromContext(ctx context.Context) string {
 	return projectID
 }
 
-func SetSessionIDInContext(ctx context.Context, sessionID string) context.Context {
-	return context.WithValue(ctx, ExecIDCtxKey, sessionID)
+func SetExecIDInContext(ctx context.Context, execID string) context.Context {
+	return context.WithValue(ctx, ExecIDCtxKey, execID)
 }
 
-func GetSessionIDFromContext(ctx context.Context) string {
-	sessionID, ok := ctx.Value(ExecIDCtxKey).(string)
-	if !ok || sessionID == "" {
+func GetExecIDFromContext(ctx context.Context) string {
+	execID, ok := ctx.Value(ExecIDCtxKey).(string)
+	if !ok || execID == "" {
 		// This should never happen at runtime.
-		log.Error().Msg("session not found in context")
-		panic("session not found in context")
+		log.Error().Msg("exec not found in context")
+		panic("exec not found in context")
 	}
-	return sessionID
+	return execID
 }
 
 // withAccountCtx is a helper middleware that fakes an authenticated account. It should only
@@ -125,14 +125,14 @@ func withProjectCtx(next http.Handler) http.Handler {
 	})
 }
 
-// withSessionCtx is a helper middleware that parsed the session id from the url and
+// withExecCtx is a helper middleware that parsed the session id from the url and
 // verifies it exists in the db.
-func withSessionCtx(next http.Handler) http.Handler {
+func withExecCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		sessionID := chi.URLParam(r, "sessionID")
+		ref := chi.URLParam(r, "exec")
 
-		session, err := db.Q.SessionGet(ctx, sessionID)
+		exec, err := db.Q.SessionGet(ctx, ref)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				render.Render(w, r.WithContext(ctx), &types.Error{
@@ -143,13 +143,13 @@ func withSessionCtx(next http.Handler) http.Handler {
 				return
 			}
 
-			err = fmt.Errorf("failed to fetch session from db %q: %w", sessionID, err)
+			err = fmt.Errorf("failed to fetch exec from db %q: %w", ref, err)
 			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to fetch session"))
 			return
 		}
 
-		ctx = context.WithValue(ctx, ExecIDCtxKey, session)
-		ctx = log.With().Str(ExecIDCtxKey, session.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, ExecIDCtxKey, exec)
+		ctx = log.With().Str(ExecIDCtxKey, exec.ID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

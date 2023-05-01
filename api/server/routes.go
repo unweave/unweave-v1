@@ -86,8 +86,8 @@ func API(cfg Config, rti runtime.Initializer) {
 			r.Post("/", ExecCreate(rti))
 			r.Get("/", ExecsList(rti))
 
-			r.Route("/{sessionID}", func(r chi.Router) {
-				r.Use(withSessionCtx)
+			r.Route("/{exec}", func(r chi.Router) {
+				r.Use(withExecCtx)
 				r.Get("/", ExecsGet(rti))
 				r.Put("/terminate", ExecsTerminate(rti))
 			})
