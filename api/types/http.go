@@ -97,16 +97,17 @@ type NodeTypesListResponse struct {
 }
 
 type ExecCreateParams struct {
-	Name          string   `json:"name,omitempty"`
-	Provider      Provider `json:"provider"`
-	NodeTypeID    string   `json:"nodeTypeID,omitempty"`
-	Region        *string  `json:"region,omitempty"`
-	SSHKeyName    *string  `json:"sshKeyName"`
-	SSHPublicKey  *string  `json:"sshPublicKey"`
-	IsInteractive bool     `json:"isInteractive"`
-	PersistentFS  bool     `json:"persistentFS"`
-	FilesystemID  *string  `json:"filesystemID,omitempty"`
-	Ctx           ExecCtx  `json:"ctx,omitempty"`
+	Name         string         `json:"name,omitempty"`
+	Provider     Provider       `json:"provider"`
+	NodeTypeID   string         `json:"nodeTypeID,omitempty"`
+	Region       *string        `json:"region,omitempty"`
+	SSHKeyName   *string        `json:"sshKeyName"`
+	SSHPublicKey *string        `json:"sshPublicKey"`
+	Image        *string        `json:"image"`
+	Command      []string       `json:"command"`
+	CommitID     *string        `json:"commitID,omitempty"`
+	GitURL       *string        `json:"gitURL,omitempty"`
+	Source       *SourceContext `json:"source,omitempty"`
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {
@@ -149,12 +150,21 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 		}
 	}
 
-	if s.Ctx.Command != nil {
+	if s.Image != nil {
+		if *s.Image == "" {
+			return &Error{
+				Code:    http.StatusBadRequest,
+				Message: "Invalid request body: field 'image' cannot be an empty string",
+			}
+		}
+	}
+
+	if s.Command != nil {
 		part, err := parseContextFile(r)
 		if err != nil {
 			return err
 		}
-		s.Ctx.Context = part
+		s.Source.Context = part
 	}
 
 	return nil

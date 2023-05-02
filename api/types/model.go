@@ -117,9 +117,10 @@ type Project struct {
 }
 
 type SSHKey struct {
-	Name      string     `json:"name"`
-	PublicKey *string    `json:"publicKey,omitempty"`
-	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	Name       string     `json:"name"`
+	PublicKey  *string    `json:"publicKey,omitempty"`
+	PrivateKey *string    `json:"privateKey,omitempty"`
+	CreatedAt  *time.Time `json:"createdAt,omitempty"`
 }
 
 type ConnectionInfo struct {
@@ -132,6 +133,10 @@ type Exec struct {
 	ID           string          `json:"id"`
 	Name         string          `json:"name"`
 	SSHKey       SSHKey          `json:"sshKey"`
+	Image        string          `json:"buildID,omitempty"`
+	Command      []string        `json:"command"`
+	CommitID     *string         `json:"commitID,omitempty"`
+	GitURL       *string         `json:"gitURL,omitempty"`
 	Connection   *ConnectionInfo `json:"connection,omitempty"`
 	Status       Status          `json:"status"`
 	CreatedAt    *time.Time      `json:"createdAt,omitempty"`
@@ -141,10 +146,25 @@ type Exec struct {
 	PersistentFS bool            `json:"persistentFS"`
 }
 
-type ExecCtx struct {
-	Command  []string      `json:"command"`
-	CommitID *string       `json:"commitID,omitempty"`
-	GitURL   *string       `json:"gitURL,omitempty"`
-	BuildID  *string       `json:"buildID,omitempty"`
-	Context  io.ReadCloser `json:"-"`
+type ExecConfig struct {
+	Image   string         `json:"image"`
+	Command []string       `json:"command"`
+	Keys    []SSHKey       `json:"keys"`
+	Volumes []Volume       `json:"volumes"`
+	Src     *SourceContext `json:"src,omitempty"`
+}
+
+type GitConfig struct {
+	CommitID *string `json:"commitID"`
+	GitURL   *string `json:"gitURL"`
+}
+
+type SourceContext struct {
+	MountPath string        `json:"mountPath"`
+	Context   io.ReadCloser `json:"-"`
+}
+
+type Volume struct {
+	MountPath    string `json:"mountPath"`
+	FilesystemID string `json:"filesystemID"`
 }

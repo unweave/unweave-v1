@@ -154,10 +154,6 @@ func (n *NodeRuntime) findRegionForNode(ctx context.Context, nodeTypeID string) 
 	return "", e
 }
 
-func (n *NodeRuntime) Exec(ctx context.Context, nodeID string, execID string, params types.ExecCtx, isInteractive bool) (err error) {
-	return fmt.Errorf("not implemented")
-}
-
 func (n *NodeRuntime) getNodeDetails(ctx context.Context, nodeID string) (client.Instance, error) {
 	instance, err := n.client.GetInstanceWithResponse(ctx, nodeID)
 	if err != nil {

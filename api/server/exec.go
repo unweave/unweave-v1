@@ -169,7 +169,7 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 		}
 	}
 
-	// Public key wasn't provided	 and key wasn't found by name
+	// Public key wasn't provided and key wasn't found by name
 	if sshPublicKey == nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
@@ -216,17 +216,6 @@ func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 	return nil
 }
 
-func updateExecStatus(ctx context.Context, execID string, status types.Status) {
-	ctx, _ = context.WithCancel(ctx) // make sure this doesn't fail because of a parent cancelled context
-	params := db.SessionStatusUpdateParams{
-		ID:     execID,
-		Status: db.UnweaveSessionStatus(status),
-	}
-	if err := db.Q.SessionStatusUpdate(ctx, params); err != nil {
-		log.Ctx(ctx).Error().Err(err).Msg("Failed to update exec status")
-	}
-}
-
 type ExecService struct {
 	srv *Service
 }
@@ -242,136 +231,47 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		Logger().
 		WithContext(ctx)
 
-	userKey, err := fetchCredentials(ctx, s.srv.cid, params.SSHKeyName, params.SSHPublicKey)
+	keys, err := s.setupUserCreds(ctx, params.SSHKeyName, params.SSHPublicKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
-	prv, pub, err := generateSSHKeyPair()
+
+	node, err := s.assignNode(ctx, params.NodeTypeID, params.Region, keys)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate ssh key pair: %w", err)
+		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
 
-	adminKey := types.SSHKey{
-		Name:      "umk-" + random.GenerateRandomAdjectiveNounTriplet(),
-		PublicKey: &pub,
-		CreatedAt: nil,
-	}
-	keys := []types.SSHKey{userKey, adminKey}
-
-	if err = registerCredentials(ctx, rt, keys); err != nil {
-		return nil, fmt.Errorf("failed to register credentials: %w", err)
-	}
-
-	node, err := rt.Node.InitNode(ctx, keys, params.NodeTypeID, params.Region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init node: %w", err)
-	}
-	if _, err := s.srv.vault.SetSecret(ctx, prv, &node.ID); err != nil {
+	if _, err := s.srv.vault.SetSecret(ctx, *keys[0].PrivateKey, &node.ID); err != nil {
 		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
-	node.OwnerID = s.srv.aid
 
-	metadata := DBNodeMetadataFromNode(node)
-	metadataJSON, err := json.Marshal(&metadata)
+	imageURI, err := s.getExecImage(ctx, projectID, params.Image)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal connection info: %w", err)
+		return nil, fmt.Errorf("failed to parse image for exec: %w", err)
 	}
 
-	sshKey, err := db.Q.SSHKeysGet(ctx, s.srv.cid)
+	var exec *types.Exec
+
+	execCfg := types.ExecConfig{
+		Image:   imageURI,
+		Command: params.Command,
+		Keys:    keys[1:], // Only mount user keys into exec
+		Volumes: nil,      // TODO: implement attaching volumes
+		Src:     params.Source,
+	}
+
+	gitCfg := types.GitConfig{
+		CommitID: params.CommitID,
+		GitURL:   params.GitURL,
+	}
+
+	exec, err = s.init(ctx, projectID, node, execCfg, gitCfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get ssh key ids: %w", err)
+		return nil, fmt.Errorf("failed to initialize exec: %w", err)
 	}
-
-	np := db.NodeCreateParams{
-		ID:        node.ID,
-		Provider:  string(rt.Node.GetProvider()),
-		Region:    node.Region,
-		Metadata:  metadataJSON,
-		Status:    string(types.StatusInitializing),
-		OwnerID:   s.srv.aid,
-		SshKeyIds: []string{sshKey[0].ID},
-	}
-	if err = db.Q.NodeCreate(ctx, np); err != nil {
-		return nil, fmt.Errorf("failed to create node in db: %w", err)
-	}
-
-	// Set commit details if provided
-	var command []string
-	var commitID, gitRemoteURL sql.NullString
-
-	if params.Ctx.Command != nil {
-		command = params.Ctx.Command
-	}
-	if params.Ctx.CommitID != nil {
-		commitID = sql.NullString{String: *params.Ctx.CommitID, Valid: true}
-	}
-	if params.Ctx.GitURL != nil {
-		gitRemoteURL = sql.NullString{String: *params.Ctx.GitURL, Valid: true}
-	}
-
-	bid := sql.NullString{}
-	imageURI := DefaultImageURI
-	buildID := params.Ctx.BuildID
-
-	if buildID == nil {
-		project, err := db.Q.ProjectGet(ctx, projectID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get project: %w", err)
-		}
-		if project.DefaultBuildID.Valid && project.DefaultBuildID.String != "" {
-			buildID = &project.DefaultBuildID.String
-		}
-	}
-	if buildID != nil && *buildID != "" {
-		imageURI, err = s.srv.Builder.GetImageURI(ctx, *params.Ctx.BuildID)
-		if err != nil {
-			log.Error().Err(err).Msgf("failed to get image uri: %w", err)
-			return nil, fmt.Errorf("failed to get image uri: %w", err)
-		}
-		bid = sql.NullString{String: *buildID, Valid: true}
-	}
-
-	execID, err := rt.Exec.Init(ctx, node, []types.SSHKey{userKey}, imageURI, filesystemID)
-	if err != nil {
-		go handleSessionError(execID, err, "failed to init session")
-		return nil, fmt.Errorf("failed to init session: %w", err)
-	}
-	dbp := db.SessionCreateParams{
-		ID:           execID,
-		NodeID:       node.ID,
-		CreatedBy:    s.srv.cid,
-		ProjectID:    projectID,
-		Region:       node.Region,
-		Name:         random.GenerateRandomPhrase(4, "-"),
-		Metadata:     metadataJSON, // This is currently the same as the node metadata. Will change in the future.
-		CommitID:     commitID,
-		GitRemoteUrl: gitRemoteURL,
-		Command:      command,
-		BuildID:      bid,
-		PersistFs:    filesystemID != nil,
-		SshKeyName:   userKey.Name,
-	}
-
-	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
-		return nil, fmt.Errorf("failed to create session in db: %w", err)
-	}
-	ctx = log.With().Str(ExecIDCtxKey, execID).Logger().WithContext(ctx)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get image uri: %w", err)
-	}
-
-	createdAt := time.Now()
-	session := &types.Exec{
-		ID:         execID,
-		Name:       dbp.Name,
-		SSHKey:     node.KeyPair,
-		Connection: nil,
-		Status:     types.StatusInitializing,
-		CreatedAt:  &createdAt,
-		NodeTypeID: node.TypeID,
-		Region:     node.Region,
-		Provider:   node.Provider,
 	}
 
 	go func() {
@@ -379,15 +279,15 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		c = log.With().
 			Str(UserIDCtxKey, s.srv.cid).
 			Str(ProjectIDCtxKey, projectID).
-			Str(ExecIDCtxKey, session.ID).
+			Str(ExecIDCtxKey, exec.ID).
 			Logger().WithContext(c)
 
-		if e := s.srv.Exec.Watch(c, session.ID); e != nil {
-			log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
+		if e := s.srv.Exec.Watch(c, exec.ID); e != nil {
+			log.Ctx(c).Error().Err(e).Msgf("Failed to watch exec")
 		}
 	}()
 
-	return session, nil
+	return exec, nil
 }
 
 func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, filesystemID string) error {
@@ -505,6 +405,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 			case <-ctx.Done():
 				log.Ctx(ctx).Info().Msgf("Ctx Done. Stopping to watch exec %s", execID)
 				return
+
 			case status := <-statusch:
 				log.Ctx(ctx).
 					Info().
@@ -555,6 +456,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 					}
 					return
 				}
+
 			case e := <-errch:
 				log.Ctx(ctx).Error().Err(e).Msg("Error while watching exec")
 

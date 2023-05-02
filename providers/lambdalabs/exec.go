@@ -11,7 +11,7 @@ type ExecRuntime struct {
 	node *NodeRuntime
 }
 
-func (e *ExecRuntime) Init(ctx context.Context, node types.Node, sshKeys []types.SSHKey, image string, filesystemID *string) (string, error) {
+func (e *ExecRuntime) Init(ctx context.Context, node types.Node, config types.ExecConfig) (string, error) {
 	// Exec and Node ID are the same for LambdaLabs (for now)
 	return node.ID, nil
 }
