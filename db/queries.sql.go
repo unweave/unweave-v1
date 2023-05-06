@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.persist_fs, n.provider
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.persist_fs, s.image, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.session s
               on s.build_id = b.id
@@ -97,6 +97,7 @@ type BuildGetUsedByRow struct {
 	Command      []string             `json:"command"`
 	Metadata     json.RawMessage      `json:"metadata"`
 	PersistFs    bool                 `json:"persistFs"`
+	Image        string               `json:"image"`
 	Provider     string               `json:"provider"`
 }
 
@@ -129,6 +130,7 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			pq.Array(&i.Command),
 			&i.Metadata,
 			&i.PersistFs,
+			&i.Image,
 			&i.Provider,
 		); err != nil {
 			return nil, err
@@ -669,11 +671,11 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 const SessionCreate = `-- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
                              region, name, metadata, commit_id, git_remote_url, command,
-                             build_id, persist_fs)
+                             build_id, image,  persist_fs)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $13
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12)
+                         where ssh_keys.name = $14
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
 `
 
 type SessionCreateParams struct {
@@ -688,6 +690,7 @@ type SessionCreateParams struct {
 	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
 	Command      []string        `json:"command"`
 	BuildID      sql.NullString  `json:"buildID"`
+	Image        string          `json:"image"`
 	PersistFs    bool            `json:"persistFs"`
 	SshKeyName   string          `json:"sshKeyName"`
 }
@@ -705,6 +708,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 		arg.GitRemoteUrl,
 		pq.Array(arg.Command),
 		arg.BuildID,
+		arg.Image,
 		arg.PersistFs,
 		arg.SshKeyName,
 	)
@@ -712,7 +716,7 @@ func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) er
 }
 
 const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
 from unweave.session
 where id = $1 or name = $1
 `
@@ -740,12 +744,13 @@ func (q *Queries) SessionGet(ctx context.Context, idOrName string) (UnweaveSessi
 		pq.Array(&i.Command),
 		&i.Metadata,
 		&i.PersistFs,
+		&i.Image,
 	)
 	return i, err
 }
 
 const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
 from unweave.session
 where status = 'initializing'
    or status = 'running'
@@ -780,6 +785,7 @@ func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, er
 			pq.Array(&i.Command),
 			&i.Metadata,
 			&i.PersistFs,
+			&i.Image,
 		); err != nil {
 			return nil, err
 		}

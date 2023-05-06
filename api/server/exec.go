@@ -220,7 +220,7 @@ type ExecService struct {
 	srv *Service
 }
 
-func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams, filesystemID *string) (*types.Exec, error) {
+func (s *ExecService) Create(ctx context.Context, projectID string, params types.ExecCreateParams) (*types.Exec, error) {
 	rt, err := s.srv.InitializeRuntime(ctx, params.Provider)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create runtime: %w", err)
@@ -245,7 +245,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to store private key: %w", err)
 	}
 
-	imageURI, err := s.getExecImage(ctx, projectID, params.Image)
+	buildID, imageURI, err := s.getExecImage(ctx, projectID, params.Image)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse image for exec: %w", err)
 	}
@@ -265,7 +265,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		GitURL:   params.GitURL,
 	}
 
-	exec, err = s.init(ctx, projectID, node, execCfg, gitCfg)
+	exec, err = s.init(ctx, projectID, node, execCfg, gitCfg, buildID, imageURI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize exec: %w", err)
 	}

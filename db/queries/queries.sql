@@ -104,11 +104,11 @@ where id = $1;
 -- name: SessionCreate :exec
 insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
                              region, name, metadata, commit_id, git_remote_url, command,
-                             build_id, persist_fs)
+                             build_id, image,  persist_fs)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
                          where ssh_keys.name = @ssh_key_name
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12);
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13);
 
 -- name: SessionGet :one
 select *

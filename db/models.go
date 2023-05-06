@@ -183,6 +183,7 @@ type UnweaveSession struct {
 	Command      []string             `json:"command"`
 	Metadata     json.RawMessage      `json:"metadata"`
 	PersistFs    bool                 `json:"persistFs"`
+	Image        string               `json:"image"`
 }
 
 type UnweaveSshKey struct {

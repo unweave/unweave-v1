@@ -184,7 +184,7 @@ func ExecCreate(rti runtime.Initializer) http.HandlerFunc {
 
 		srv := NewCtxService(rti, accountID, userID)
 
-		session, err := srv.Exec.Create(ctx, projectID, *scr, nil)
+		session, err := srv.Exec.Create(ctx, projectID, *scr)
 		if err != nil {
 			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create session"))
 			return

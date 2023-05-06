@@ -49,19 +49,19 @@ func (s *ExecService) assignNode(ctx context.Context, nodeTypeID string, region 
 	return node, nil
 }
 
-func (s *ExecService) getExecImage(ctx context.Context, projectID string, imageOrBuild *string) (string, error) {
-	imageURI := DefaultImageURI
+func (s *ExecService) getExecImage(ctx context.Context, projectID string, imageOrBuild *string) (buildID string, imageURI string, err error) {
+	imageURI = DefaultImageURI
 
 	// No image or build specified, get default image for project
 	if imageOrBuild == nil {
 		// Get default image for project
 		project, err := db.Q.ProjectGet(ctx, projectID)
 		if err != nil {
-			return "", fmt.Errorf("failed to get project: %w", err)
+			return "", "", fmt.Errorf("failed to get project: %w", err)
 		}
 
 		if !project.DefaultBuildID.Valid || project.DefaultBuildID.String == "" {
-			return imageURI, nil
+			return "", imageURI, nil
 		}
 
 		imageOrBuild = &project.DefaultBuildID.String
@@ -70,23 +70,24 @@ func (s *ExecService) getExecImage(ctx context.Context, projectID string, imageO
 	if *imageOrBuild != "" {
 		build, err := db.Q.BuildGet(ctx, *imageOrBuild)
 		if err != nil && err != sql.ErrNoRows {
-			return "", fmt.Errorf("failed to get build: %w", err)
+			return "", "", fmt.Errorf("failed to get build: %w", err)
 		}
 
+		// Must be a referencing a build
 		if err == nil {
 			imageURI, err = s.srv.Builder.GetImageURI(ctx, build.ID)
 			if err != nil {
-				return "", fmt.Errorf("failed to get image uri: %w", err)
+				return "", "", fmt.Errorf("failed to get image uri: %w", err)
 			}
-			return imageURI, nil
+			return build.ID, imageURI, nil
 		}
 
 		// Must be a public image
-		return *imageOrBuild, nil
+		return "", *imageOrBuild, nil
 	}
 
 	// No default image for project and no image specified, use default
-	return imageURI, nil
+	return "", imageURI, nil
 }
 
 func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey *string) ([]types.SSHKey, error) {
@@ -115,7 +116,7 @@ func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey *strin
 	return keys, nil
 }
 
-func (s *ExecService) init(ctx context.Context, projectID string, node types.Node, cfg types.ExecConfig, gitCfg types.GitConfig) (*types.Exec, error) {
+func (s *ExecService) init(ctx context.Context, projectID string, node types.Node, cfg types.ExecConfig, gitCfg types.GitConfig, buildID, imageURI string) (*types.Exec, error) {
 	var command []string
 	var commitID, gitRemoteURL sql.NullString
 
@@ -140,6 +141,11 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 	}
 	createdAt := time.Now()
 
+	bid := sql.NullString{}
+	if buildID != "" {
+		bid = sql.NullString{String: buildID, Valid: true}
+	}
+
 	dbp := db.SessionCreateParams{
 		ID:           execID,
 		NodeID:       node.ID,
@@ -151,7 +157,8 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		CommitID:     commitID,
 		GitRemoteUrl: gitRemoteURL,
 		Command:      command,
-		BuildID:      sql.NullString{},
+		BuildID:      bid,
+		Image:        imageURI,
 		PersistFs:    len(cfg.Volumes) != 0, // TODO: implement this properly
 		SshKeyName:   cfg.Keys[0].Name,      // TODO: support multiple keys
 	}
