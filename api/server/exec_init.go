@@ -146,7 +146,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		bid = sql.NullString{String: buildID, Valid: true}
 	}
 
-	dbp := db.SessionCreateParams{
+	dbp := db.ExecCreateParams{
 		ID:           execID,
 		NodeID:       node.ID,
 		CreatedBy:    s.srv.cid,
@@ -163,7 +163,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		SshKeyName:   cfg.Keys[0].Name,      // TODO: support multiple keys
 	}
 
-	if err := db.Q.SessionCreate(ctx, dbp); err != nil {
+	if err := db.Q.ExecCreate(ctx, dbp); err != nil {
 		return nil, fmt.Errorf("failed to create exec in db: %w", err)
 	}
 

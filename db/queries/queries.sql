@@ -15,7 +15,7 @@ where id = $1;
 -- name: BuildGetUsedBy :many
 select s.*, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
-         join unweave.session s
+         join unweave.exec s
               on s.build_id = b.id
          join unweave.node as n on s.node_id = n.id;
 
@@ -101,8 +101,8 @@ set status        = $2,
 where id = $1;
 
 
--- name: SessionCreate :exec
-insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
+-- name: ExecCreate :exec
+insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
                              region, name, metadata, commit_id, git_remote_url, command,
                              build_id, image,  persist_fs)
 values ($1, $2, $3, $4, (select id
@@ -110,39 +110,39 @@ values ($1, $2, $3, $4, (select id
                          where ssh_keys.name = @ssh_key_name
                            and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13);
 
--- name: SessionGet :one
+-- name: ExecGet :one
 select *
-from unweave.session
+from unweave.exec
 where id = @id_or_name or name = @id_or_name;
 
--- name: SessionGetAllActive :many
+-- name: ExecGetAllActive :many
 select *
-from unweave.session
+from unweave.exec
 where status = 'initializing'
    or status = 'running';
 
--- name: SessionUpdateConnectionInfo :exec
-update unweave.session
+-- name: ExecUpdateConnectionInfo :exec
+update unweave.exec
 set metadata = jsonb_set(metadata, '{connection_info}', @connection_info::jsonb)
 where id = $1;
 
--- name: SessionsGet :many
-select session.id, ssh_key.name as ssh_key_name, session.status
-from unweave.session
+-- name: ExecsGet :many
+select exec.id, ssh_key.name as ssh_key_name, exec.status
+from unweave.exec
          left join unweave.ssh_key
-                   on ssh_key.id = session.ssh_key_id
+                   on ssh_key.id = exec.ssh_key_id
 where project_id = $1
-order by unweave.session.created_at desc
+order by unweave.exec.created_at desc
 limit $2 offset $3;
 
--- name: SessionSetError :exec
-update unweave.session
-set status = 'error'::unweave.session_status,
+-- name: ExecSetError :exec
+update unweave.exec
+set status = 'error'::unweave.exec_status,
     error  = $2
 where id = $1;
 
--- name: SessionStatusUpdate :exec
-update unweave.session
+-- name: ExecStatusUpdate :exec
+update unweave.exec
 set status    = $2,
     ready_at  = coalesce(sqlc.narg('ready_at'), ready_at),
     exited_at = coalesce(sqlc.narg('exited_at'), exited_at)
@@ -174,7 +174,7 @@ where public_key = $1
 -- The queries below return data in the format expected by the API.
 -------------------------------------------------------------------
 
--- name: MxSessionGet :one
+-- name: MxExecGet :one
 select s.id,
        s.name,
        s.status,
@@ -187,12 +187,12 @@ select s.id,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
-from unweave.session as s
+from unweave.exec as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
          join unweave.node as n on s.node_id = n.id
 where s.id = $1;
 
--- name: MxSessionsGet :many
+-- name: MxExecsGet :many
 select s.id,
        s.name,
        s.status,
@@ -205,7 +205,7 @@ select s.id,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
-from unweave.session as s
+from unweave.exec as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
          join unweave.node as n on s.node_id = n.id
 where s.project_id = $1;

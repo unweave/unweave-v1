@@ -72,33 +72,33 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
 select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.persist_fs, s.image, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
-         join unweave.session s
+         join unweave.exec s
               on s.build_id = b.id
          join unweave.node as n on s.node_id = n.id
 `
 
 type BuildGetUsedByRow struct {
-	ID           string               `json:"id"`
-	Name         string               `json:"name"`
-	NodeID       string               `json:"nodeID"`
-	Region       string               `json:"region"`
-	CreatedBy    string               `json:"createdBy"`
-	CreatedAt    time.Time            `json:"createdAt"`
-	ReadyAt      sql.NullTime         `json:"readyAt"`
-	ExitedAt     sql.NullTime         `json:"exitedAt"`
-	Status       UnweaveSessionStatus `json:"status"`
-	ProjectID    string               `json:"projectID"`
-	SshKeyID     sql.NullString       `json:"sshKeyID"`
-	Error        sql.NullString       `json:"error"`
-	BuildID      sql.NullString       `json:"buildID"`
-	Spec         json.RawMessage      `json:"spec"`
-	CommitID     sql.NullString       `json:"commitID"`
-	GitRemoteUrl sql.NullString       `json:"gitRemoteUrl"`
-	Command      []string             `json:"command"`
-	Metadata     json.RawMessage      `json:"metadata"`
-	PersistFs    bool                 `json:"persistFs"`
-	Image        string               `json:"image"`
-	Provider     string               `json:"provider"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	NodeID       string            `json:"nodeID"`
+	Region       string            `json:"region"`
+	CreatedBy    string            `json:"createdBy"`
+	CreatedAt    time.Time         `json:"createdAt"`
+	ReadyAt      sql.NullTime      `json:"readyAt"`
+	ExitedAt     sql.NullTime      `json:"exitedAt"`
+	Status       UnweaveExecStatus `json:"status"`
+	ProjectID    string            `json:"projectID"`
+	SshKeyID     sql.NullString    `json:"sshKeyID"`
+	Error        sql.NullString    `json:"error"`
+	BuildID      sql.NullString    `json:"buildID"`
+	Spec         json.RawMessage   `json:"spec"`
+	CommitID     sql.NullString    `json:"commitID"`
+	GitRemoteUrl sql.NullString    `json:"gitRemoteUrl"`
+	Command      []string          `json:"command"`
+	Metadata     json.RawMessage   `json:"metadata"`
+	PersistFs    bool              `json:"persistFs"`
+	Image        string            `json:"image"`
+	Provider     string            `json:"provider"`
 }
 
 func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error) {
@@ -176,6 +176,241 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 		arg.FinishedAt,
 	)
 	return err
+}
+
+const ExecCreate = `-- name: ExecCreate :exec
+insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
+                             region, name, metadata, commit_id, git_remote_url, command,
+                             build_id, image,  persist_fs)
+values ($1, $2, $3, $4, (select id
+                         from unweave.ssh_key as ssh_keys
+                         where ssh_keys.name = $14
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
+`
+
+type ExecCreateParams struct {
+	ID           string          `json:"id"`
+	NodeID       string          `json:"nodeID"`
+	CreatedBy    string          `json:"createdBy"`
+	ProjectID    string          `json:"projectID"`
+	Region       string          `json:"region"`
+	Name         string          `json:"name"`
+	Metadata     json.RawMessage `json:"metadata"`
+	CommitID     sql.NullString  `json:"commitID"`
+	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
+	Command      []string        `json:"command"`
+	BuildID      sql.NullString  `json:"buildID"`
+	Image        string          `json:"image"`
+	PersistFs    bool            `json:"persistFs"`
+	SshKeyName   string          `json:"sshKeyName"`
+}
+
+func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
+	_, err := q.db.ExecContext(ctx, ExecCreate,
+		arg.ID,
+		arg.NodeID,
+		arg.CreatedBy,
+		arg.ProjectID,
+		arg.Region,
+		arg.Name,
+		arg.Metadata,
+		arg.CommitID,
+		arg.GitRemoteUrl,
+		pq.Array(arg.Command),
+		arg.BuildID,
+		arg.Image,
+		arg.PersistFs,
+		arg.SshKeyName,
+	)
+	return err
+}
+
+const ExecGet = `-- name: ExecGet :one
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
+from unweave.exec
+where id = $1 or name = $1
+`
+
+func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error) {
+	row := q.db.QueryRowContext(ctx, ExecGet, idOrName)
+	var i UnweaveExec
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.NodeID,
+		&i.Region,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ReadyAt,
+		&i.ExitedAt,
+		&i.Status,
+		&i.ProjectID,
+		&i.SshKeyID,
+		&i.Error,
+		&i.BuildID,
+		&i.Spec,
+		&i.CommitID,
+		&i.GitRemoteUrl,
+		pq.Array(&i.Command),
+		&i.Metadata,
+		&i.PersistFs,
+		&i.Image,
+	)
+	return i, err
+}
+
+const ExecGetAllActive = `-- name: ExecGetAllActive :many
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
+from unweave.exec
+where status = 'initializing'
+   or status = 'running'
+`
+
+func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
+	rows, err := q.db.QueryContext(ctx, ExecGetAllActive)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveExec
+	for rows.Next() {
+		var i UnweaveExec
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NodeID,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.SshKeyID,
+			&i.Error,
+			&i.BuildID,
+			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
+			&i.Metadata,
+			&i.PersistFs,
+			&i.Image,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ExecSetError = `-- name: ExecSetError :exec
+update unweave.exec
+set status = 'error'::unweave.exec_status,
+    error  = $2
+where id = $1
+`
+
+type ExecSetErrorParams struct {
+	ID    string         `json:"id"`
+	Error sql.NullString `json:"error"`
+}
+
+func (q *Queries) ExecSetError(ctx context.Context, arg ExecSetErrorParams) error {
+	_, err := q.db.ExecContext(ctx, ExecSetError, arg.ID, arg.Error)
+	return err
+}
+
+const ExecStatusUpdate = `-- name: ExecStatusUpdate :exec
+update unweave.exec
+set status    = $2,
+    ready_at  = coalesce($3, ready_at),
+    exited_at = coalesce($4, exited_at)
+where id = $1
+`
+
+type ExecStatusUpdateParams struct {
+	ID       string            `json:"id"`
+	Status   UnweaveExecStatus `json:"status"`
+	ReadyAt  sql.NullTime      `json:"readyAt"`
+	ExitedAt sql.NullTime      `json:"exitedAt"`
+}
+
+func (q *Queries) ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, ExecStatusUpdate,
+		arg.ID,
+		arg.Status,
+		arg.ReadyAt,
+		arg.ExitedAt,
+	)
+	return err
+}
+
+const ExecUpdateConnectionInfo = `-- name: ExecUpdateConnectionInfo :exec
+update unweave.exec
+set metadata = jsonb_set(metadata, '{connection_info}', $2::jsonb)
+where id = $1
+`
+
+type ExecUpdateConnectionInfoParams struct {
+	ID             string          `json:"id"`
+	ConnectionInfo json.RawMessage `json:"connectionInfo"`
+}
+
+func (q *Queries) ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error {
+	_, err := q.db.ExecContext(ctx, ExecUpdateConnectionInfo, arg.ID, arg.ConnectionInfo)
+	return err
+}
+
+const ExecsGet = `-- name: ExecsGet :many
+select exec.id, ssh_key.name as ssh_key_name, exec.status
+from unweave.exec
+         left join unweave.ssh_key
+                   on ssh_key.id = exec.ssh_key_id
+where project_id = $1
+order by unweave.exec.created_at desc
+limit $2 offset $3
+`
+
+type ExecsGetParams struct {
+	ProjectID string `json:"projectID"`
+	Limit     int32  `json:"limit"`
+	Offset    int32  `json:"offset"`
+}
+
+type ExecsGetRow struct {
+	ID         string            `json:"id"`
+	SshKeyName sql.NullString    `json:"sshKeyName"`
+	Status     UnweaveExecStatus `json:"status"`
+}
+
+func (q *Queries) ExecsGet(ctx context.Context, arg ExecsGetParams) ([]ExecsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, ExecsGet, arg.ProjectID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ExecsGetRow
+	for rows.Next() {
+		var i ExecsGetRow
+		if err := rows.Scan(&i.ID, &i.SshKeyName, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const FilesystemCreate = `-- name: FilesystemCreate :one
@@ -363,7 +598,7 @@ func (q *Queries) FilesystemVersionGet(ctx context.Context, execID string) (Unwe
 	return i, err
 }
 
-const MxSessionGet = `-- name: MxSessionGet :one
+const MxExecGet = `-- name: MxExecGet :one
 
 select s.id,
        s.name,
@@ -377,33 +612,33 @@ select s.id,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
-from unweave.session as s
+from unweave.exec as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
          join unweave.node as n on s.node_id = n.id
 where s.id = $1
 `
 
-type MxSessionGetRow struct {
-	ID              string               `json:"id"`
-	Name            string               `json:"name"`
-	Status          UnweaveSessionStatus `json:"status"`
-	NodeID          string               `json:"nodeID"`
-	Provider        string               `json:"provider"`
-	Region          string               `json:"region"`
-	CreatedAt       time.Time            `json:"createdAt"`
-	Metadata        json.RawMessage      `json:"metadata"`
-	PersistFs       bool                 `json:"persistFs"`
-	SshKeyName      string               `json:"sshKeyName"`
-	PublicKey       string               `json:"publicKey"`
-	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
+type MxExecGetRow struct {
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Status          UnweaveExecStatus `json:"status"`
+	NodeID          string            `json:"nodeID"`
+	Provider        string            `json:"provider"`
+	Region          string            `json:"region"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	Metadata        json.RawMessage   `json:"metadata"`
+	PersistFs       bool              `json:"persistFs"`
+	SshKeyName      string            `json:"sshKeyName"`
+	PublicKey       string            `json:"publicKey"`
+	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
 }
 
 // -----------------------------------------------------------------
 // The queries below return data in the format expected by the API.
 // -----------------------------------------------------------------
-func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow, error) {
-	row := q.db.QueryRowContext(ctx, MxSessionGet, id)
-	var i MxSessionGetRow
+func (q *Queries) MxExecGet(ctx context.Context, id string) (MxExecGetRow, error) {
+	row := q.db.QueryRowContext(ctx, MxExecGet, id)
+	var i MxExecGetRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -421,7 +656,7 @@ func (q *Queries) MxSessionGet(ctx context.Context, id string) (MxSessionGetRow,
 	return i, err
 }
 
-const MxSessionsGet = `-- name: MxSessionsGet :many
+const MxExecsGet = `-- name: MxExecsGet :many
 select s.id,
        s.name,
        s.status,
@@ -434,36 +669,36 @@ select s.id,
        ssh_key.name       as ssh_key_name,
        ssh_key.public_key,
        ssh_key.created_at as ssh_key_created_at
-from unweave.session as s
+from unweave.exec as s
          join unweave.ssh_key on s.ssh_key_id = ssh_key.id
          join unweave.node as n on s.node_id = n.id
 where s.project_id = $1
 `
 
-type MxSessionsGetRow struct {
-	ID              string               `json:"id"`
-	Name            string               `json:"name"`
-	Status          UnweaveSessionStatus `json:"status"`
-	NodeID          string               `json:"nodeID"`
-	Provider        string               `json:"provider"`
-	Region          string               `json:"region"`
-	CreatedAt       time.Time            `json:"createdAt"`
-	Metadata        json.RawMessage      `json:"metadata"`
-	PersistFs       bool                 `json:"persistFs"`
-	SshKeyName      string               `json:"sshKeyName"`
-	PublicKey       string               `json:"publicKey"`
-	SshKeyCreatedAt time.Time            `json:"sshKeyCreatedAt"`
+type MxExecsGetRow struct {
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Status          UnweaveExecStatus `json:"status"`
+	NodeID          string            `json:"nodeID"`
+	Provider        string            `json:"provider"`
+	Region          string            `json:"region"`
+	CreatedAt       time.Time         `json:"createdAt"`
+	Metadata        json.RawMessage   `json:"metadata"`
+	PersistFs       bool              `json:"persistFs"`
+	SshKeyName      string            `json:"sshKeyName"`
+	PublicKey       string            `json:"publicKey"`
+	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
 }
 
-func (q *Queries) MxSessionsGet(ctx context.Context, projectID string) ([]MxSessionsGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, MxSessionsGet, projectID)
+func (q *Queries) MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGetRow, error) {
+	rows, err := q.db.QueryContext(ctx, MxExecsGet, projectID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []MxSessionsGetRow
+	var items []MxExecsGetRow
 	for rows.Next() {
-		var i MxSessionsGetRow
+		var i MxExecsGetRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -655,241 +890,6 @@ func (q *Queries) SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshK
 			&i.PublicKey,
 			&i.IsActive,
 		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const SessionCreate = `-- name: SessionCreate :exec
-insert into unweave.session (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, metadata, commit_id, git_remote_url, command,
-                             build_id, image,  persist_fs)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $14
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
-`
-
-type SessionCreateParams struct {
-	ID           string          `json:"id"`
-	NodeID       string          `json:"nodeID"`
-	CreatedBy    string          `json:"createdBy"`
-	ProjectID    string          `json:"projectID"`
-	Region       string          `json:"region"`
-	Name         string          `json:"name"`
-	Metadata     json.RawMessage `json:"metadata"`
-	CommitID     sql.NullString  `json:"commitID"`
-	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
-	Command      []string        `json:"command"`
-	BuildID      sql.NullString  `json:"buildID"`
-	Image        string          `json:"image"`
-	PersistFs    bool            `json:"persistFs"`
-	SshKeyName   string          `json:"sshKeyName"`
-}
-
-func (q *Queries) SessionCreate(ctx context.Context, arg SessionCreateParams) error {
-	_, err := q.db.ExecContext(ctx, SessionCreate,
-		arg.ID,
-		arg.NodeID,
-		arg.CreatedBy,
-		arg.ProjectID,
-		arg.Region,
-		arg.Name,
-		arg.Metadata,
-		arg.CommitID,
-		arg.GitRemoteUrl,
-		pq.Array(arg.Command),
-		arg.BuildID,
-		arg.Image,
-		arg.PersistFs,
-		arg.SshKeyName,
-	)
-	return err
-}
-
-const SessionGet = `-- name: SessionGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
-from unweave.session
-where id = $1 or name = $1
-`
-
-func (q *Queries) SessionGet(ctx context.Context, idOrName string) (UnweaveSession, error) {
-	row := q.db.QueryRowContext(ctx, SessionGet, idOrName)
-	var i UnweaveSession
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.NodeID,
-		&i.Region,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.ReadyAt,
-		&i.ExitedAt,
-		&i.Status,
-		&i.ProjectID,
-		&i.SshKeyID,
-		&i.Error,
-		&i.BuildID,
-		&i.Spec,
-		&i.CommitID,
-		&i.GitRemoteUrl,
-		pq.Array(&i.Command),
-		&i.Metadata,
-		&i.PersistFs,
-		&i.Image,
-	)
-	return i, err
-}
-
-const SessionGetAllActive = `-- name: SessionGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
-from unweave.session
-where status = 'initializing'
-   or status = 'running'
-`
-
-func (q *Queries) SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error) {
-	rows, err := q.db.QueryContext(ctx, SessionGetAllActive)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []UnweaveSession
-	for rows.Next() {
-		var i UnweaveSession
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.NodeID,
-			&i.Region,
-			&i.CreatedBy,
-			&i.CreatedAt,
-			&i.ReadyAt,
-			&i.ExitedAt,
-			&i.Status,
-			&i.ProjectID,
-			&i.SshKeyID,
-			&i.Error,
-			&i.BuildID,
-			&i.Spec,
-			&i.CommitID,
-			&i.GitRemoteUrl,
-			pq.Array(&i.Command),
-			&i.Metadata,
-			&i.PersistFs,
-			&i.Image,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const SessionSetError = `-- name: SessionSetError :exec
-update unweave.session
-set status = 'error'::unweave.session_status,
-    error  = $2
-where id = $1
-`
-
-type SessionSetErrorParams struct {
-	ID    string         `json:"id"`
-	Error sql.NullString `json:"error"`
-}
-
-func (q *Queries) SessionSetError(ctx context.Context, arg SessionSetErrorParams) error {
-	_, err := q.db.ExecContext(ctx, SessionSetError, arg.ID, arg.Error)
-	return err
-}
-
-const SessionStatusUpdate = `-- name: SessionStatusUpdate :exec
-update unweave.session
-set status    = $2,
-    ready_at  = coalesce($3, ready_at),
-    exited_at = coalesce($4, exited_at)
-where id = $1
-`
-
-type SessionStatusUpdateParams struct {
-	ID       string               `json:"id"`
-	Status   UnweaveSessionStatus `json:"status"`
-	ReadyAt  sql.NullTime         `json:"readyAt"`
-	ExitedAt sql.NullTime         `json:"exitedAt"`
-}
-
-func (q *Queries) SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, SessionStatusUpdate,
-		arg.ID,
-		arg.Status,
-		arg.ReadyAt,
-		arg.ExitedAt,
-	)
-	return err
-}
-
-const SessionUpdateConnectionInfo = `-- name: SessionUpdateConnectionInfo :exec
-update unweave.session
-set metadata = jsonb_set(metadata, '{connection_info}', $2::jsonb)
-where id = $1
-`
-
-type SessionUpdateConnectionInfoParams struct {
-	ID             string          `json:"id"`
-	ConnectionInfo json.RawMessage `json:"connectionInfo"`
-}
-
-func (q *Queries) SessionUpdateConnectionInfo(ctx context.Context, arg SessionUpdateConnectionInfoParams) error {
-	_, err := q.db.ExecContext(ctx, SessionUpdateConnectionInfo, arg.ID, arg.ConnectionInfo)
-	return err
-}
-
-const SessionsGet = `-- name: SessionsGet :many
-select session.id, ssh_key.name as ssh_key_name, session.status
-from unweave.session
-         left join unweave.ssh_key
-                   on ssh_key.id = session.ssh_key_id
-where project_id = $1
-order by unweave.session.created_at desc
-limit $2 offset $3
-`
-
-type SessionsGetParams struct {
-	ProjectID string `json:"projectID"`
-	Limit     int32  `json:"limit"`
-	Offset    int32  `json:"offset"`
-}
-
-type SessionsGetRow struct {
-	ID         string               `json:"id"`
-	SshKeyName sql.NullString       `json:"sshKeyName"`
-	Status     UnweaveSessionStatus `json:"status"`
-}
-
-func (q *Queries) SessionsGet(ctx context.Context, arg SessionsGetParams) ([]SessionsGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, SessionsGet, arg.ProjectID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []SessionsGetRow
-	for rows.Next() {
-		var i SessionsGetRow
-		if err := rows.Scan(&i.ID, &i.SshKeyName, &i.Status); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

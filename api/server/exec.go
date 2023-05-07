@@ -66,7 +66,7 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 	return n
 }
 
-func handleSessionError(execID string, err error, msg string) {
+func handleExecError(execID string, err error, msg string) {
 	// Make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
@@ -80,14 +80,14 @@ func handleSessionError(execID string, err error, msg string) {
 
 	log.Ctx(ctx).Error().Err(err).Msg(msg)
 
-	params := db.SessionSetErrorParams{
+	params := db.ExecSetErrorParams{
 		ID: execID,
 		Error: sql.NullString{
 			String: msg,
 			Valid:  true,
 		},
 	}
-	if err = db.Q.SessionSetError(ctx, params); err != nil {
+	if err = db.Q.ExecSetError(ctx, params); err != nil {
 		log.Ctx(ctx).Error().Err(err).Msg("Failed to set session error")
 	}
 }
@@ -206,11 +206,11 @@ func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection info: %w", err)
 	}
-	params := db.SessionUpdateConnectionInfoParams{
+	params := db.ExecUpdateConnectionInfoParams{
 		ID:             execID,
 		ConnectionInfo: connInfoJSON,
 	}
-	if e := db.Q.SessionUpdateConnectionInfo(ctx, params); e != nil {
+	if e := db.Q.ExecUpdateConnectionInfo(ctx, params); e != nil {
 		return fmt.Errorf("failed to update connection info: %w", e)
 	}
 	return nil
@@ -296,12 +296,12 @@ func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, 
 }
 
 func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, error) {
-	dbs, err := db.Q.MxSessionGet(ctx, execID)
+	dbs, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &types.Error{
 				Code:    http.StatusNotFound,
-				Message: "Session not found",
+				Message: "Exec not found",
 			}
 		}
 		return nil, fmt.Errorf("failed to get session from db: %w", err)
@@ -335,7 +335,7 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 }
 
 func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) ([]types.Exec, error) {
-	sessions, err := db.Q.MxSessionsGet(ctx, projectID)
+	sessions, err := db.Q.MxExecsGet(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to get sessions from db: %w", err)
 		return nil, err
@@ -345,7 +345,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 
 	for _, s := range sessions {
 		s := s
-		if !listAll && (s.Status == db.UnweaveSessionStatusTerminated || s.Status == db.UnweaveSessionStatusError) {
+		if !listAll && (s.Status == db.UnweaveExecStatusTerminated || s.Status == db.UnweaveExecStatusError) {
 			continue
 		}
 		metadata := &NodeMetadataV1{}
@@ -377,12 +377,12 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 }
 
 func (s *ExecService) Watch(ctx context.Context, execID string) error {
-	exec, err := db.Q.MxSessionGet(ctx, execID)
+	exec, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
 				Code:    http.StatusNotFound,
-				Message: "Session not found",
+				Message: "Exec not found",
 			}
 		}
 		return fmt.Errorf("failed to get exec from db: %w", err)
@@ -409,7 +409,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 			case status := <-statusch:
 				log.Ctx(ctx).
 					Info().
-					Str(SessionStatusCtxKey, string(status)).
+					Str(ExecStatusCtxKey, string(status)).
 					Msg("Exec status changed")
 
 				if status == types.StatusRunning {
@@ -423,21 +423,21 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 								Err(terminateErr).
 								Msgf("failed to terminate exec %q on failure to watch", execID)
 						}
-						handleSessionError(execID, e, "Failed to update connection info")
+						handleExecError(execID, e, "Failed to update connection info")
 						// TODO: we should perhaps do some retries here
 						return
 					}
 				}
 
-				params := db.SessionStatusUpdateParams{
+				params := db.ExecStatusUpdateParams{
 					ID:     execID,
-					Status: db.UnweaveSessionStatus(status),
+					Status: db.UnweaveExecStatus(status),
 					ReadyAt: sql.NullTime{
 						Time:  time.Now(),
 						Valid: true,
 					},
 				}
-				if e := db.Q.SessionStatusUpdate(ctx, params); e != nil {
+				if e := db.Q.ExecStatusUpdate(ctx, params); e != nil {
 					log.Ctx(ctx).Error().Err(e).Msg("failed to update exec status")
 					return
 				}
@@ -467,7 +467,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 				if err := s.Terminate(ctx, execID); err != nil {
 					log.Ctx(ctx).Error().Err(err).Msg("failed to terminate exec on failure to watch")
 				}
-				handleSessionError(execID, e, "Failed to watch exec")
+				handleExecError(execID, e, "Failed to watch exec")
 				return
 			}
 		}
@@ -477,12 +477,12 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 }
 
 func (s *ExecService) Snapshot(ctx context.Context, execID string) error {
-	exec, err := db.Q.MxSessionGet(ctx, execID)
+	exec, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
 				Code:       http.StatusNotFound,
-				Message:    "Session not found",
+				Message:    "Exec not found",
 				Suggestion: "Make sure the session id is valid",
 			}
 		}
@@ -514,12 +514,12 @@ func (s *ExecService) Snapshot(ctx context.Context, execID string) error {
 }
 
 func (s *ExecService) Terminate(ctx context.Context, execID string) error {
-	exec, err := db.Q.MxSessionGet(ctx, execID)
+	exec, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &types.Error{
 				Code:       http.StatusNotFound,
-				Message:    "Session not found",
+				Message:    "Exec not found",
 				Suggestion: "Make sure the session id is valid",
 			}
 		}
@@ -557,15 +557,15 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", exec.NodeID)
 	}
 
-	params := db.SessionStatusUpdateParams{
+	params := db.ExecStatusUpdateParams{
 		ID:     execID,
-		Status: db.UnweaveSessionStatusTerminated,
+		Status: db.UnweaveExecStatusTerminated,
 		ExitedAt: sql.NullTime{
 			Time:  time.Now(),
 			Valid: true,
 		},
 	}
-	if err = db.Q.SessionStatusUpdate(ctx, params); err != nil {
+	if err = db.Q.ExecStatusUpdate(ctx, params); err != nil {
 		log.Ctx(ctx).
 			Error().
 			Err(err).

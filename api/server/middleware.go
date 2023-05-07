@@ -17,12 +17,12 @@ import (
 // either in the middleware or in the handlers. They should not be passed further into
 // the call stack.
 const (
-	UserIDCtxKey        = "userID"
-	AccountIDCtxKey     = "accountID"
-	BuildIDCtxKey       = "buildID"
-	ProjectIDCtxKey     = "projectID"
-	ExecIDCtxKey        = "execID"
-	SessionStatusCtxKey = "sessionStatus"
+	UserIDCtxKey     = "userID"
+	AccountIDCtxKey  = "accountID"
+	BuildIDCtxKey    = "buildID"
+	ProjectIDCtxKey  = "projectID"
+	ExecIDCtxKey     = "execID"
+	ExecStatusCtxKey = "sessionStatus"
 )
 
 func SetAccountIDInContext(ctx context.Context, aid string) context.Context {
@@ -132,7 +132,7 @@ func withExecCtx(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ref := chi.URLParam(r, "exec")
 
-		exec, err := db.Q.SessionGet(ctx, ref)
+		exec, err := db.Q.ExecGet(ctx, ref)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				render.Render(w, r.WithContext(ctx), &types.Error{
