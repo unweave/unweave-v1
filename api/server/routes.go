@@ -20,7 +20,7 @@ type Config struct {
 
 func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 	// Re-watch all sessions
-	sessions, err := db.Q.SessionGetAllActive(ctx)
+	sessions, err := db.Q.ExecGetAllActive(ctx)
 	if err != nil {
 		return err
 	}

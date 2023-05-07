@@ -13,6 +13,13 @@ type Querier interface {
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
+	ExecCreate(ctx context.Context, arg ExecCreateParams) error
+	ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error)
+	ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error)
+	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error
+	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
+	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
+	ExecsGet(ctx context.Context, arg ExecsGetParams) ([]ExecsGetRow, error)
 	FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error)
 	FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error)
 	FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error)
@@ -24,8 +31,8 @@ type Querier interface {
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
-	MxSessionGet(ctx context.Context, id string) (MxSessionGetRow, error)
-	MxSessionsGet(ctx context.Context, projectID string) ([]MxSessionsGetRow, error)
+	MxExecGet(ctx context.Context, id string) (MxExecGetRow, error)
+	MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGetRow, error)
 	NodeCreate(ctx context.Context, arg NodeCreateParams) error
 	NodeStatusUpdate(ctx context.Context, arg NodeStatusUpdateParams) error
 	ProjectGet(ctx context.Context, id string) (UnweaveProject, error)
@@ -33,13 +40,6 @@ type Querier interface {
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
-	SessionCreate(ctx context.Context, arg SessionCreateParams) error
-	SessionGet(ctx context.Context, idOrName string) (UnweaveSession, error)
-	SessionGetAllActive(ctx context.Context) ([]UnweaveSession, error)
-	SessionSetError(ctx context.Context, arg SessionSetErrorParams) error
-	SessionStatusUpdate(ctx context.Context, arg SessionStatusUpdateParams) error
-	SessionUpdateConnectionInfo(ctx context.Context, arg SessionUpdateConnectionInfoParams) error
-	SessionsGet(ctx context.Context, arg SessionsGetParams) ([]SessionsGetRow, error)
 }
 
 var _ Querier = (*Queries)(nil)
