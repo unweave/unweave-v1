@@ -9,42 +9,31 @@ involved, reach out to us on [Discord](https://discord.gg/ydyVHbFjPt), [Twitter]
 [email](mailto:info@unweave.io)
 {% /callout %}
 
-## Dashboard
+You're ready to train your model. There's only one piece missing, the GPU to train on. With Unweave, you're 2 mins away to start training your model. 
 
-The Unweave dashboard gives you an overview of your account and projects. You should first  [create
-an account and login](https://app.unweave.io) before moving on to the CLI.
-
-## Installation
-
-### Homebrew (Mac)
-
+## Install the cli
 ```bash
-brew tap unweave/unweave
-brew install unweave
+$ brew tap unweave/unweave
+$ brew install unweave
 ```
 
-### Linux
-
-Currently, you'll need to extract the package from the [latest release](https://github.com/unweave/cli/releases) and install it with the package manager for your platform.
-Once you've downloaded the `.apk/.deb/.rpm/.tar.gz` file, depending on your package manager, you can run one of the following commands:
-
+## Login
 ```bash
-# APK
-sudo apk add --allow-untrusted <...>.apk
-# DEB
-sudo dpkg -i <...>.deb
-# RPM
-sudo rpm -i <...>.rpm
+$ unweave login
 ```
 
-### Login to the CLI
-
-
+## Create a machine
 ```bash
-unweave login
+unweave new
 ```
 
+## Launch vscode
 
+```bash
+unweave code
+```
+
+You're done 🚀. You now have VSCode with all the files in your repo, and you can get started. 
 
 
 ---
