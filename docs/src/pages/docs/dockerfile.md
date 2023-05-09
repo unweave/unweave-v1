@@ -19,7 +19,7 @@ Session. Unweave will detect a `Dockerfile` at the root of your project and use 
 to build the Session image.
 
 ```bash
-unweave sessions create --ex-dockerfile
+unweave new --ex-dockerfile
 ```
 
 Images are automatically built and uploaded to the Unweave registry and tagged with the `sessionID`.

@@ -16,7 +16,7 @@ the credit falls below $0, the session will automatically be terminated.
 To create a new session from the CLI, run:
 
 ```bash
-unweave session create --project <username>/<project-name> --provider <provider> --type <node-type>
+unweave new --project <username>/<project-name> --provider <provider> --type <node-type>
 ```
 
 This will prompt you for an SSH public key to use for the session. You can either choose to use 
@@ -27,7 +27,7 @@ Or, if you have a project linked to your local directory, you can skip the flags
 automatically use the defaults configured in the `config.toml` file.
 
 ```bash
-unweave session create
+unweave new
 ```
 
 ## SSH Keys
