@@ -63,7 +63,7 @@ func (e *Error) Render(w http.ResponseWriter, r *http.Request) error {
 	if e.Code == http.StatusInternalServerError {
 		log.Ctx(r.Context()).Error().Err(e.Err).Stack().Msg(e.Message)
 		hook.Error().Err(e.Err).Stack().Msg(e.Message)
-	} else {
+	} else if e.Code == http.StatusBadRequest {
 		log.Ctx(r.Context()).Warn().Err(e.Err).Stack().Msg(e.Message)
 		hook.Warn().Err(e.Err).Stack().Msg(e.Message)
 	}

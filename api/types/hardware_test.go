@@ -145,6 +145,23 @@ func TestHardwareSpecParse(t *testing.T) {
 			&HardwareSpec{},
 			true,
 		},
+		{
+			"0,10",
+			&HardwareSpec{
+				GPU: GPU{
+					Count: HardwareRequestRange{
+						Min: 0,
+						Max: 0,
+					},
+					Type: "",
+				},
+				CPU: HardwareRequestRange{
+					Min: 10,
+					Max: 10,
+				},
+			},
+			false,
+		},
 	}
 
 	for _, test := range tests {
