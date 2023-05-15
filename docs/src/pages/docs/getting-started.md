@@ -54,7 +54,7 @@ The next step is to launch VSCode in your GPU-powered machine. Run the following
 
 
 ```bash
-unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
+$ unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 ```
 This command will launch VSCode with all the files in your repository, but on a GPU-powered machine. The example above uses the rtx_5000 GPU type and the pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel Docker image as the base.
 
