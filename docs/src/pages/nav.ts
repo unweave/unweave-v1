@@ -16,6 +16,12 @@ export const NavigationMap = [
         ],
     },
     {
+        title: 'Guides',
+        links: [
+            { title: 'NanoGPT', href: '/guides/nanogpt' },
+        ],
+    },
+    {
         title: 'Help',
         links: [
             { title: 'FAQ', href: '/docs/faq' },
