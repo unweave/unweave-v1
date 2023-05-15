@@ -9,16 +9,17 @@ involved, reach out to us on [Discord](https://discord.gg/ydyVHbFjPt), [Twitter]
 [email](mailto:info@unweave.io)
 {% /callout %}
 
-You're ready to train your model. There's only one piece missing, the GPU to train on. With Unweave, you're 2 mins away to start training your model. 
 
 ## Install the cli
+To begin, you need to install the Unweave Command Line Interface (CLI) by following these steps:
+
 ```bash
 $ brew tap unweave/unweave
 $ brew install unweave
 ```
 
 ## Login
-Let's first login: 
+After installing the CLI, you need to log in to your Unweave account. Use the following command:
 
 ```bash
 $ unweave login
@@ -30,16 +31,18 @@ $ unweave login
 In the next version of our cli, you'll be able to create projects from your command line directly!
 {% /callout %}
 
-Navigate to the Unweave dashboard by: 
+To create a new project, navigate to the Unweave dashboard by running the command:
+
 
 ```bash
 $ unweave open
 ```
-You'll see a big blue button to create your project. Go ahead and create it!
+
+Click the big blue button to create your project.
 
 ## Link your project
 
-Now that you have a project created, we'll go ahead and link it to our directory: 
+Once you have created your project, you need to link it to your local directory. Use the following command:
 
 ```bash
 $ unweave link your-username/your-project-name
@@ -47,25 +50,38 @@ $ unweave link your-username/your-project-name
 
 ## Launch VSCode 
 
-Last step is to launch VSCode in our brand new GPU powered machine!
+The next step is to launch VSCode in your GPU-powered machine. Run the following command:
+
 
 ```bash
 unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 ```
-You're done 🚀. You now have VSCode with all the files in your repo, and you can get started. 
+This command will launch VSCode with all the files in your repository, but on a GPU-powered machine. The example above uses the rtx_5000 GPU type and the pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel Docker image as the base.
 
-Note: This will launch your exact same repository but in a GPU powered machine. Here, we are using the `rtx_5000` gpu type, and the `pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel` docker image as our base. 
+Congratulations! You're now ready to start working with your GPU-accelerated environment in VSCode.
+
+## Listing Sessions
+
+After you have finished your work and powered down the GPU-powered machine, you may want to check the status of any running sessions. You can do this using the unweave ls command. Simply run the following command:
+
+```bash
+$ unweave ls
+```
+
+This command will display a list of all your running sessions, along with relevant information such as session ID, machine type. Remember to always clean up and terminate your sessions when you are finished to avoid unnecessary charges.
 
 ## Cleaning up
 
-Once you're done using the machine, remember to power it down: 
+Once you are done using the GPU-powered machine, remember to power it down to avoid unnecessary costs. Run the following command:
+
 ```bash
 $ unweave terminate
 ```
 
 ## More options
 
-Our CLI is pretty powerful, explore more options with: 
+The Unweave CLI offers various powerful features. To explore more options, use the following command:
+
 ```
 $ unweave --help
 ```
