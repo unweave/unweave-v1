@@ -15,13 +15,13 @@ export const NavigationMap = [
             { title: 'Dockerfile (beta)', href: '/docs/dockerfile' },
         ],
     },
-    {
-        title: 'Guides',
-        links: [
-            { title: 'NanoGPT', href: '/guides/nanogpt' },
-            { title: 'Whisper', href: '/guides/whisper' },
-        ],
-    },
+    // {
+    //     title: 'Guides',
+    //     links: [
+    //         { title: 'NanoGPT', href: '/guides/nanogpt' },
+    //         { title: 'Whisper', href: '/guides/whisper' },
+    //     ],
+    // },
     {
         title: 'Help',
         links: [
