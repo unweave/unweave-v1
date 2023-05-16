@@ -177,7 +177,7 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 		}
 	}
 	if sshKeyName == nil || *sshKeyName == "" {
-		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-"))
+		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-") + ".pub")
 	}
 
 	// Key doesn't exist in db, but the user provided a public key, so add it to the db

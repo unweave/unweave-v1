@@ -170,7 +170,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 	exec := &types.Exec{
 		ID:           execID,
 		Name:         dbp.Name,
-		SSHKey:       node.KeyPair,
+		SSHKey:       cfg.Keys[0],
 		Image:        cfg.Image,
 		Connection:   nil,
 		Status:       types.StatusInitializing,
