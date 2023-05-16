@@ -19,6 +19,7 @@ export const NavigationMap = [
         title: 'Guides',
         links: [
             { title: 'NanoGPT', href: '/guides/nanogpt' },
+            { title: 'Whisper', href: '/guides/whisper' },
         ],
     },
     {
