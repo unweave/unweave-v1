@@ -506,43 +506,6 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 	return nil
 }
 
-func (s *ExecService) Snapshot(ctx context.Context, execID string) error {
-	exec, err := db.Q.MxExecGet(ctx, execID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &types.Error{
-				Code:       http.StatusNotFound,
-				Message:    "Exec not found",
-				Suggestion: "Make sure the session id is valid",
-			}
-		}
-		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
-	}
-
-	if !exec.PersistFs {
-		log.Ctx(ctx).Info().Msgf("Exec %q is not configured to persist filesystem. No-op.", execID)
-		return nil
-	}
-
-	fs, e := db.Q.FilesystemGetByExecID(ctx, execID)
-	if e != nil {
-		return fmt.Errorf("failed to get filesystem for exec %q: %w", execID, e)
-	}
-
-	provider := types.Provider(exec.Provider)
-	rt, err := s.srv.InitializeRuntime(ctx, provider)
-	if err != nil {
-		return fmt.Errorf("failed to create runtime %q: %w", exec.Provider, err)
-	}
-
-	err = rt.Exec.SnapshotFS(ctx, execID, fs.ID)
-	if err != nil {
-		return fmt.Errorf("failed to snapshot filesystem: %w", err)
-	}
-
-	return nil
-}
-
 func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	exec, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
@@ -576,10 +539,6 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		Logger().
 		WithContext(ctx)
 
-	if err = s.Snapshot(ctx, execID); err != nil {
-		// We don't want to fail the termination because of this. Log and continue.
-		log.Ctx(ctx).Error().Err(err).Msgf("Failed to snapshot filesystem for exec %q", execID)
-	}
 	if err = rt.Exec.Terminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}

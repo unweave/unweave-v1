@@ -159,8 +159,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		Command:      command,
 		BuildID:      bid,
 		Image:        imageURI,
-		PersistFs:    len(cfg.Volumes) != 0, // TODO: implement this properly
-		SshKeyName:   cfg.Keys[0].Name,      // TODO: support multiple keys
+		SshKeyName:   cfg.Keys[0].Name, // TODO: support multiple keys
 	}
 
 	if err := db.Q.ExecCreate(ctx, dbp); err != nil {

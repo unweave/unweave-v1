@@ -20,14 +20,6 @@ type Querier interface {
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
 	ExecsGet(ctx context.Context, arg ExecsGetParams) ([]ExecsGetRow, error)
-	FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error)
-	FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error)
-	FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error)
-	FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error)
-	FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error)
-	FilesystemGetLatestVersion(ctx context.Context, filesystemID string) (UnweaveFilesystemVersion, error)
-	FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error
-	FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------

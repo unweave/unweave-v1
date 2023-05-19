@@ -141,26 +141,13 @@ type UnweaveExec struct {
 	GitRemoteUrl sql.NullString    `json:"gitRemoteUrl"`
 	Command      []string          `json:"command"`
 	Metadata     json.RawMessage   `json:"metadata"`
-	PersistFs    bool              `json:"persistFs"`
 	Image        string            `json:"image"`
 }
 
-type UnweaveFilesystem struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	ProjectID string    `json:"projectID"`
-	ExecID    string    `json:"execID"`
-	OwnerID   string    `json:"ownerID"`
-	CreatedAt time.Time `json:"createdAt"`
-	SrcPath   string    `json:"srcPath"`
-}
-
-type UnweaveFilesystemVersion struct {
-	FilesystemID string         `json:"filesystemID"`
-	ExecID       string         `json:"execID"`
-	Version      int32          `json:"version"`
-	CreatedAt    time.Time      `json:"createdAt"`
-	BuildID      sql.NullString `json:"buildID"`
+type UnweaveExecVolume struct {
+	ExecID    string `json:"execID"`
+	VolumeID  string `json:"volumeID"`
+	MountPath string `json:"mountPath"`
 }
 
 type UnweaveNode struct {
@@ -193,4 +180,12 @@ type UnweaveSshKey struct {
 	CreatedAt time.Time `json:"createdAt"`
 	PublicKey string    `json:"publicKey"`
 	IsActive  bool      `json:"isActive"`
+}
+
+type UnweaveVolume struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	ProjectID string    `json:"projectID"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
