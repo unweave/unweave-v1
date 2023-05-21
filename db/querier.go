@@ -32,6 +32,10 @@ type Querier interface {
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
+	VolumeCreate(ctx context.Context, arg VolumeCreateParams) (UnweaveVolume, error)
+	VolumeDelete(ctx context.Context, id string) error
+	VolumeGet(ctx context.Context, id string) (UnweaveVolume, error)
+	VolumeList(ctx context.Context, projectID string) ([]UnweaveVolume, error)
 }
 
 var _ Querier = (*Queries)(nil)

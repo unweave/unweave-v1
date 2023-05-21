@@ -8,6 +8,7 @@ create table unweave.volume
     id         text primary key                              default ('vol_'::text || public.nanoid()) not null,
     name       text                                 not null,
     project_id text references unweave.project (id) not null,
+    provider   text                                 not null,
     created_at timestamp                            not null default now(),
     updated_at timestamp                            not null default now()
 );

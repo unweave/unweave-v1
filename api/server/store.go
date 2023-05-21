@@ -1,6 +1,8 @@
 package server
 
-import "github.com/unweave/unweave/service/volume"
+import (
+	"github.com/unweave/unweave/volume"
+)
 
 var store struct {
 	VolumeStore volume.Store

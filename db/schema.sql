@@ -162,6 +162,7 @@ CREATE TABLE unweave.volume (
     id text DEFAULT ('vol_'::text || public.nanoid()) NOT NULL,
     name text NOT NULL,
     project_id text NOT NULL,
+    provider text NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     updated_at timestamp without time zone DEFAULT now() NOT NULL
 );

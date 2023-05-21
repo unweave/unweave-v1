@@ -6,8 +6,8 @@ import (
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
-	"github.com/unweave/unweave/service/volume"
 	"github.com/unweave/unweave/vault"
+	"github.com/unweave/unweave/volume"
 )
 
 type Runtime struct {
