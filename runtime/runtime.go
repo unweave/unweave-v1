@@ -6,12 +6,14 @@ import (
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave/service/volume"
 	"github.com/unweave/unweave/vault"
 )
 
 type Runtime struct {
-	Node Node
-	Exec Exec
+	Node   Node
+	Exec   Exec
+	Volume volume.Provider
 }
 
 // Node represents an interactive session on a node. You can connect to it via SSH and

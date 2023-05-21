@@ -233,3 +233,26 @@ type SSHKeyResponse struct {
 type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
 }
+
+type VolumeCreateParams struct {
+	Name     string   `json:"name"`
+	Size     int      `json:"size"`
+	Provider Provider `json:"provider"`
+}
+
+func (v *VolumeCreateParams) Bind(r *http.Request) error {
+	if v.Provider == "" {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: field 'provider' is required",
+		}
+	}
+
+	if v.Size < 1 {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: volume size must be at least 10GB",
+		}
+	}
+	return nil
+}

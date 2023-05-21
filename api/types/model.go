@@ -151,8 +151,3 @@ type SourceContext struct {
 	MountPath string        `json:"mountPath"`
 	Context   io.ReadCloser `json:"-"`
 }
-
-type Volume struct {
-	MountPath    string `json:"mountPath"`
-	FilesystemID string `json:"filesystemID"`
-}

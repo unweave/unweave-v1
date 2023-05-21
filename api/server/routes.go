@@ -92,6 +92,10 @@ func API(cfg Config, rti runtime.Initializer) {
 				r.Put("/terminate", ExecsTerminate(rti))
 			})
 		})
+
+		r.Route("/volumes", func(r chi.Router) {
+			r.Post("/", VolumeCreate(rti))
+		})
 	})
 
 	r.Route("/ssh-keys/{owner}", func(r chi.Router) {

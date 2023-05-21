@@ -11,6 +11,7 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
+	"github.com/unweave/unweave/service/volume"
 )
 
 // Builder
@@ -343,5 +344,39 @@ func SSHKeyList(rti runtime.Initializer) http.HandlerFunc {
 
 		res := types.SSHKeyListResponse{Keys: keys}
 		render.JSON(w, r, res)
+	}
+}
+
+func VolumeCreate(rti runtime.Initializer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		log.Ctx(ctx).Info().Msgf("Executing VolumeCreate request")
+
+		params := types.VolumeCreateParams{}
+		if err := render.Bind(r, &params); err != nil {
+			err = fmt.Errorf("failed to read body: %w", err)
+			render.Render(w, r.WithContext(ctx), ErrHTTPBadRequest(err, "Invalid request body"))
+			return
+		}
+
+		accountID := GetAccountIDFromContext(ctx)
+		projectID := GetProjectIDFromContext(ctx)
+		volStore := GetVolumeStore()
+
+		rt, err := rti.InitializeRuntime(ctx, accountID, params.Provider)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to initialize provider"))
+			return
+		}
+
+		handler := volume.NewVolumeService(projectID, rt.Volume, volStore)
+
+		vol, err := handler.Create(ctx, params.Size)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), ErrHTTPError(err, "Failed to create volume"))
+			return
+		}
+
+		render.JSON(w, r, vol)
 	}
 }
