@@ -100,6 +100,7 @@ type ExecCreateParams struct {
 	Name         string         `json:"name,omitempty"`
 	Provider     Provider       `json:"provider"`
 	NodeTypeID   string         `json:"nodeTypeID,omitempty"`
+	NodeGPUCount int            `json:"nodeGPUCount,omitempty"`
 	Region       *string        `json:"region,omitempty"`
 	SSHKeyName   *string        `json:"sshKeyName"`
 	SSHPublicKey *string        `json:"sshPublicKey"`

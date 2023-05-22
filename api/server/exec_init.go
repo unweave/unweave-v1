@@ -12,11 +12,11 @@ import (
 	"github.com/unweave/unweave/tools/random"
 )
 
-func (s *ExecService) assignNode(ctx context.Context, nodeTypeID string, region *string, keys []types.SSHKey) (types.Node, error) {
+func (s *ExecService) assignNode(ctx context.Context, nodeTypeID string, region *string, NodeGPUCount int, keys []types.SSHKey) (types.Node, error) {
 	owner := s.srv.aid
 	user := s.srv.cid
 
-	node, err := s.srv.runtime.Node.InitNode(ctx, keys, nodeTypeID, region)
+	node, err := s.srv.runtime.Node.InitNode(ctx, keys, nodeTypeID, region, NodeGPUCount)
 	if err != nil {
 		return types.Node{}, fmt.Errorf("failed to init node: %w", err)
 	}
