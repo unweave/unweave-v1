@@ -203,7 +203,7 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 	return err
 }
 
-func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string, NodeGPUCount int) (types.Node, error) {
 	log.Ctx(ctx).Debug().Msgf("Executing InitNode for Lambdalabs - no op")
 	if len(sshKey) == 0 {
 		return types.Node{}, &types.Error{
@@ -288,12 +288,6 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 		return types.Node{}, fmt.Errorf("failed to launch instance")
 	}
 
-	gpuCount, err := parseGPUCount(nodeTypeID)
-	if err != nil {
-		log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse number of GPUs")
-		gpuCount = 0
-	}
-
 	gpuMem, err := parseGPUMemory(nodeTypeID)
 	if err != nil {
 		log.Ctx(ctx).Warn().Err(err).Msg("Failed to parse GPU memory")
@@ -316,7 +310,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 			VCPUs:     instance.InstanceType.Specs.Vcpus,
 			Memory:    instance.InstanceType.Specs.MemoryGib,
 			GPUMemory: &gpuMem,
-			GPUCount:  gpuCount,
+			GPUCount:  NodeGPUCount,
 			Storage:   instance.InstanceType.Specs.StorageGib,
 		},
 	}, nil

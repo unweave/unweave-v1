@@ -236,7 +236,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	node, err := s.assignNode(ctx, params.NodeTypeID, params.Region, keys)
+	node, err := s.assignNode(ctx, params.NodeTypeID, params.Region, params.NodeGPUCount, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
