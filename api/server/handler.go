@@ -11,7 +11,7 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/volume"
+	"github.com/unweave/unweave/wip/conductor/volume"
 )
 
 // Builder

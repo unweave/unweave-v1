@@ -322,11 +322,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	return exec, nil
 }
 
-func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, filesystemID string) error {
-	// TODO: if filesystem is not a root filesystem, return error
-	return nil
-}
-
 func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, error) {
 	dbs, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
