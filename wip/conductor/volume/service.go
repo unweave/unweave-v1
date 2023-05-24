@@ -22,7 +22,7 @@ func NewVolumeService(namespace string, provider Provider, store Store) *Service
 }
 
 func (s *Service) Create(ctx context.Context, size int) (types.Volume, error) {
-	vol, err := s.provider.Create(ctx, size)
+	vol, err := s.provider.VolumeCreate(ctx, size)
 	if err != nil {
 		return types.Volume{}, err
 	}

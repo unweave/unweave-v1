@@ -6,21 +6,6 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-type Provider interface {
-	// Create creates a volume. The size is in GB.
-	Create(ctx context.Context, size int) (Volume, error)
-	// Delete deletes the volume.
-	Delete(ctx context.Context) error
-	// Get gets the volume.
-	Get(ctx context.Context, id string) (Volume, error)
-	// List lists all volumes the provider has.
-	List(ctx context.Context) ([]Volume, error)
-	// Name returns the name of the provider.
-	Name() types.Provider
-	// Resize resizes the volume to the given size in GB.
-	Resize(ctx context.Context, size int) error
-}
-
 // Volume is an interface that must be implemented by a volume.
 // The implementation of the volume interface should have the ability/permissions
 // to mount the volume onto a container inside a node. For instance, this could
@@ -33,4 +18,19 @@ type Volume interface {
 	Mount(ctx context.Context, path string) error
 	// Unmount unmounts the volume from the given path.
 	Unmount(ctx context.Context, path string) error
+}
+
+type Provider interface {
+	// VolumeCreate creates a volume. The size is in GB.
+	VolumeCreate(ctx context.Context, size int) (Volume, error)
+	// VolumeDelete deletes the volume.
+	VolumeDelete(ctx context.Context) error
+	// VolumeGet gets the volume.
+	VolumeGet(ctx context.Context, id string) (Volume, error)
+	// VolumeList lists all volumes the provider has.
+	VolumeList(ctx context.Context) ([]Volume, error)
+	// VolumeName returns the name of the provider.
+	VolumeName() types.Provider
+	// VolumeResize resizes the volume to the given size in GB.
+	VolumeResize(ctx context.Context, size int) error
 }
