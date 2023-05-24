@@ -16,9 +16,6 @@ func (s *ExecService) assignNode(ctx context.Context, nodeTypeID string, region 
 	owner := s.srv.aid
 	user := s.srv.cid
 
-	// print NodeGPUCount
-	fmt.Println("NodeGPUCount: ", NodeGPUCount)
-
 	node, err := s.srv.runtime.Node.InitNode(ctx, keys, nodeTypeID, region, NodeGPUCount)
 	if err != nil {
 		return types.Node{}, fmt.Errorf("failed to init node: %w", err)
