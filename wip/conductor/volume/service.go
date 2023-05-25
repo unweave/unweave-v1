@@ -27,7 +27,7 @@ func (s *Service) Create(ctx context.Context, size int) (types.Volume, error) {
 		return types.Volume{}, err
 	}
 
-	v, err := s.store.Create(s.namespace, vol.ID(), s.provider.Name().String())
+	v, err := s.store.Create(s.namespace, vol.ID(), s.provider.Name())
 	if err != nil {
 		return types.Volume{}, fmt.Errorf("failed to add volume to store: %w", err)
 	}
@@ -36,7 +36,7 @@ func (s *Service) Create(ctx context.Context, size int) (types.Volume, error) {
 }
 
 func (s *Service) Delete(ctx context.Context, id string) error {
-	if err := s.provider.Delete(ctx); err != nil {
+	if err := s.provider.VolumeDelete(ctx); err != nil {
 		return fmt.Errorf("failed to delete volume with provider: %w", err)
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) Mount(ctx context.Context, id, path string) error {
 		return fmt.Errorf("failed to get volume from store: %w", err)
 	}
 
-	v, err := s.provider.Get(ctx, vol.ID)
+	v, err := s.provider.VolumeGet(ctx, vol.ID)
 	if err := v.Mount(ctx, path); err != nil {
 		return fmt.Errorf("failed to mount volume: %w", err)
 	}
@@ -82,7 +82,7 @@ func (s *Service) UnMount(ctx context.Context, id, path string) error {
 		return fmt.Errorf("failed to get volume from store: %w", err)
 	}
 
-	v, err := s.provider.Get(ctx, vol.ID)
+	v, err := s.provider.VolumeGet(ctx, vol.ID)
 	if err := v.Unmount(ctx, path); err != nil {
 		return fmt.Errorf("failed to unmount volume: %w", err)
 	}

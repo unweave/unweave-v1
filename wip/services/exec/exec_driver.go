@@ -1,4 +1,4 @@
-package wip
+package exec
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func (d *SSHDriver) Create(ctx context.Context, project string, params types.Exe
 	spec := conductor.Spec{}
 	config := conductor.ContainerCreateConfig{
 		Cmd:     params.Command,
-		SSHKeys: params.PublicKeys,
+		SSHKeys: []string{},
 		Volumes: map[string]string{},
 	}
 

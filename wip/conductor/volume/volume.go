@@ -2,8 +2,6 @@ package volume
 
 import (
 	"context"
-
-	"github.com/unweave/unweave/api/types"
 )
 
 // Volume is an interface that must be implemented by a volume.
@@ -20,7 +18,15 @@ type Volume interface {
 	Unmount(ctx context.Context, path string) error
 }
 
+type Driver interface {
+	Mount(ctx context.Context, volumeID, path string) error
+	Unmount(ctx context.Context, volumeID, path string) error
+}
+
+// Provider allows management of volumes from different providers (eg AWS, GCP).
 type Provider interface {
+	// Name returns the name of the provider.
+	Name() string
 	// VolumeCreate creates a volume. The size is in GB.
 	VolumeCreate(ctx context.Context, size int) (Volume, error)
 	// VolumeDelete deletes the volume.
@@ -29,8 +35,6 @@ type Provider interface {
 	VolumeGet(ctx context.Context, id string) (Volume, error)
 	// VolumeList lists all volumes the provider has.
 	VolumeList(ctx context.Context) ([]Volume, error)
-	// VolumeName returns the name of the provider.
-	VolumeName() types.Provider
 	// VolumeResize resizes the volume to the given size in GB.
 	VolumeResize(ctx context.Context, size int) error
 }

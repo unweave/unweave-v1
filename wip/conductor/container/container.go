@@ -26,8 +26,7 @@ type LogEntry struct {
 
 // Driver is an interface that must be implemented by any type that needs access to
 // high level container operations.
-//
-// The implementing type should handle the details of operating over a network, different
+// The implementation should handle the details of operating over a network, different
 // cloud providers etc.
 type Driver interface {
 	Logs(ctx context.Context, id string) (logs chan<- LogEntry, err error)
@@ -39,12 +38,12 @@ type Driver interface {
 // Runtime is an interface that must be implemented by any runtime that manages containers
 // on a node. Docker is a classic example of this.
 type Runtime interface {
-	Create(ctx context.Context) (string, error)
-	Exec(ctx context.Context, containerID string)
-	Logs(ctx context.Context, containerID string)
-	List(ctx context.Context) ([]Container, error)
-	Start(ctx context.Context, containerID string)
-	Stop(ctx context.Context, containerID string) error
-	Top(ctx context.Context, containerID string)
-	Kill(ctx context.Context, containerID string)
+	ContainerCreate(ctx context.Context) (string, error)
+	ContainerExec(ctx context.Context, containerID string)
+	ContainerLogs(ctx context.Context, containerID string)
+	ContainerList(ctx context.Context) ([]Container, error)
+	ContainerStart(ctx context.Context, containerID string)
+	ContainerStop(ctx context.Context, containerID string) error
+	ContainerTop(ctx context.Context, containerID string)
+	ContainerKill(ctx context.Context, containerID string)
 }

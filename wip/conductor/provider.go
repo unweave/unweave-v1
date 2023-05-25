@@ -1,20 +1,9 @@
 package conductor
 
-type Node interface {
-	NodeCreate()
-	NodeInit()
-	NodeStop()
-	NodeTerminate()
-	NodeList()
-}
-
-type Volume interface {
-	VolumeCreate()
-	VolumeDelete()
-	VolumeList()
-	VolumeGet()
-	VolumeResize()
-}
+import (
+	"github.com/unweave/unweave/wip/conductor/node"
+	"github.com/unweave/unweave/wip/conductor/volume"
+)
 
 type Keys interface {
 	KeysRegister()
@@ -28,7 +17,12 @@ type Network interface {
 }
 
 type Provider interface {
+	// ID is the unique identifier for the provider. This is used to monitor, assign and
+	// forward requests to each provider. You should make sure this is unique. In most
+	// cases this will be the accountID or userID of the owner of the provider.
 	ID() string
-	Node
-	Volume
+	// Name is the name of the provider (eg. AWS, GCP, DigitalOcean etc.)
+	Name() string
+	node.Provider
+	volume.Provider
 }

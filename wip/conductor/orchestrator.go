@@ -69,6 +69,10 @@ func (o *orchestrator) match(spec types.Spec) (nodeID string, err error) {
 	return "", ErrorNoNode
 }
 
+func (o *orchestrator) handle() {
+
+}
+
 func (o *orchestrator) assign(spec types.Spec) (containerID, nodeID string, err error) {
 	// find a node that matches the spec
 	// if no node matches, create a new node
@@ -123,4 +127,13 @@ func Init(providers map[string]Provider) {
 			go o.start()
 		}
 	}
+}
+
+func RegisterProvider(provider Provider) {
+	o := new(provider)
+
+	for i := 0; i < numWorkers; i++ {
+		go o.handle()
+	}
+	orcMap[provider.ID()] = o
 }
