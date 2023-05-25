@@ -203,10 +203,10 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 	return err
 }
 
-func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, specReq types.HardwareSpec, region *string) (types.Node, error) {
+func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, spec types.HardwareSpec, region *string) (types.Node, error) {
 	log.Ctx(ctx).Debug().Msgf("Executing InitNode for Lambdalabs - no op")
 
-	var nodeTypeID = specReq.GPU.Type
+	var nodeTypeID = spec.GPU.Type
 
 	if len(sshKey) == 0 {
 		return types.Node{}, &types.Error{
@@ -359,7 +359,7 @@ func (n *NodeRuntime) ListNodeTypes(ctx context.Context, filterAvailable bool) (
 			Regions:  []string{},
 			Price:    &data.InstanceType.PriceCentsPerHour,
 			Provider: types.LambdaLabsProvider,
-			Specs:    getHardwareSpecFromInstanceTypesRespose(data.InstanceType, gpuMem, gpuCount),
+			Specs:    getHardwareSpecFromInstanceTypes(data.InstanceType, gpuMem, gpuCount),
 		}
 
 		if filterAvailable && len(data.RegionsWithCapacityAvailable) == 0 {
@@ -545,7 +545,7 @@ func getHardwareSpecFromInstance(instance client.Instance, gpuMem, gpuCount int)
 	}
 }
 
-func getHardwareSpecFromInstanceTypesRespose(instance client.InstanceType, gpuMem, gpuCount int) types.HardwareSpec {
+func getHardwareSpecFromInstanceTypes(instance client.InstanceType, gpuMem, gpuCount int) types.HardwareSpec {
 	return types.HardwareSpec{
 		GPU: types.GPU{
 			Count: types.HardwareRequestRange{
