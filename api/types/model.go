@@ -72,42 +72,28 @@ func (l LogEntry) String() string {
 	return fmt.Sprintf("%s %s %s", l.TimeStamp.Format(time.RFC3339), l.Level, l.Message)
 }
 
-type NodeSpecs struct {
-	VCPUs int `json:"vCPUs"`
-	// Memory is the RAM in GB
-	Memory int `json:"memory"`
-	// Storage is the storage in GB
-	Storage int `json:"storage"`
-	// GPUType is the type of GPU
-	GPUType string `json:"gpuType"`
-	// GPUCount is the number of GPUs
-	GPUCount int `json:"gpuCount"`
-	// GPUMemory is the GPU RAM in GB
-	GPUMemory *int `json:"gpuMemory"`
-}
-
 type NodeType struct {
-	ID       string    `json:"id"`
-	Name     *string   `json:"name"`
-	Price    *int      `json:"price"`
-	Regions  []string  `json:"regions"`
-	Provider Provider  `json:"provider"`
-	Specs    NodeSpecs `json:"specs"`
+	ID       string       `json:"id"`
+	Name     *string      `json:"name"`
+	Price    *int         `json:"price"`
+	Regions  []string     `json:"regions"`
+	Provider Provider     `json:"provider"`
+	Specs    HardwareSpec `json:"specs"`
 }
 
 type Node struct {
-	ID       string    `json:"id"`
-	TypeID   string    `json:"typeID"`
-	OwnerID  string    `json:"ownerID"`
-	Price    int       `json:"price"`
-	Region   string    `json:"region"`
-	KeyPair  SSHKey    `json:"sshKeyPair"`
-	Status   Status    `json:"status"`
-	Provider Provider  `json:"provider"`
-	Specs    NodeSpecs `json:"specs"`
-	Host     string    `json:"host"`
-	User     string    `json:"user"`
-	Port     int       `json:"port"`
+	ID       string       `json:"id"`
+	TypeID   string       `json:"typeID"`
+	OwnerID  string       `json:"ownerID"`
+	Price    int          `json:"price"`
+	Region   string       `json:"region"`
+	KeyPair  SSHKey       `json:"sshKeyPair"`
+	Status   Status       `json:"status"`
+	Provider Provider     `json:"provider"`
+	Specs    HardwareSpec `json:"specs"`
+	Host     string       `json:"host"`
+	User     string       `json:"user"`
+	Port     int          `json:"port"`
 }
 
 type Project struct {
