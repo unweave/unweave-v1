@@ -203,8 +203,11 @@ func (n *NodeRuntime) HealthCheck(ctx context.Context) error {
 	return err
 }
 
-func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeTypeID string, region *string) (types.Node, error) {
+func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, spec types.HardwareSpec, region *string) (types.Node, error) {
 	log.Ctx(ctx).Debug().Msgf("Executing InitNode for Lambdalabs - no op")
+
+	var nodeTypeID = spec.GPU.Type
+
 	if len(sshKey) == 0 {
 		return types.Node{}, &types.Error{
 			Code:    http.StatusInternalServerError,
@@ -312,13 +315,7 @@ func (n *NodeRuntime) InitNode(ctx context.Context, sshKey []types.SSHKey, nodeT
 		KeyPair:  sshKey[0],
 		Status:   types.StatusInitializing,
 		Provider: types.LambdaLabsProvider,
-		Specs: types.NodeSpecs{
-			VCPUs:     instance.InstanceType.Specs.Vcpus,
-			Memory:    instance.InstanceType.Specs.MemoryGib,
-			GPUMemory: &gpuMem,
-			GPUCount:  gpuCount,
-			Storage:   instance.InstanceType.Specs.StorageGib,
-		},
+		Specs:    getHardwareSpecFromInstance(instance, gpuMem, gpuCount),
 	}, nil
 }
 
@@ -362,13 +359,7 @@ func (n *NodeRuntime) ListNodeTypes(ctx context.Context, filterAvailable bool) (
 			Regions:  []string{},
 			Price:    &data.InstanceType.PriceCentsPerHour,
 			Provider: types.LambdaLabsProvider,
-			Specs: types.NodeSpecs{
-				VCPUs:     data.InstanceType.Specs.Vcpus,
-				Memory:    data.InstanceType.Specs.MemoryGib,
-				Storage:   data.InstanceType.Specs.StorageGib,
-				GPUMemory: &gpuMem,
-				GPUCount:  gpuCount,
-			},
+			Specs:    getHardwareSpecFromInstanceTypes(data.InstanceType, gpuMem, gpuCount),
 		}
 
 		if filterAvailable && len(data.RegionsWithCapacityAvailable) == 0 {
@@ -523,4 +514,62 @@ func NewNodeRuntime(apiKey string) (*NodeRuntime, error) {
 	}
 
 	return &NodeRuntime{client: llClient}, nil
+}
+
+func getHardwareSpecFromInstance(instance client.Instance, gpuMem, gpuCount int) types.HardwareSpec {
+	return types.HardwareSpec{
+		GPU: types.GPU{
+			Count: types.HardwareRequestRange{
+				Min: gpuCount,
+				Max: gpuCount,
+			},
+			// For LL we get the node type ID from the user and directly pass to the API
+			Type: "",
+			RAM: types.HardwareRequestRange{
+				Min: gpuMem,
+				Max: gpuMem,
+			},
+		},
+		CPU: types.HardwareRequestRange{
+			Min: instance.InstanceType.Specs.Vcpus,
+			Max: instance.InstanceType.Specs.Vcpus,
+		},
+		RAM: types.HardwareRequestRange{
+			Min: instance.InstanceType.Specs.MemoryGib,
+			Max: instance.InstanceType.Specs.MemoryGib,
+		},
+		Storage: types.HardwareRequestRange{
+			Min: instance.InstanceType.Specs.StorageGib,
+			Max: instance.InstanceType.Specs.StorageGib,
+		},
+	}
+}
+
+func getHardwareSpecFromInstanceTypes(instance client.InstanceType, gpuMem, gpuCount int) types.HardwareSpec {
+	return types.HardwareSpec{
+		GPU: types.GPU{
+			Count: types.HardwareRequestRange{
+				Min: gpuCount,
+				Max: gpuCount,
+			},
+			// For LL we get the node type ID from the user and directly pass to the API
+			Type: "",
+			RAM: types.HardwareRequestRange{
+				Min: gpuMem,
+				Max: gpuMem,
+			},
+		},
+		CPU: types.HardwareRequestRange{
+			Min: instance.Specs.Vcpus,
+			Max: instance.Specs.Vcpus,
+		},
+		RAM: types.HardwareRequestRange{
+			Min: instance.Specs.MemoryGib,
+			Max: instance.Specs.MemoryGib,
+		},
+		Storage: types.HardwareRequestRange{
+			Min: instance.Specs.StorageGib,
+			Max: instance.Specs.StorageGib,
+		},
+	}
 }

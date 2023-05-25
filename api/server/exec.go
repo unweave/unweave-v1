@@ -41,20 +41,16 @@ type NodeMetadataV1 struct {
 }
 
 func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
-	gpuMem := 0
-	if node.Specs.GPUMemory != nil {
-		gpuMem = *node.Specs.GPUMemory
-	}
 	n := NodeMetadataV1{
 		ID:        node.ID,
 		TypeID:    node.TypeID,
 		Price:     node.Price,
-		VCPUs:     node.Specs.VCPUs,
-		Memory:    node.Specs.Memory,
-		Storage:   node.Specs.Storage,
-		GpuType:   node.Specs.GPUType,
-		GPUCount:  node.Specs.GPUCount,
-		GPUMemory: gpuMem,
+		VCPUs:     node.Specs.CPU.Min,
+		Memory:    node.Specs.RAM.Min,
+		Storage:   node.Specs.Storage.Min,
+		GpuType:   node.Specs.GPU.Type,
+		GPUCount:  node.Specs.GPU.Count.Min,
+		GPUMemory: node.Specs.GPU.RAM.Min,
 
 		ConnectionInfo: ConnectionInfoV1{
 			Version: 1,
@@ -236,7 +232,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	node, err := s.assignNode(ctx, params.NodeTypeID, params.Region, keys)
+	node, err := s.assignNode(ctx, params.HardwareSpec, params.Region, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
