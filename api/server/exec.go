@@ -268,7 +268,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	// Where a user assigns a session
 	node, err := s.assignNode(ctx, params.HardwareSpec, params.Region, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
@@ -298,7 +297,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		GitURL:   params.GitURL,
 	}
 
-	// Where we tell Coreweave to assign an Exec/Session
 	exec, err = s.init(ctx, projectID, node, execCfg, gitCfg, buildID, imageURI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize exec: %w", err)
