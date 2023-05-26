@@ -58,7 +58,7 @@ Now, let's get your audio file ready for transcription:
 - Create a new machine with GPU support in the Unweave platform:
 
 ```bash
-unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
+unweave code --gpu-type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 ```
 
 - Make sure your audio file is on the machine (e.g., `ls`).

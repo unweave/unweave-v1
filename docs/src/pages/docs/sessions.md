@@ -16,7 +16,7 @@ the credit falls below $0, the session will automatically be terminated.
 To create a new session from the CLI, run:
 
 ```bash
-unweave new --project <username>/<project-name> --provider <provider> --type <node-type>
+unweave new --project <username>/<project-name> --provider <provider> --gpu-type <node-type>
 ```
 
 This will prompt you for an SSH public key to use for the session. You can either choose to use 

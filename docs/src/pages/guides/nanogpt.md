@@ -4,15 +4,19 @@ description: Training a NanoGPT model on the unweave platform
 ---
 ## 1.Introduction to NanoGPT and Unweave
 
-[NanoGPT](https://github.com/karpathy/nanoGPT) is a powerful repository for training and fine-tuning medium-sized GPTs. Unweave is a platform that provides a seamless environment for machine learning tasks. In this guide, we will walk you through the process of training NanoGPT models using Unweave. 
+[NanoGPT](https://github.com/karpathy/nanoGPT) is a powerful repository for training and fine-tuning 
+tiny GPTs, mostly for instructional purposes. In this guide, we'll walk you through the process of 
+training NanoGPT models using Unweave. 
 
-By following this guide, you will learn how to set up your environment, prepare the dataset, configure the fine-tuning process, initiate training on Unweave, save the fine-tuned model, generate samples, and manage your resources effectively. Let's get started and explore the capabilities of NanoGPT on the Unweave platform!
+By following this guide, you'll learn how to set up your environment, prepare the dataset, 
+configure the fine-tuning process, initiate training on Unweave, save the fine-tuned model, 
+generate samples, and manage your resources effectively. 
 
 ##  2.Setting Up the Environment
 
-Before we begin training NanoGPT models on the Unweave platform, it's important to set up the environment properly. Follow these steps to ensure a smooth setup process:
+We'll first setup the NanoGPT repository on our local machine and link it to a new project on Unweave.
 
-- Clone the NanoGPT repository from GitHub by running the following command in your desired directory:
+- Clone the NanoGPT repository from GitHub:
 
 ```shell
 git clone https://github.com/karpathy/nanoGPT
@@ -24,14 +28,14 @@ git clone https://github.com/karpathy/nanoGPT
 cd nanoGPT
 ```
 
-- Install the Unweave Command Line Interface (CLI) by running the following commands:
+- If you haven't already, install the Unweave Command Line Interface (CLI):
 
 ```shell
 brew tap unweave/unweave
 brew install unweave
 ```
 
-- Log in to your Unweave account using the command:
+- Log in to your Unweave account on the CLI. This will redirect you to the Unweave dashboard in your browser:
 
 ```shell
 unweave login
@@ -43,33 +47,31 @@ unweave login
 unweave open
 ```
 
-- Click the "Create Project" button to set up your project.
+- Click the "Create Project" button to set up your project. Call it `nanoGPT`
 - Link your local directory to the Unweave project using the command:
 
 ```shell
-unweave link your-username/nanoGPT
+unweave link <your-username>/nanoGPT
 ```
 
-Replace `your-username` and `your-project-name` with your actual username.
+Replace `your-username` with your Unweave username above.
 
-Once you have completed these setup steps, you'll be ready to start training NanoGPT models on the Unweave platform. Let's move on to preparing the dataset.
+We're now ready to start training NanoGPT models. Let's move on to preparing the dataset.
 
 ##  3.Preparing the Dataset
 
-To prepare the dataset for training NanoGPT, follow these steps:
+We'll do all the data prep and training on Unweave using the Pytorch 2.0 Docker image:
 
-- Create a new machine with GPU support in the Unweave platform:
-
-```bash
-unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
-```
-
-- Ensure your NanoGPT repository is on the machine (e.g., `ls`).
-- Navigate to the NanoGPT repository:
+- Create a new machine with GPU support using the Unweave CLI. In this case, we don't need a huge machine, 
+  so we'll use the `rtx_5000` GPU type. Since the pytorch image is quite large, this might take 1-2 minutes 
+  to start-up:
 
 ```bash
-cd NanoGPT
+unweave code --gpu-type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 ```
+
+- This should land you in the `/home/unweave` directory with your code copied over. Make sure it is
+ (e.g., `ls`). 
 
 - Install the required [dependencies](https://github.com/karpathy/nanoGPT#install) mentioned in the NanoGPT repository:
 
@@ -86,11 +88,9 @@ python data/shakespeare_char/prepare.py
 
 Make sure that `train.bin` and `val.bin` are created in the `data/shakespeare` directory.
 
-By following these steps, you will set up the necessary environment, ensure your repository is available, install dependencies, and prepare the dataset for training NanoGPT.
-
 ##  4.Fine-tuning and Inference
 
-With the dataset prepared, we can now proceed with fine-tuning and generating text using NanoGPT:
+With the dataset prepared, we can now proceed to fine-tuning and generating text using NanoGPT:
 
 - Start the fine-tuning process:
 
@@ -110,11 +110,12 @@ nvidia-smi
 sample.py --out_dir=out-shakespeare
 ```
 
-Congratulations! You have successfully trained NanoGPT on the Unweave platform and generated text using the fine-tuned model.
+Congratulations! You have successfully trained your NanoGPT to talk Shakespeare! 
 
 ##  5.Cleaning Up and Terminating Sessions
 
-After you have finished working with your trained model, it's important to clean up and terminate any running sessions. Follow these steps:
+After you have finished working with your trained model, it's important to clean up and terminate 
+any running sessions. Follow these steps:
 
 - Zip your fine-tuned model:
 
@@ -136,10 +137,8 @@ unweave ls
 unweave terminate
 ```
 
-By following these steps, you can organize your project files and free up resources on the Unweave platform.
-
 ---
 
-In this tutorial, we covered the process of training NanoGPT models using Unweave. We set up the environment, prepared the dataset, performed fine-tuning, and generated text. Finally, we learned how to clean up and terminate sessions on the Unweave platform.
-
-Now you can leverage the power of NanoGPT and Unweave for your own machine learning tasks. Happy training!
+In this tutorial, we covered the process of training NanoGPT models using Unweave. We set up the 
+environment, prepared the dataset, performed fine-tuning, and generated text. Finally, we learned 
+how to clean up and terminate sessions on the Unweave.

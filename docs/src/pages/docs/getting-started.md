@@ -55,7 +55,7 @@ unweave link <unweave-username>/<project-name>
 Unweave ships with a super handy command to launch VS Code in the context of your project.
 
 ```bash
-unweave code --new --type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
+unweave code --gpu-type rtx_5000 --image pytorch/pytorch:2.0.0-cuda11.7-cudnn8-devel
 ```
 
 This  will launch VS Code, setup SSH access, and sync your local directory onto the VM at 
