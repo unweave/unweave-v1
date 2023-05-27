@@ -18,10 +18,10 @@ func NewService(store Store, driver Driver) (*Service, error) {
 	s := &Service{
 		store:         store,
 		driver:        driver,
-		stateInformer: NewStateInformer(store, driver),
+		stateInformer: newStateInformer(store, driver),
 	}
 
-	s.stateInformer.watch()
+	go s.stateInformer.watch()
 
 	execs, err := store.ListAll()
 	if err != nil {
@@ -30,6 +30,16 @@ func NewService(store Store, driver Driver) (*Service, error) {
 
 	for _, e := range execs {
 		e := e
+
+		ed, err := s.store.GetDriver(e.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init informer, failed get exec driver: %w", err)
+		}
+
+		if ed != s.driver.DriverName() {
+			continue
+		}
+
 		o := s.newStateObserver(e)
 		s.stateInformer.register(o)
 	}

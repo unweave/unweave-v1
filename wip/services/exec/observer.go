@@ -1,14 +1,12 @@
 package exec
 
 import (
-	"context"
-
 	"github.com/unweave/unweave/api/types"
 )
 
 type observer interface {
 	id() string
-	update(ctx context.Context, exec types.Exec)
+	update(exec types.Exec)
 }
 
 type stateObserver struct {
@@ -20,13 +18,8 @@ func (o *stateObserver) id() string {
 	return o.exec.ID
 }
 
-func (o *stateObserver) update(ctx context.Context, exec types.Exec) {
-	// check if state changed
-	if o.exec.Status == exec.Status {
-		return
-	}
-	o.exec = exec
-
+func (o *stateObserver) update(exec types.Exec) {
+	// the state has been updated
 	// act accordingly
 	switch exec.Status {
 	case types.StatusRunning:

@@ -52,7 +52,12 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 	return nil
 }
 
-func (p postgresStore) Get(project, id string) (types.Exec, error) {
+func (p postgresStore) Get(id string) (types.Exec, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p postgresStore) GetDriver(id string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -72,7 +77,7 @@ func (p postgresStore) Delete(project, id string) error {
 	panic("implement me")
 }
 
-func (p postgresStore) Update(project, id string, exec types.Exec) error {
+func (p postgresStore) Update(id string, exec types.Exec) error {
 	//TODO implement me
 	panic("implement me")
 }
