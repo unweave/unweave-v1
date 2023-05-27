@@ -6,8 +6,8 @@ type HardwareRequestRange struct {
 }
 
 type GPU struct {
-	Count HardwareRequestRange `json:"count"`
 	Type  string               `json:"type,omitempty"`
+	Count HardwareRequestRange `json:"count"`
 	RAM   HardwareRequestRange `json:"ram,omitempty"`
 }
 

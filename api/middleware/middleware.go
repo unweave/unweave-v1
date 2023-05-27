@@ -1,4 +1,4 @@
-package server
+package middleware
 
 import (
 	"context"
@@ -81,9 +81,9 @@ func GetExecIDFromContext(ctx context.Context) string {
 	return execID
 }
 
-// withAccountCtx is a helper middleware that fakes an authenticated account. It should only
+// WithAccountCtx is a helper middleware that fakes an authenticated account. It should only
 // be user for development or when self-hosting.
-func withAccountCtx(next http.Handler) http.Handler {
+func WithAccountCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		userID := "uid_1234"
@@ -94,9 +94,9 @@ func withAccountCtx(next http.Handler) http.Handler {
 	})
 }
 
-// withProjectCtx is a helper middleware that parsed the project id from the url and
+// WithProjectCtx is a helper middleware that parsed the project id from the url and
 // verifies it exists in the db.
-func withProjectCtx(next http.Handler) http.Handler {
+func WithProjectCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		projectID := chi.URLParam(r, "project")
@@ -114,7 +114,7 @@ func withProjectCtx(next http.Handler) http.Handler {
 
 			err = fmt.Errorf("failed to fetch project from db %q: %w", projectID, err)
 			render.Render(w, r.WithContext(ctx),
-				ErrInternalServer(err, "Failed to fetch project"))
+				types.ErrInternalServer(err, "Failed to fetch project"))
 			return
 		}
 
@@ -125,9 +125,9 @@ func withProjectCtx(next http.Handler) http.Handler {
 	})
 }
 
-// withExecCtx is a helper middleware that parsed the session id from the url and
+// WithExecCtx is a helper middleware that parsed the session id from the url and
 // verifies it exists in the db.
-func withExecCtx(next http.Handler) http.Handler {
+func WithExecCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		ref := chi.URLParam(r, "exec")
@@ -144,7 +144,7 @@ func withExecCtx(next http.Handler) http.Handler {
 			}
 
 			err = fmt.Errorf("failed to fetch exec from db %q: %w", ref, err)
-			render.Render(w, r.WithContext(ctx), ErrInternalServer(err, "Failed to fetch session"))
+			render.Render(w, r.WithContext(ctx), types.ErrInternalServer(err, "Failed to fetch session"))
 			return
 		}
 

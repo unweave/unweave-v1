@@ -115,19 +115,29 @@ type ConnectionInfo struct {
 	User string `json:"user"`
 }
 
+type ExecNetwork struct {
+	Host  string `json:"host"`
+	Ports []int  `json:"ports"`
+	User  string `json:"user"`
+}
+
 type Exec struct {
-	ID           string          `json:"id"`
-	Name         string          `json:"name"`
-	SSHKey       SSHKey          `json:"sshKey"`
-	Specs        HardwareSpec    `json:"specs"`
-	Image        string          `json:"buildID,omitempty"`
-	Connection   *ConnectionInfo `json:"connection,omitempty"`
-	Status       Status          `json:"status"`
-	CreatedAt    *time.Time      `json:"createdAt,omitempty"`
-	NodeTypeID   string          `json:"nodeTypeID"`
-	Region       string          `json:"region"`
-	Provider     Provider        `json:"provider"`
-	PersistentFS bool            `json:"persistentFS"`
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	CreatedAt time.Time    `json:"createdAt,omitempty"`
+	CreatedBy string       `json:"createdBy,omitempty"`
+	Image     string       `json:"image,omitempty"`
+	BuildID   *string      `json:"buildID,omitempty"`
+	Status    Status       `json:"status"`
+	Command   []string     `json:"command"`
+	Keys      []SSHKey     `json:"keys"`
+	Volumes   []Volume     `json:"volumes"`
+	Network   ExecNetwork  `json:"network"`
+	Spec      HardwareSpec `json:"spec"`
+	CommitID  *string      `json:"commitID,omitempty"`
+	GitURL    *string      `json:"gitURL,omitempty"`
+	Region    string       `json:"region"`
+	Provider  Provider     `json:"provider"`
 }
 
 func NewExec(ID string, name string, SSHKey SSHKey, image string, connection *ConnectionInfo, status Status, createdAt *time.Time, nodeTypeID string, region string, provider Provider, specs HardwareSpec, hasPersistentFS bool) *Exec {

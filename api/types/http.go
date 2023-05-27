@@ -99,7 +99,7 @@ type NodeTypesListResponse struct {
 type ExecCreateParams struct {
 	Name         string         `json:"name,omitempty"`
 	Provider     Provider       `json:"provider"`
-	HardwareSpec HardwareSpec   `json:"hardwareSpec,omitempty"`
+	Spec         HardwareSpec   `json:"hardwareSpec,omitempty"`
 	Region       *string        `json:"region,omitempty"`
 	SSHKeyName   *string        `json:"sshKeyName"`
 	SSHPublicKey *string        `json:"sshPublicKey"`

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools/random"
@@ -156,7 +157,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 
 	go func() {
 		c := context.Background()
-		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
+		c = log.With().Str(middleware.BuildIDCtxKey, buildID).Logger().WithContext(c)
 
 		// Upload context to S3
 		if e := builder.Upload(c, buildID, buildContext); e != nil {

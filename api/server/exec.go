@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
@@ -102,7 +103,7 @@ func handleExecError(execID string, err error, msg string) {
 	// Make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
-	ctx = log.Ctx(ctx).With().Str(ExecIDCtxKey, execID).Logger().WithContext(ctx)
+	ctx = log.Ctx(ctx).With().Str(middleware.ExecIDCtxKey, execID).Logger().WithContext(ctx)
 
 	var e *types.Error
 	if errors.As(err, &e) {
@@ -309,9 +310,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	go func() {
 		c := context.Background()
 		c = log.With().
-			Str(UserIDCtxKey, s.srv.cid).
-			Str(ProjectIDCtxKey, projectID).
-			Str(ExecIDCtxKey, exec.ID).
+			Str(middleware.UserIDCtxKey, s.srv.cid).
+			Str(middleware.ProjectIDCtxKey, projectID).
+			Str(middleware.ExecIDCtxKey, exec.ID).
 			Logger().WithContext(c)
 
 		if e := s.srv.Exec.Watch(c, exec.ID); e != nil {
@@ -434,7 +435,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 			case status := <-statusch:
 				log.Ctx(ctx).
 					Info().
-					Str(ExecStatusCtxKey, string(status)).
+					Str(middleware.ExecStatusCtxKey, string(status)).
 					Msg("Exec status changed")
 
 				if status == types.StatusRunning {

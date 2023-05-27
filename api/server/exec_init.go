@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
@@ -139,7 +138,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
 	}
-	createdAt := time.Now()
+	//createdAt := time.Now()
 
 	bid := sql.NullString{}
 	if buildID != "" {
@@ -166,6 +165,18 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		return nil, fmt.Errorf("failed to create exec in db: %w", err)
 	}
 
-	exec := types.NewExec(execID, dbp.Name, cfg.Keys[0], cfg.Image, nil, types.StatusInitializing, &createdAt, node.TypeID, node.Region, node.Provider, node.Specs, false)
+	exec := &types.Exec{
+		ID:   execID,
+		Name: dbp.Name,
+		//SSHKey:       cfg.Keys[0],
+		Image: cfg.Image,
+		//Connection:   nil,
+		Status: types.StatusInitializing,
+		//CreatedAt:    &createdAt,
+		//NodeTypeID:   node.TypeID,
+		Region:   node.Region,
+		Provider: node.Provider,
+		//PersistentFS: false,
+	}
 	return exec, nil
 }
