@@ -11,7 +11,21 @@ import (
 type Service struct {
 	store         Store
 	driver        Driver
-	stateInformer informer
+	stateInformer StateInformer
+	statsInformer StatsInformer
+
+	stateObservers []func(exec types.Exec) StateObserver
+	statsObservers []func(exec types.Exec) StatsObserver
+}
+
+func WithStateObserver(s *Service, f func(exec types.Exec) StateObserver) *Service {
+	s.stateObservers = append(s.stateObservers, f)
+	return s
+}
+
+func WithStatsObserver(s *Service, f func(exec types.Exec) StatsObserver) *Service {
+	s.statsObservers = append(s.statsObservers, f)
+	return s
 }
 
 func NewService(store Store, driver Driver) (*Service, error) {
@@ -21,11 +35,11 @@ func NewService(store Store, driver Driver) (*Service, error) {
 		stateInformer: newStateInformer(store, driver),
 	}
 
-	go s.stateInformer.watch()
+	go s.stateInformer.Watch()
 
 	execs, err := store.ListAll()
 	if err != nil {
-		return nil, fmt.Errorf("failed to init informer, failed list all execs: %w", err)
+		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
 
 	for _, e := range execs {
@@ -33,7 +47,7 @@ func NewService(store Store, driver Driver) (*Service, error) {
 
 		ed, err := s.store.GetDriver(e.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to init informer, failed get exec driver: %w", err)
+			return nil, fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
 		}
 
 		if ed != s.driver.DriverName() {
@@ -41,13 +55,13 @@ func NewService(store Store, driver Driver) (*Service, error) {
 		}
 
 		o := s.newStateObserver(e)
-		s.stateInformer.register(o)
+		s.stateInformer.Register(o)
 	}
 
 	return s, nil
 }
 
-func (s *Service) newStateObserver(exec types.Exec) observer {
+func (s *Service) newStateObserver(exec types.Exec) StateObserver {
 	return &stateObserver{exec: exec, srv: s}
 }
 
@@ -85,8 +99,15 @@ func (s *Service) Create(ctx context.Context, project string, params types.ExecC
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	o := s.newStateObserver(exec)
-	s.stateInformer.register(o)
+	for _, so := range s.stateObservers {
+		o := so(exec)
+		s.stateInformer.Register(o)
+	}
+
+	for _, so := range s.statsObservers {
+		o := so(exec)
+		s.statsInformer.Register(o)
+	}
 
 	return exec, nil
 }
