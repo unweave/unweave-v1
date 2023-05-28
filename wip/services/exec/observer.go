@@ -18,6 +18,10 @@ type stateObserver struct {
 	srv  *Service
 }
 
+func NewStateObserver(exec types.Exec, srv *Service) StateObserver {
+	return &stateObserver{exec: exec, srv: srv}
+}
+
 func (o *stateObserver) ID() string {
 	return o.exec.ID
 }
@@ -46,6 +50,14 @@ type TerminateIdleObserver struct {
 	lastActive      time.Time
 	shouldTerminate bool
 	idleTimeout     time.Duration
+}
+
+func NewTerminateIdleObserver(exec types.Exec, srv *Service, idleTimeout time.Duration) StatsObserver {
+	return &TerminateIdleObserver{
+		exec:        exec,
+		srv:         srv,
+		idleTimeout: idleTimeout,
+	}
 }
 
 func (o *TerminateIdleObserver) ID() string {

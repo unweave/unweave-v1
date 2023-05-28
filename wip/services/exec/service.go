@@ -54,15 +54,11 @@ func NewService(store Store, driver Driver) (*Service, error) {
 			continue
 		}
 
-		o := s.newStateObserver(e)
+		o := NewStateObserver(e, s)
 		s.stateInformer.Register(o)
 	}
 
 	return s, nil
-}
-
-func (s *Service) newStateObserver(exec types.Exec) StateObserver {
-	return &stateObserver{exec: exec, srv: s}
 }
 
 func (s *Service) Create(ctx context.Context, project string, params types.ExecCreateParams) (types.Exec, error) {

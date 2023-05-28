@@ -84,10 +84,9 @@ func API(cfg Config, rti runtime.Initializer) {
 			r.Get("/{buildID}", BuildsGet(rti))
 		})
 
+		r.Route("/sessions", func(r chi.Router) { router.RegisterExecRoutes(r, nil) })
 		r.Route("/sessions", func(r chi.Router) {
-			execRouter := router.NewExecRouter(nil, nil, nil)
 
-			r.Post("/", execRouter.ExecCreateHandler)
 			r.Get("/", ExecsList(rti))
 
 			r.Route("/{exec}", func(r chi.Router) {

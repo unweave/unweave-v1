@@ -3,11 +3,14 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/providers/lambdalabs"
 	execsrv "github.com/unweave/unweave/wip/services/exec"
 )
 
@@ -19,21 +22,16 @@ type ExecRouter struct {
 	conductorService *execsrv.Service
 }
 
-func NewExecRouter(store execsrv.Store, lambdaLabsDriver, unweaveDriver execsrv.Driver) *ExecRouter {
-	lls, err := execsrv.NewService(store, lambdaLabsDriver)
-	if err != nil {
-		panic(fmt.Errorf("failed to create lambda labs service: %w", err))
-	}
-
+func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.Service) *ExecRouter {
 	return &ExecRouter{
 		store:            store,
-		llService:        lls,
-		unweaveService:   nil,
+		llService:        lambdaLabsService,
+		unweaveService:   unweaveService,
 		conductorService: nil,
 	}
 }
 
-func (e *ExecRouter) route(provider types.Provider) *execsrv.Service {
+func (e *ExecRouter) service(provider types.Provider) *execsrv.Service {
 	switch provider {
 	case types.LambdaLabsProvider:
 		return e.llService
@@ -59,10 +57,24 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	exec, err := e.route(scr.Provider).Create(ctx, projectID, *scr)
+	exec, err := e.service(scr.Provider).Create(ctx, projectID, *scr)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create session"))
 		return
 	}
 	render.JSON(w, r, exec)
+}
+
+func RegisterExecRoutes(r chi.Router, store execsrv.Store) {
+	lls, err := execsrv.NewService(store, lambdalabs.ExecDriver{})
+	if err != nil {
+		panic(err)
+	}
+
+	lls = execsrv.WithStateObserver(lls, func(e types.Exec) execsrv.StateObserver { return execsrv.NewStateObserver(e, lls) })
+	lls = execsrv.WithStatsObserver(lls, func(e types.Exec) execsrv.StatsObserver { return execsrv.NewTerminateIdleObserver(e, lls, 2*time.Hour) })
+
+	execRouter := NewExecRouter(store, lls, nil)
+
+	r.Post("/", execRouter.ExecCreateHandler)
 }
