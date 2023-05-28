@@ -1,8 +1,6 @@
 package exec
 
 import (
-	"time"
-
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -13,13 +11,17 @@ type StateObserver interface {
 	Update(status types.Status)
 }
 
+type StateObserverFunc func(exec types.Exec) StateObserver
+
 type stateObserver struct {
 	exec types.Exec
 	srv  *Service
 }
 
-func NewStateObserver(exec types.Exec, srv *Service) StateObserver {
-	return &stateObserver{exec: exec, srv: srv}
+func NewStateObserverFunc(s *Service) StateObserverFunc {
+	return func(exec types.Exec) StateObserver {
+		return &stateObserver{exec: exec, srv: s}
+	}
 }
 
 func (o *stateObserver) ID() string {
@@ -42,28 +44,4 @@ type StatsObserver interface {
 	Update(stats Stats)
 }
 
-// TerminateIdleObserver watches for exec resource utilization and updates the exec according to
-// the configured policy
-type TerminateIdleObserver struct {
-	exec            types.Exec
-	srv             *Service
-	lastActive      time.Time
-	shouldTerminate bool
-	idleTimeout     time.Duration
-}
-
-func NewTerminateIdleObserver(exec types.Exec, srv *Service, idleTimeout time.Duration) StatsObserver {
-	return &TerminateIdleObserver{
-		exec:        exec,
-		srv:         srv,
-		idleTimeout: idleTimeout,
-	}
-}
-
-func (o *TerminateIdleObserver) ID() string {
-	return o.exec.ID
-}
-
-func (o *TerminateIdleObserver) Update(stats Stats) {
-	// check utilization is below threshold and idle time is above threshold -> terminate
-}
+type StatsObserverFunc func(exec types.Exec) StatsObserver

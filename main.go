@@ -7,9 +7,12 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/router"
 	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/tools/gonfig"
+	execsrv "github.com/unweave/unweave/wip/services/exec"
 )
 
 func main() {
@@ -31,5 +34,13 @@ func main() {
 	// Initialize unweave from environment variables
 	runtimeCfg := &EnvInitializer{}
 
-	server.API(cfg, runtimeCfg)
+	lls, err := execsrv.NewService(nil, lambdalabs.ExecDriver{})
+	if err != nil {
+		panic(err)
+	}
+	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
+
+	execRouter := router.NewExecRouter(nil, lls, nil)
+
+	server.API(cfg, runtimeCfg, execRouter)
 }

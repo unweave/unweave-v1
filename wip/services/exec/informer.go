@@ -1,13 +1,16 @@
 package exec
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/unweave/unweave/api/types"
 )
 
-// StateInformer informs observers of state changes in registered execs.
+// StateInformer informs observers of state changes in registered execs. There should only
+// ever be one StateInformer per driver guaranteeing that exec state change is only ever
+// transmitted once.
 type StateInformer interface {
 	Inform(id string, status types.Status)
 	Register(o StateObserver)
@@ -18,6 +21,7 @@ type StateInformer interface {
 type stateInformer struct {
 	store     Store
 	driver    Driver
+	execs     map[string]types.Exec
 	observers map[string]StateObserver
 	mu        sync.Mutex
 }
@@ -62,24 +66,25 @@ func (i *stateInformer) Watch() {
 	for {
 		select {
 		case <-time.After(5 * time.Second):
-			for _, o := range i.observers {
+			// We need to maintain a cache of execs and compare them to both the Store and
+			// the Driver for changes.
+			//
+			// Changes in the Store reflect execs that might have been created or deleted
+			// since the last watch. Changes in the Driver should only reflect changes in
+			// the exec's running state i.e. whether it transitioned from initializing to
+			// running, failed, stopped etc.
+			for _, e := range i.execs {
 				// get state and compare to previous
 
-				exec, err := i.store.Get(o.ID())
+				exec, err := i.store.Get(e.ID)
 				if err != nil {
 					// handle error
 				}
 
-				// get status of exec from Driver
-				// Update with real status
-				status := types.StatusRunning
-				if status != exec.Status {
-					if err = i.store.Update(exec.ID, types.Exec{Status: status}); err != nil {
-						// handle error
-					}
-					// TODO: handle context deadlines
-					i.Inform("", status)
-				}
+				fmt.Println(exec)
+
+				// if state changed, inform observers
+
 			}
 		}
 	}

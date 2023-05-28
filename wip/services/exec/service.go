@@ -14,17 +14,17 @@ type Service struct {
 	stateInformer StateInformer
 	statsInformer StatsInformer
 
-	stateObservers []func(exec types.Exec) StateObserver
-	statsObservers []func(exec types.Exec) StatsObserver
+	stateObserversFuncs []StateObserverFunc
+	statsObserversFuncs []StatsObserverFunc
 }
 
-func WithStateObserver(s *Service, f func(exec types.Exec) StateObserver) *Service {
-	s.stateObservers = append(s.stateObservers, f)
+func WithStateObserver(s *Service, f StateObserverFunc) *Service {
+	s.stateObserversFuncs = append(s.stateObserversFuncs, f)
 	return s
 }
 
-func WithStatsObserver(s *Service, f func(exec types.Exec) StatsObserver) *Service {
-	s.statsObservers = append(s.statsObservers, f)
+func WithStatsObserver(s *Service, f StatsObserverFunc) *Service {
+	s.statsObserversFuncs = append(s.statsObserversFuncs, f)
 	return s
 }
 
@@ -54,8 +54,10 @@ func NewService(store Store, driver Driver) (*Service, error) {
 			continue
 		}
 
-		o := NewStateObserver(e, s)
-		s.stateInformer.Register(o)
+		for _, f := range s.stateObserversFuncs {
+			o := f(e)
+			s.stateInformer.Register(o)
+		}
 	}
 
 	return s, nil
@@ -95,12 +97,12 @@ func (s *Service) Create(ctx context.Context, project string, params types.ExecC
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	for _, so := range s.stateObservers {
+	for _, so := range s.stateObserversFuncs {
 		o := so(exec)
 		s.stateInformer.Register(o)
 	}
 
-	for _, so := range s.statsObservers {
+	for _, so := range s.statsObserversFuncs {
 		o := so(exec)
 		s.statsInformer.Register(o)
 	}

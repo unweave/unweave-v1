@@ -3,23 +3,38 @@ package router
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/lambdalabs"
 	execsrv "github.com/unweave/unweave/wip/services/exec"
 )
 
 type ExecRouter struct {
+	r     chi.Router
 	store execsrv.Store
 
 	llService        *execsrv.Service
 	unweaveService   *execsrv.Service
 	conductorService *execsrv.Service
+}
+
+func (e *ExecRouter) Routes() []Route {
+	var routes []Route
+
+	_ = chi.Walk(e.r, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		r := Route{
+			Handler: handler,
+			Method:  method,
+			Path:    route,
+		}
+		routes = append(routes, r)
+		return nil
+	})
+
+	return routes
 }
 
 func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.Service) *ExecRouter {
@@ -36,10 +51,10 @@ func (e *ExecRouter) service(provider types.Provider) *execsrv.Service {
 	case types.LambdaLabsProvider:
 		return e.llService
 	case types.UnweaveProvider:
-		panic("not implemented") // this is only available in the hosted version
+		return e.unweaveService
 	default:
-		// This is unreachable update this. Using panic for now until we have the
-		// conductor implemented for AWS, GCP etc
+		// This is unreachable. Using panic for now until we have the conductor
+		// implemented for AWS, GCP etc
 		panic(fmt.Errorf("unknown provider: %s", provider))
 	}
 }
@@ -63,18 +78,4 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.JSON(w, r, exec)
-}
-
-func RegisterExecRoutes(r chi.Router, store execsrv.Store) {
-	lls, err := execsrv.NewService(store, lambdalabs.ExecDriver{})
-	if err != nil {
-		panic(err)
-	}
-
-	lls = execsrv.WithStateObserver(lls, func(e types.Exec) execsrv.StateObserver { return execsrv.NewStateObserver(e, lls) })
-	lls = execsrv.WithStatsObserver(lls, func(e types.Exec) execsrv.StatsObserver { return execsrv.NewTerminateIdleObserver(e, lls, 2*time.Hour) })
-
-	execRouter := NewExecRouter(store, lls, nil)
-
-	r.Post("/", execRouter.ExecCreateHandler)
 }

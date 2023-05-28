@@ -48,7 +48,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 	return nil
 }
 
-func API(cfg Config, rti runtime.Initializer) {
+func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -84,7 +84,10 @@ func API(cfg Config, rti runtime.Initializer) {
 			r.Get("/{buildID}", BuildsGet(rti))
 		})
 
-		r.Route("/sessions", func(r chi.Router) { router.RegisterExecRoutes(r, nil) })
+		r.Route("/sessions", func(r chi.Router) {
+			r.Post("/", execRouter.ExecCreateHandler)
+		})
+
 		r.Route("/sessions", func(r chi.Router) {
 
 			r.Get("/", ExecsList(rti))
