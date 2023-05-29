@@ -13,7 +13,7 @@ import (
 // the bare VM with the pre-configured Lambda Labs image.
 type ExecDriver struct{}
 
-func (e ExecDriver) Create(ctx context.Context, project, image string, spec types.HardwareSpec) (string, error) {
+func (e ExecDriver) Create(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }

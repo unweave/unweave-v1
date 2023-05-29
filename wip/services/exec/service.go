@@ -76,7 +76,7 @@ func (s *Service) Create(ctx context.Context, project string, params types.ExecC
 	// 	- Parse volumes
 
 	image := ""
-	execID, err := s.driver.Create(ctx, project, image, params.Spec)
+	execID, err := s.driver.Create(ctx, project, image, params.Spec, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}

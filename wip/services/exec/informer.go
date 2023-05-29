@@ -8,7 +8,7 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-type PollingStateInformer struct {
+type pollingStateInformer struct {
 	store     Store
 	driver    Driver
 	execs     map[string]types.Exec
@@ -16,7 +16,16 @@ type PollingStateInformer struct {
 	mu        sync.Mutex
 }
 
-func (i *PollingStateInformer) Inform(id string, status types.Status) {
+func NewPollingStateInformer(store Store, driver Driver) StateInformer {
+	return &pollingStateInformer{
+		store:     store,
+		driver:    driver,
+		execs:     make(map[string]types.Exec),
+		observers: make(map[string]StateObserver),
+	}
+}
+
+func (i *pollingStateInformer) Inform(id string, status types.Status) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -24,7 +33,7 @@ func (i *PollingStateInformer) Inform(id string, status types.Status) {
 	go o.Update(status)
 }
 
-func (i *PollingStateInformer) Register(o StateObserver) {
+func (i *pollingStateInformer) Register(o StateObserver) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -34,7 +43,7 @@ func (i *PollingStateInformer) Register(o StateObserver) {
 	i.observers[o.ID()] = o
 }
 
-func (i *PollingStateInformer) Unregister(o StateObserver) {
+func (i *pollingStateInformer) Unregister(o StateObserver) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -44,7 +53,7 @@ func (i *PollingStateInformer) Unregister(o StateObserver) {
 	delete(i.observers, o.ID())
 }
 
-func (i *PollingStateInformer) Watch() {
+func (i *pollingStateInformer) Watch() {
 	for {
 		select {
 		case <-time.After(5 * time.Second):
@@ -77,7 +86,7 @@ type statsInformer struct {
 	driver Driver
 }
 
-func newStatsInformer(store Store, driver Driver) *statsInformer {
+func NewPollingStatsInformer(store Store, driver Driver) StatsInformer {
 	return &statsInformer{
 		store:  store,
 		driver: driver,

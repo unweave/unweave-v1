@@ -34,7 +34,12 @@ func main() {
 	// Initialize unweave from environment variables
 	runtimeCfg := &EnvInitializer{}
 
-	lls, err := execsrv.NewService(nil, lambdalabs.ExecDriver{})
+	// TODO: init store
+	lDriver := lambdalabs.ExecDriver{}
+	lStateInf := execsrv.NewPollingStateInformer(nil, lDriver)
+	lStatsInf := execsrv.NewPollingStatsInformer(nil, lDriver)
+
+	lls, err := execsrv.NewService(nil, lDriver, lStateInf, lStatsInf)
 	if err != nil {
 		panic(err)
 	}
