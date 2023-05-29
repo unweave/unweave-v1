@@ -8,17 +8,7 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-// StateInformer informs observers of state changes in registered execs. There should only
-// ever be one StateInformer per driver guaranteeing that exec state change is only ever
-// transmitted once.
-type StateInformer interface {
-	Inform(id string, status types.Status)
-	Register(o StateObserver)
-	Unregister(o StateObserver)
-	Watch()
-}
-
-type stateInformer struct {
+type PollingStateInformer struct {
 	store     Store
 	driver    Driver
 	execs     map[string]types.Exec
@@ -26,15 +16,7 @@ type stateInformer struct {
 	mu        sync.Mutex
 }
 
-func newStateInformer(store Store, driver Driver) *stateInformer {
-	return &stateInformer{
-		store:     store,
-		driver:    driver,
-		observers: make(map[string]StateObserver),
-	}
-}
-
-func (i *stateInformer) Inform(id string, status types.Status) {
+func (i *PollingStateInformer) Inform(id string, status types.Status) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -42,7 +24,7 @@ func (i *stateInformer) Inform(id string, status types.Status) {
 	go o.Update(status)
 }
 
-func (i *stateInformer) Register(o StateObserver) {
+func (i *PollingStateInformer) Register(o StateObserver) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -52,7 +34,7 @@ func (i *stateInformer) Register(o StateObserver) {
 	i.observers[o.ID()] = o
 }
 
-func (i *stateInformer) Unregister(o StateObserver) {
+func (i *PollingStateInformer) Unregister(o StateObserver) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
@@ -62,7 +44,7 @@ func (i *stateInformer) Unregister(o StateObserver) {
 	delete(i.observers, o.ID())
 }
 
-func (i *stateInformer) Watch() {
+func (i *PollingStateInformer) Watch() {
 	for {
 		select {
 		case <-time.After(5 * time.Second):
@@ -88,15 +70,6 @@ func (i *stateInformer) Watch() {
 			}
 		}
 	}
-}
-
-// StatsInformer regularly Inform observers of the resource utilization of registered
-// execs.
-type StatsInformer interface {
-	Inform(id string, stats Stats)
-	Register(o StatsObserver)
-	Unregister(o StatsObserver)
-	Watch()
 }
 
 type statsInformer struct {

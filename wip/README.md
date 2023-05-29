@@ -22,7 +22,11 @@ suitable node. It also manages the lifecycle of the nodes.
 
 ## Observers and Informers
 
-Services implement Informers and allow registering Observers. Observers correspond to a 
+Services implement `Informer`s and allow registering `Observer`s. Observers correspond to a 
 specific Informer and can implement different behaviors. For example, a `ExecStateInformer`
 watches for state changes in an exec and informs the registered observers. A `ExecRunningEmailer`
-observer can register to the `ExecStateInformer` and send out an email when the exec is running.
+Observer can register to the `ExecStateInformer` and send out an email when the exec is running.
+
+**N.B. Currently, the implementation of observers and informers assumes exactly one
+instance of each service. To support distributed systems in the future, we'll need to
+extract the `Observer` and `Informer` interfaces into shared/thread-safe implementations.**

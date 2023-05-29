@@ -28,11 +28,17 @@ func WithStatsObserver(s *Service, f StatsObserverFunc) *Service {
 	return s
 }
 
-func NewService(store Store, driver Driver) (*Service, error) {
+func NewService(
+	store Store,
+	driver Driver,
+	stateInformer StateInformer,
+	statsInformer StatsInformer,
+) (*Service, error) {
 	s := &Service{
 		store:         store,
 		driver:        driver,
-		stateInformer: newStateInformer(store, driver),
+		stateInformer: stateInformer,
+		statsInformer: statsInformer,
 	}
 
 	go s.stateInformer.Watch()
