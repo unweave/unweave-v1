@@ -69,7 +69,7 @@ func (m NodeMetadataV1) GetHardwareSpec() types.HardwareSpec {
 			Min: m.Memory,
 			Max: m.Memory,
 		},
-		Storage: types.HardwareRequestRange{
+		HDD: types.HardwareRequestRange{
 			Min: m.Storage,
 			Max: m.Storage,
 		},
@@ -83,7 +83,7 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 		Price:     node.Price,
 		VCPUs:     node.Specs.CPU.Min,
 		Memory:    node.Specs.RAM.Min,
-		Storage:   node.Specs.Storage.Min,
+		Storage:   node.Specs.HDD.Min,
 		GpuType:   node.Specs.GPU.Type,
 		GPUCount:  node.Specs.GPU.Count.Min,
 		GPUMemory: node.Specs.GPU.RAM.Min,
@@ -268,7 +268,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	node, err := s.assignNode(ctx, params.HardwareSpec, params.Region, keys)
+	node, err := s.assignNode(ctx, types.SetSpecDefaultValues(params.HardwareSpec), params.Region, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
