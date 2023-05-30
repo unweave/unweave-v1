@@ -80,7 +80,7 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 	}
 
 	// TODO: currently assumes only one SSH key - need to support multiple
-	execID, err := s.driver.Create(ctx, project, image, params.Spec, []string{params.SSHPublicKey})
+	execID, err := s.driver.Create(ctx, project, image, params.Spec, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}

@@ -35,7 +35,11 @@ func main() {
 	runtimeCfg := &EnvInitializer{}
 
 	// TODO: init store
-	lDriver := lambdalabs.ExecDriver{}
+	lDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
+	if err != nil {
+		panic(err)
+	}
+
 	lStateInf := execsrv.NewPollingStateInformer(nil, lDriver)
 	lStatsInf := execsrv.NewPollingStatsInformer(nil, lDriver)
 
