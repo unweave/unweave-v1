@@ -9,7 +9,6 @@ import (
 func TestSetDefaultValues(t *testing.T) {
 	g := Goblin(t)
 
-	const defaultMinValue = 1
 	const defaultGPU = "rtx_4000"
 
 	g.Describe("SetDefaultValues", func() {
@@ -19,26 +18,20 @@ func TestSetDefaultValues(t *testing.T) {
 				expectedSpec := HardwareSpec{
 					GPU: GPU{
 						Count: HardwareRequestRange{
-							Min: defaultMinValue,
-							Max: defaultMinValue,
+							Min: defaultMinGPUs,
+							Max: defaultMinGPUs,
 						},
-						RAM: HardwareRequestRange{
-							Min: defaultMinValue,
-							Max: defaultMinValue,
-						},
+
 						Type: defaultGPU,
 					},
 					CPU: HardwareRequestRange{
-						Min: defaultMinValue,
-						Max: defaultMinValue,
+						Min: defaultMinCPU,
+						Max: defaultMinCPU,
 					},
-					RAM: HardwareRequestRange{
-						Min: defaultMinValue,
-						Max: defaultMinValue,
-					},
+
 					HDD: HardwareRequestRange{
-						Min: defaultMinValue,
-						Max: defaultMinValue,
+						Min: defaultMinHDD,
+						Max: defaultMinHDD,
 					},
 				}
 
@@ -52,16 +45,10 @@ func TestSetDefaultValues(t *testing.T) {
 						Count: HardwareRequestRange{
 							Min: 2,
 						},
-						RAM: HardwareRequestRange{
-							Max: 4,
-						},
 						Type: "test",
 					},
 					CPU: HardwareRequestRange{
 						Max: 8,
-					},
-					RAM: HardwareRequestRange{
-						Min: 16,
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -74,19 +61,11 @@ func TestSetDefaultValues(t *testing.T) {
 							Min: 2,
 							Max: 2,
 						},
-						RAM: HardwareRequestRange{
-							Min: defaultMinValue,
-							Max: 4,
-						},
 						Type: "test",
 					},
 					CPU: HardwareRequestRange{
-						Min: defaultMinValue,
+						Min: defaultMinCPU,
 						Max: 8,
-					},
-					RAM: HardwareRequestRange{
-						Min: 16,
-						Max: 16,
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -107,18 +86,10 @@ func TestSetDefaultValues(t *testing.T) {
 							Min: 2,
 							Max: 4,
 						},
-						RAM: HardwareRequestRange{
-							Min: 8,
-							Max: 16,
-						},
 					},
 					CPU: HardwareRequestRange{
 						Min: 4,
 						Max: 8,
-					},
-					RAM: HardwareRequestRange{
-						Min: 16,
-						Max: 32,
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -131,19 +102,11 @@ func TestSetDefaultValues(t *testing.T) {
 							Min: 2,
 							Max: 4,
 						},
-						RAM: HardwareRequestRange{
-							Min: 8,
-							Max: 16,
-						},
 						Type: defaultGPU,
 					},
 					CPU: HardwareRequestRange{
 						Min: 4,
 						Max: 8,
-					},
-					RAM: HardwareRequestRange{
-						Min: 16,
-						Max: 32,
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,

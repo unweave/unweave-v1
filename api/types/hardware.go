@@ -18,13 +18,17 @@ type HardwareSpec struct {
 	HDD HardwareRequestRange `json:"hdd"`
 }
 
-func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
-	const defaultMinValueRequest = 1
-	const defaultGPURequest = "rtx_4000"
+const (
+	defaultMinCPU     = 1
+	defaultMinHDD     = 4
+	defaultMinGPUs    = 1
+	defaultGPURequest = "rtx_4000"
+)
 
-	setMinIfZero := func(val *int) {
+func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
+	setMinIfZero := func(val *int, min int) {
 		if *val == 0 {
-			*val = defaultMinValueRequest
+			*val = min
 		}
 	}
 
@@ -42,20 +46,13 @@ func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
 
 	setDefaultGPU(&spec.GPU.Type)
 
-	setMinIfZero(&spec.GPU.Count.Min)
+	setMinIfZero(&spec.GPU.Count.Min, defaultMinGPUs)
 	setMaxIfZeroOrBelowMin(&spec.GPU.Count.Min, &spec.GPU.Count.Max)
 
-	setMinIfZero(&spec.GPU.RAM.Min)
-	setMaxIfZeroOrBelowMin(&spec.GPU.RAM.Min, &spec.GPU.RAM.Max)
-
-	setMinIfZero(&spec.CPU.Min)
+	setMinIfZero(&spec.CPU.Min, defaultMinCPU)
 	setMaxIfZeroOrBelowMin(&spec.CPU.Min, &spec.CPU.Max)
 
-	setMinIfZero(&spec.RAM.Min)
-	setMaxIfZeroOrBelowMin(&spec.RAM.Min, &spec.RAM.Max)
-
-	setMinIfZero(&spec.HDD.Min)
+	setMinIfZero(&spec.HDD.Min, defaultMinHDD)
 	setMaxIfZeroOrBelowMin(&spec.HDD.Min, &spec.HDD.Max)
-
 	return spec
 }
