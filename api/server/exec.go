@@ -27,6 +27,14 @@ type ConnectionInfoV1 struct {
 	User    string `json:"user"`
 }
 
+func (c ConnectionInfoV1) GetConnectionInfo() *types.ConnectionInfo {
+	return &types.ConnectionInfo{
+		Host: c.Host,
+		Port: c.Port,
+		User: c.User,
+	}
+}
+
 type NodeMetadataV1 struct {
 	ID             string           `json:"id"`
 	TypeID         string           `json:"typeID"`
@@ -38,6 +46,34 @@ type NodeMetadataV1 struct {
 	GPUCount       int              `json:"gpuCount"`
 	GPUMemory      int              `json:"gpuMemory"`
 	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
+}
+
+func (m NodeMetadataV1) GetHardwareSpec() types.HardwareSpec {
+	return types.HardwareSpec{
+		GPU: types.GPU{
+			Count: types.HardwareRequestRange{
+				Min: m.GPUCount,
+				Max: m.GPUCount,
+			},
+			Type: m.GpuType,
+			RAM: types.HardwareRequestRange{
+				Min: m.GPUMemory,
+				Max: m.GPUMemory,
+			},
+		},
+		CPU: types.HardwareRequestRange{
+			Min: m.VCPUs,
+			Max: m.VCPUs,
+		},
+		RAM: types.HardwareRequestRange{
+			Min: m.Memory,
+			Max: m.Memory,
+		},
+		Storage: types.HardwareRequestRange{
+			Min: m.Storage,
+			Max: m.Storage,
+		},
+	}
 }
 
 func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
@@ -308,25 +344,24 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 	}
 
-	session := &types.Exec{
-		ID:   execID,
-		Name: dbs.Name,
-		SSHKey: types.SSHKey{
+	session := types.NewExec(
+		execID,
+		dbs.Name,
+		types.SSHKey{
 			Name:      dbs.SshKeyName,
 			PublicKey: &dbs.PublicKey,
 			CreatedAt: &dbs.SshKeyCreatedAt,
 		},
-		Connection: &types.ConnectionInfo{
-			Host: metadata.ConnectionInfo.Host,
-			Port: metadata.ConnectionInfo.Port,
-			User: metadata.ConnectionInfo.User,
-		},
-		Status:     types.Status(dbs.Status),
-		CreatedAt:  &dbs.CreatedAt,
-		NodeTypeID: metadata.TypeID,
-		Region:     dbs.Region,
-		Provider:   types.Provider(dbs.Provider),
-	}
+		"",
+		metadata.ConnectionInfo.GetConnectionInfo(),
+		types.Status(dbs.Status),
+		&dbs.CreatedAt,
+		metadata.TypeID,
+		dbs.Region,
+		types.Provider(dbs.Provider),
+		metadata.GetHardwareSpec(),
+		false, // Assuming `hasPersistentFS` value is always `false` in this case
+	)
 	return session, nil
 }
 
@@ -348,26 +383,25 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 		if err := json.Unmarshal(s.Metadata, metadata); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
-		session := types.Exec{
-			ID:   s.ID,
-			Name: s.Name,
-			SSHKey: types.SSHKey{
+		session := types.NewExec(
+			s.ID,
+			s.Name,
+			types.SSHKey{
 				Name:      s.SshKeyName,
 				PublicKey: &s.PublicKey,
 				CreatedAt: &s.SshKeyCreatedAt,
 			},
-			Connection: &types.ConnectionInfo{
-				Host: metadata.ConnectionInfo.Host,
-				Port: metadata.ConnectionInfo.Port,
-				User: metadata.ConnectionInfo.User,
-			},
-			Status:     types.Status(s.Status),
-			CreatedAt:  &s.CreatedAt,
-			NodeTypeID: metadata.TypeID,
-			Region:     s.Region,
-			Provider:   types.Provider(s.Provider),
-		}
-		res = append(res, session)
+			"",
+			metadata.ConnectionInfo.GetConnectionInfo(),
+			types.Status(s.Status),
+			&s.CreatedAt,
+			metadata.TypeID,
+			s.Region,
+			types.Provider(s.Provider),
+			metadata.GetHardwareSpec(),
+			false, // Assuming `hasPersistentFS` value is always `false` in this case
+		)
+		res = append(res, *session)
 	}
 	return res, nil
 }

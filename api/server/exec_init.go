@@ -167,18 +167,6 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		return nil, fmt.Errorf("failed to create exec in db: %w", err)
 	}
 
-	exec := &types.Exec{
-		ID:           execID,
-		Name:         dbp.Name,
-		SSHKey:       cfg.Keys[0],
-		Image:        cfg.Image,
-		Connection:   nil,
-		Status:       types.StatusInitializing,
-		CreatedAt:    &createdAt,
-		NodeTypeID:   node.TypeID,
-		Region:       node.Region,
-		Provider:     node.Provider,
-		PersistentFS: false,
-	}
+	exec := types.NewExec(execID, dbp.Name, cfg.Keys[0], cfg.Image, nil, types.StatusInitializing, &createdAt, node.TypeID, node.Region, node.Provider, node.Specs, false)
 	return exec, nil
 }
