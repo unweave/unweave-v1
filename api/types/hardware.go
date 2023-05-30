@@ -15,7 +15,7 @@ type HardwareSpec struct {
 	GPU GPU                  `json:"gpu"`
 	CPU HardwareRequestRange `json:"cpu"`
 	RAM HardwareRequestRange `json:"ram"`
-	HDD HardwareRequestRange `json:"storage"`
+	HDD HardwareRequestRange `json:"hdd"`
 }
 
 func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {

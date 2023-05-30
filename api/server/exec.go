@@ -41,7 +41,7 @@ type NodeMetadataV1 struct {
 	Price          int              `json:"price"`
 	VCPUs          int              `json:"vcpus"`
 	Memory         int              `json:"memory"`
-	Storage        int              `json:"storage"`
+	HDD            int              `json:"hdd"`
 	GpuType        string           `json:"gpuType"`
 	GPUCount       int              `json:"gpuCount"`
 	GPUMemory      int              `json:"gpuMemory"`
@@ -70,8 +70,8 @@ func (m NodeMetadataV1) GetHardwareSpec() types.HardwareSpec {
 			Max: m.Memory,
 		},
 		HDD: types.HardwareRequestRange{
-			Min: m.Storage,
-			Max: m.Storage,
+			Min: m.HDD,
+			Max: m.HDD,
 		},
 	}
 }
@@ -83,7 +83,7 @@ func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
 		Price:     node.Price,
 		VCPUs:     node.Specs.CPU.Min,
 		Memory:    node.Specs.RAM.Min,
-		Storage:   node.Specs.HDD.Min,
+		HDD:       node.Specs.HDD.Min,
 		GpuType:   node.Specs.GPU.Type,
 		GPUCount:  node.Specs.GPU.Count.Min,
 		GPUMemory: node.Specs.GPU.RAM.Min,
