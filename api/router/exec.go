@@ -70,9 +70,10 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID := middleware.GetUserIDFromContext(ctx)
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	exec, err := e.service(scr.Provider).Create(ctx, projectID, *scr)
+	exec, err := e.service(scr.Provider).Create(ctx, projectID, userID, *scr)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create session"))
 		return

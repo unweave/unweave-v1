@@ -8,6 +8,10 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+var (
+	DefaultImageURI = "ubuntu:latest"
+)
+
 type Service struct {
 	store         Store
 	driver        Driver
@@ -43,7 +47,7 @@ func NewService(
 
 	go s.stateInformer.Watch()
 
-	execs, err := store.ListAll()
+	execs, err := store.ListByProvider(driver.Provider(), true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
@@ -69,35 +73,39 @@ func NewService(
 	return s, nil
 }
 
-func (s *Service) Create(ctx context.Context, project string, params types.ExecCreateParams) (types.Exec, error) {
-	// TODO:
-	// 	- Parse image and buildID
-	//  - Parse network
-	// 	- Parse volumes
+func (s *Service) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
+	image := DefaultImageURI
+	if params.Image != nil && *params.Image != "" {
+		image = *params.Image
+	}
 
-	image := ""
-	execID, err := s.driver.Create(ctx, project, image, params.Spec, nil)
+	// TODO: currently assumes only one SSH key - need to support multiple
+	execID, err := s.driver.Create(ctx, project, image, params.Spec, []string{params.SSHPublicKey})
 	if err != nil {
 		return types.Exec{}, err
 	}
 
 	exec := types.Exec{
 		ID:        execID,
-		Name:      "",
 		CreatedAt: time.Now(),
-		CreatedBy: "",
+		CreatedBy: creator,
 		Image:     image,
 		BuildID:   nil,
 		Status:    types.StatusInitializing,
 		Command:   params.Command,
-		Keys:      nil,
-		Volumes:   nil,
-		Network:   types.ExecNetwork{},
-		Spec:      types.HardwareSpec{},
-		CommitID:  params.CommitID,
-		GitURL:    params.GitURL,
-		Region:    "", // Set later once
-		Provider:  params.Provider,
+		Keys: []types.SSHKey{
+			{
+				Name:      params.SSHKeyName,
+				PublicKey: &params.SSHPublicKey,
+			},
+		},
+		Volumes:  nil,
+		Network:  types.ExecNetwork{},
+		Spec:     types.HardwareSpec{},
+		CommitID: params.CommitID,
+		GitURL:   params.GitURL,
+		Region:   "", // Set later once the exec has been successfully scheduled
+		Provider: params.Provider,
 	}
 	if err = s.store.Create(project, exec); err != nil {
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
@@ -125,6 +133,5 @@ func (s *Service) List(ctx context.Context, project string) ([]types.Exec, error
 }
 
 func (s *Service) Terminate(ctx context.Context, id string) error {
-
 	return nil
 }

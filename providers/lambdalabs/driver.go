@@ -15,6 +15,7 @@ type ExecDriver struct{}
 
 func (e ExecDriver) Create(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string) (string, error) {
 	//TODO implement me
+	// TODO: we need to check if the public key already exists on the VM and if not, add it
 	panic("implement me")
 }
 
@@ -31,6 +32,10 @@ func (e ExecDriver) Get(ctx context.Context, id string) (types.Exec, error) {
 func (e ExecDriver) List(ctx context.Context, project string) ([]types.Exec, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (e ExecDriver) Provider() types.Provider {
+	return types.LambdaLabsProvider
 }
 
 func (e ExecDriver) Terminate(ctx context.Context, id string) error {

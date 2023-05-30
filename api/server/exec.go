@@ -14,7 +14,6 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
 )
@@ -146,16 +145,16 @@ func registerCredentials(ctx context.Context, rt *runtime.Runtime, keys []types.
 	return nil
 }
 
-func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
-	if sshKeyName == nil && sshPublicKey == nil {
+func fetchCredentials(ctx context.Context, userID, sshKeyName, sshPublicKey string) (types.SSHKey, error) {
+	if sshKeyName == "" && sshPublicKey == "" {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "Either Key name or Public Key must be provided",
 		}
 	}
 
-	if sshKeyName != nil {
-		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: userID}
+	if sshKeyName != "" {
+		params := db.SSHKeyGetByNameParams{Name: sshKeyName, OwnerID: userID}
 		k, err := db.Q.SSHKeyGetByName(ctx, params)
 		if err == nil {
 			return types.SSHKey{
@@ -174,8 +173,8 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}
 
 	// Not found by name, try public key
-	if sshPublicKey != nil {
-		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*sshPublicKey))
+	if sshPublicKey != "" {
+		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(sshPublicKey))
 		if err != nil {
 			return types.SSHKey{}, &types.Error{
 				Code:    http.StatusBadRequest,
@@ -203,26 +202,26 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}
 
 	// Public key wasn't provided and key wasn't found by name
-	if sshPublicKey == nil {
+	if sshPublicKey == "" {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "SSH key not found",
 		}
 	}
-	if sshKeyName == nil || *sshKeyName == "" {
-		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-") + ".pub")
+	if sshKeyName == "" {
+		sshKeyName = "uw:" + random.GenerateRandomPhrase(4, "-") + ".pub"
 	}
 
 	// Key doesn't exist in db, but the user provided a public key, so add it to the db
-	if err := saveSSHKey(ctx, userID, *sshKeyName, *sshPublicKey); err != nil {
+	if err := saveSSHKey(ctx, userID, sshKeyName, sshPublicKey); err != nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to save SSH key",
 		}
 	}
 	return types.SSHKey{
-		Name:      *sshKeyName,
-		PublicKey: sshPublicKey,
+		Name:      sshKeyName,
+		PublicKey: &sshPublicKey,
 	}, nil
 }
 

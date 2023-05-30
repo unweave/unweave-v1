@@ -97,6 +97,7 @@ CREATE TABLE unweave.exec (
     command text[],
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     image text DEFAULT 'ubuntu:latest'::text NOT NULL,
+    provider text NOT NULL,
     CONSTRAINT session_id_check CHECK ((length(id) > 11))
 );
 

@@ -142,6 +142,7 @@ type UnweaveExec struct {
 	Command      []string          `json:"command"`
 	Metadata     json.RawMessage   `json:"metadata"`
 	Image        string            `json:"image"`
+	Provider     string            `json:"provider"`
 }
 
 type UnweaveExecVolume struct {

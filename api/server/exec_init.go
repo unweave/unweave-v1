@@ -89,7 +89,7 @@ func (s *ExecService) getExecImage(ctx context.Context, projectID string, imageO
 	return "", imageURI, nil
 }
 
-func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey *string) ([]types.SSHKey, error) {
+func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey string) ([]types.SSHKey, error) {
 	user := s.srv.cid
 	userKey, err := fetchCredentials(ctx, user, keyName, pubKey)
 	if err != nil {

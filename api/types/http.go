@@ -100,9 +100,9 @@ type ExecCreateParams struct {
 	Name         string         `json:"name,omitempty"`
 	Provider     Provider       `json:"provider"`
 	Spec         HardwareSpec   `json:"hardwareSpec,omitempty"`
+	SSHKeyName   string         `json:"sshKeyName"`
+	SSHPublicKey string         `json:"sshPublicKey"`
 	Region       *string        `json:"region,omitempty"`
-	SSHKeyName   *string        `json:"sshKeyName"`
-	SSHPublicKey *string        `json:"sshPublicKey"`
 	Image        *string        `json:"image"`
 	Command      []string       `json:"command"`
 	CommitID     *string        `json:"commitID,omitempty"`
@@ -143,10 +143,10 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 			Message: "Invalid request body: field 'provider' is required",
 		}
 	}
-	if s.SSHPublicKey == nil && s.SSHKeyName == nil {
+	if s.SSHPublicKey == "" || s.SSHKeyName == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: either 'sshKeyName' or 'sshPublicKey' is required",
+			Message: "Invalid request body: both Public Key and Key Name are required",
 		}
 	}
 

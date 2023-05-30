@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.image, n.provider
+select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.image, s.provider, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.exec s
               on s.build_id = b.id
@@ -98,6 +98,7 @@ type BuildGetUsedByRow struct {
 	Metadata     json.RawMessage   `json:"metadata"`
 	Image        string            `json:"image"`
 	Provider     string            `json:"provider"`
+	Provider_2   string            `json:"provider2"`
 }
 
 func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error) {
@@ -130,6 +131,7 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.Metadata,
 			&i.Image,
 			&i.Provider,
+			&i.Provider_2,
 		); err != nil {
 			return nil, err
 		}
@@ -222,7 +224,7 @@ func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
 }
 
 const ExecGet = `-- name: ExecGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
 where id = $1 or name = $1
 `
@@ -250,12 +252,13 @@ func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, er
 		pq.Array(&i.Command),
 		&i.Metadata,
 		&i.Image,
+		&i.Provider,
 	)
 	return i, err
 }
 
 const ExecGetAllActive = `-- name: ExecGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
 where status = 'initializing'
    or status = 'running'
@@ -290,6 +293,7 @@ func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 			pq.Array(&i.Command),
 			&i.Metadata,
 			&i.Image,
+			&i.Provider,
 		); err != nil {
 			return nil, err
 		}
