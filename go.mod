@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.62
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.3
 	github.com/deepmap/oapi-codegen v1.12.4
+	github.com/franela/goblin v0.0.0-20211003143422-0a4f594942bf
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/cors v1.2.1
