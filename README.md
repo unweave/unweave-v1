@@ -57,7 +57,7 @@ VM instances in Unweave are called Sessions. You can start a new Session on a su
 cloud provider by using the `--provider` flag. The default provider is Unweave.
 
 ```bash
-unweave new --project <project-id> --provider lambdalabs --type gpu_1x_a10
+unweave new --project <project-id> --provider lambdalabs --gpu-type gpu_1x_a10
 ```
 
 You can then ssh into the Session you create as usual. You can find the host by running 
