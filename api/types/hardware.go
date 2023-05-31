@@ -26,33 +26,39 @@ const (
 )
 
 func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
-	setMinIfZero := func(val *int, min int) {
-		if *val == 0 {
-			*val = min
-		}
-	}
+	spec.GPU.Type = setDefaultGPU(spec.GPU.Type)
 
-	setMaxIfZeroOrBelowMin := func(min, max *int) {
-		if *max <= *min {
-			*max = *min
-		}
-	}
+	spec.GPU.Count.Min = setMinIfZero(spec.GPU.Count.Min, defaultMinGPUs)
+	spec.GPU.Count.Max = setMaxIfZeroOrBelowMin(spec.GPU.Count.Min, spec.GPU.Count.Max)
 
-	setDefaultGPU := func(val *string) {
-		if *val == "" {
-			*val = defaultGPURequest
-		}
-	}
+	spec.CPU.Min = setMinIfZero(spec.CPU.Min, defaultMinCPU)
+	spec.CPU.Max = setMaxIfZeroOrBelowMin(spec.CPU.Min, spec.CPU.Max)
 
-	setDefaultGPU(&spec.GPU.Type)
+	spec.HDD.Min = setMinIfZero(spec.HDD.Min, defaultMinHDD)
+	spec.HDD.Max = setMaxIfZeroOrBelowMin(spec.HDD.Min, spec.HDD.Max)
 
-	setMinIfZero(&spec.GPU.Count.Min, defaultMinGPUs)
-	setMaxIfZeroOrBelowMin(&spec.GPU.Count.Min, &spec.GPU.Count.Max)
-
-	setMinIfZero(&spec.CPU.Min, defaultMinCPU)
-	setMaxIfZeroOrBelowMin(&spec.CPU.Min, &spec.CPU.Max)
-
-	setMinIfZero(&spec.HDD.Min, defaultMinHDD)
-	setMaxIfZeroOrBelowMin(&spec.HDD.Min, &spec.HDD.Max)
 	return spec
+}
+
+func setMinIfZero(val int, min int) int {
+	if val == 0 {
+		return min
+	}
+	return val
+}
+
+func setMaxIfZeroOrBelowMin(min, max int) int {
+	if max <= min {
+		return min
+	}
+
+	return max
+}
+
+func setDefaultGPU(val string) string {
+	if val == "" {
+		val = defaultGPURequest
+	}
+
+	return val
 }
