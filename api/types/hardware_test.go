@@ -9,8 +9,6 @@ import (
 func TestSetDefaultValues(t *testing.T) {
 	g := Goblin(t)
 
-	const defaultGPU = "rtx_4000"
-
 	g.Describe("SetDefaultValues", func() {
 		g.It("should set default values for unset fields", func() {
 			g.Describe("when all fields are unset", func() {
@@ -18,11 +16,11 @@ func TestSetDefaultValues(t *testing.T) {
 				expectedSpec := HardwareSpec{
 					GPU: GPU{
 						Count: HardwareRequestRange{
-							Min: defaultMinGPUs,
-							Max: defaultMinGPUs,
+							Min: 0,
+							Max: 0,
 						},
 
-						Type: defaultGPU,
+						Type: "",
 					},
 					CPU: HardwareRequestRange{
 						Min: defaultMinCPU,
@@ -102,7 +100,7 @@ func TestSetDefaultValues(t *testing.T) {
 							Min: 2,
 							Max: 4,
 						},
-						Type: defaultGPU,
+						Type: "",
 					},
 					CPU: HardwareRequestRange{
 						Min: 4,

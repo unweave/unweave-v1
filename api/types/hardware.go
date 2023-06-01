@@ -19,16 +19,12 @@ type HardwareSpec struct {
 }
 
 const (
-	defaultMinCPU     = 1
-	defaultMinHDD     = 4
-	defaultMinGPUs    = 1
-	defaultGPURequest = "rtx_4000"
+	defaultMinCPU = 4
+	defaultMinHDD = 50
 )
 
 func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
-	spec.GPU.Type = setDefaultGPU(spec.GPU.Type)
-
-	spec.GPU.Count.Min = setMinIfZero(spec.GPU.Count.Min, defaultMinGPUs)
+	spec.GPU.Count.Min = setDefaultMinGPUCount(spec.GPU)
 	spec.GPU.Count.Max = setMaxIfZeroOrBelowMin(spec.GPU.Count.Min, spec.GPU.Count.Max)
 
 	spec.CPU.Min = setMinIfZero(spec.CPU.Min, defaultMinCPU)
@@ -55,10 +51,16 @@ func setMaxIfZeroOrBelowMin(min, max int) int {
 	return max
 }
 
-func setDefaultGPU(val string) string {
-	if val == "" {
-		val = defaultGPURequest
+func setDefaultMinGPUCount(gpu GPU) int {
+	if gpu.Count.Min != 0 {
+		return gpu.Count.Min
 	}
 
-	return val
+	// User specified a GPU and didn't specify a min count. Use 1 as the default
+	if gpu.Type != "" {
+		return 1
+	}
+
+	// If no GPU type and no min count assume the user does not want a GPU
+	return 0
 }
