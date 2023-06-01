@@ -20,6 +20,7 @@ type StateInformer interface {
 // of the Update method
 type StateObserver interface {
 	ID() string
+	ExecID() string
 	Update(status types.Status)
 }
 
@@ -61,7 +62,7 @@ type Heartbeat struct {
 // HeartbeatInformer informs observers of heartbeats in registered execs.
 type HeartbeatInformer interface {
 	Inform(id string, heartbeat Heartbeat)
-	Register(execID string, o HeartbeatObserver)
+	Register(o HeartbeatObserver)
 	Unregister(o HeartbeatObserver)
 	Watch()
 }

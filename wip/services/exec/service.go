@@ -13,13 +13,15 @@ var (
 )
 
 type Service struct {
-	store         Store
-	driver        Driver
-	stateInformer StateInformer
-	statsInformer StatsInformer
+	store             Store
+	driver            Driver
+	stateInformer     StateInformer
+	statsInformer     StatsInformer
+	heartbeatInformer HeartbeatInformer
 
-	stateObserversFuncs []StateObserverFunc
-	statsObserversFuncs []StatsObserverFunc
+	stateObserversFuncs     []StateObserverFunc
+	statsObserversFuncs     []StatsObserverFunc
+	heartbeatObserversFuncs []HeartbeatObserverFunc
 }
 
 func WithStateObserver(s *Service, f StateObserverFunc) *Service {
@@ -32,17 +34,24 @@ func WithStatsObserver(s *Service, f StatsObserverFunc) *Service {
 	return s
 }
 
+func WithHeartbeatObserver(s *Service, f HeartbeatObserverFunc) *Service {
+	s.heartbeatObserversFuncs = append(s.heartbeatObserversFuncs, f)
+	return s
+}
+
 func NewService(
 	store Store,
 	driver Driver,
 	stateInformer StateInformer,
 	statsInformer StatsInformer,
+	heartbeatInformer HeartbeatInformer,
 ) (*Service, error) {
 	s := &Service{
-		store:         store,
-		driver:        driver,
-		stateInformer: stateInformer,
-		statsInformer: statsInformer,
+		store:             store,
+		driver:            driver,
+		stateInformer:     stateInformer,
+		statsInformer:     statsInformer,
+		heartbeatInformer: heartbeatInformer,
 	}
 
 	go s.stateInformer.Watch()
@@ -116,11 +125,6 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		s.stateInformer.Register(o)
 	}
 
-	for _, so := range s.statsObserversFuncs {
-		o := so(exec)
-		s.statsInformer.Register(o)
-	}
-
 	return exec, nil
 }
 
@@ -133,5 +137,25 @@ func (s *Service) List(ctx context.Context, project string) ([]types.Exec, error
 }
 
 func (s *Service) Terminate(ctx context.Context, id string) error {
+	return nil
+}
+
+// Monitor starts monitoring an exec by registering observers to the stats and heartbeat
+// informers.
+func (s *Service) Monitor(ctx context.Context, execID string) error {
+	exec, err := s.store.Get(execID)
+	if err != nil {
+		return fmt.Errorf("failed to get exec from store: %w", err)
+	}
+
+	for _, so := range s.statsObserversFuncs {
+		o := so(exec)
+		s.statsInformer.Register(o)
+	}
+
+	for _, ho := range s.heartbeatObserversFuncs {
+		o := ho(exec)
+		s.heartbeatInformer.Register(o)
+	}
 	return nil
 }

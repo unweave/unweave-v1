@@ -19,6 +19,10 @@ func (o *stateObserver) ID() string {
 	return o.exec.ID
 }
 
+func (o *stateObserver) ExecID() string {
+	return o.exec.ID
+}
+
 func (o *stateObserver) Update(status types.Status) {
 	// the state has been updated
 	// act accordingly
