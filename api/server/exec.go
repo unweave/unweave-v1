@@ -268,7 +268,8 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	node, err := s.assignNode(ctx, types.SetSpecDefaultValues(params.HardwareSpec), params.Region, keys)
+	spec := types.SetSpecDefaultValues(params.Spec)
+	node, err := s.assignNode(ctx, spec, params.Region, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
@@ -348,14 +349,11 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 			CreatedAt: &dbs.SshKeyCreatedAt,
 		},
 		"",
-		metadata.ConnectionInfo.GetConnectionInfo(),
 		types.Status(dbs.Status),
-		&dbs.CreatedAt,
-		metadata.TypeID,
+		dbs.CreatedAt,
 		dbs.Region,
 		types.Provider(dbs.Provider),
 		metadata.GetHardwareSpec(),
-		false, // Assuming `hasPersistentFS` value is always `false` in this case
 	)
 	return session, nil
 }
@@ -387,14 +385,11 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 				CreatedAt: &s.SshKeyCreatedAt,
 			},
 			"",
-			metadata.ConnectionInfo.GetConnectionInfo(),
 			types.Status(s.Status),
-			&s.CreatedAt,
-			metadata.TypeID,
+			s.CreatedAt,
 			s.Region,
 			types.Provider(s.Provider),
 			metadata.GetHardwareSpec(),
-			false, // Assuming `hasPersistentFS` value is always `false` in this case
 		)
 		res = append(res, *session)
 	}

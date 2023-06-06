@@ -140,8 +140,28 @@ type Exec struct {
 	Provider  Provider     `json:"provider"`
 }
 
-func NewExec(ID string, name string, SSHKey SSHKey, image string, connection *ConnectionInfo, status Status, createdAt *time.Time, nodeTypeID string, region string, provider Provider, specs HardwareSpec, hasPersistentFS bool) *Exec {
-	return &Exec{ID: ID, Name: name, Specs: specs, Image: image, SSHKey: SSHKey, Connection: connection, Status: status, CreatedAt: createdAt, NodeTypeID: nodeTypeID, Region: region, Provider: provider, PersistentFS: hasPersistentFS}
+func NewExec(
+	ID string,
+	name string,
+	sshKey SSHKey,
+	image string,
+	status Status,
+	createdAt time.Time,
+	region string,
+	provider Provider,
+	spec HardwareSpec,
+) *Exec {
+	return &Exec{
+		ID:        ID,
+		Name:      name,
+		Spec:      spec,
+		Image:     image,
+		Keys:      []SSHKey{sshKey},
+		Status:    status,
+		CreatedAt: createdAt,
+		Region:    region,
+		Provider:  provider,
+	}
 }
 
 type ExecConfig struct {
