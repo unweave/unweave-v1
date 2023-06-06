@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -23,11 +24,6 @@ func (o *stateObserver) ExecID() string {
 	return o.exec.ID
 }
 
-func (o *stateObserver) Update(status types.Status) {
-	// the state has been updated
-	// act accordingly
-	switch status {
-	case types.StatusRunning:
-		// TODO: Update networking details etc
-	}
+func (o *stateObserver) Update(state State) {
+	log.Info().Str("exec", o.exec.ID).Msgf("No-op state observer received state update: %s", state.Status)
 }

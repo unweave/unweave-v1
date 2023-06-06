@@ -13,11 +13,11 @@ var (
 )
 
 type Service struct {
-	store             Store
-	driver            Driver
-	stateInformer     StateInformer
-	statsInformer     StatsInformer
-	heartbeatInformer HeartbeatInformer
+	store                 Store
+	driver                Driver
+	stateInformerFunc     StateInformerFunc
+	statsInformerFunc     StatsInformerFunc
+	heartbeatInformerFunc HeartbeatInformerFunc
 
 	stateObserversFuncs     []StateObserverFunc
 	statsObserversFuncs     []StatsObserverFunc
@@ -42,19 +42,17 @@ func WithHeartbeatObserver(s *Service, f HeartbeatObserverFunc) *Service {
 func NewService(
 	store Store,
 	driver Driver,
-	stateInformer StateInformer,
-	statsInformer StatsInformer,
-	heartbeatInformer HeartbeatInformer,
+	stateInformerFunc StateInformerFunc,
+	statsInformerFunc StatsInformerFunc,
+	heartbeatInformerFunc HeartbeatInformerFunc,
 ) (*Service, error) {
 	s := &Service{
-		store:             store,
-		driver:            driver,
-		stateInformer:     stateInformer,
-		statsInformer:     statsInformer,
-		heartbeatInformer: heartbeatInformer,
+		store:                 store,
+		driver:                driver,
+		stateInformerFunc:     stateInformerFunc,
+		statsInformerFunc:     statsInformerFunc,
+		heartbeatInformerFunc: heartbeatInformerFunc,
 	}
-
-	go s.stateInformer.Watch()
 
 	execs, err := store.ListByProvider(driver.Provider(), true)
 	if err != nil {
@@ -73,9 +71,10 @@ func NewService(
 			continue
 		}
 
+		informer := s.stateInformerFunc(e)
 		for _, f := range s.stateObserversFuncs {
 			o := f(e)
-			s.stateInformer.Register(o)
+			informer.Register(o)
 		}
 	}
 
@@ -120,9 +119,10 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
+	informer := s.stateInformerFunc(exec)
 	for _, so := range s.stateObserversFuncs {
 		o := so(exec)
-		s.stateInformer.Register(o)
+		informer.Register(o)
 	}
 
 	return exec, nil
@@ -148,14 +148,16 @@ func (s *Service) Monitor(ctx context.Context, execID string) error {
 		return fmt.Errorf("failed to get exec from store: %w", err)
 	}
 
+	stInformer := s.statsInformerFunc(exec)
 	for _, so := range s.statsObserversFuncs {
 		o := so(exec)
-		s.statsInformer.Register(o)
+		stInformer.Register(o)
 	}
 
+	hbInformer := s.heartbeatInformerFunc(exec)
 	for _, ho := range s.heartbeatObserversFuncs {
 		o := ho(exec)
-		s.heartbeatInformer.Register(o)
+		hbInformer.Register(o)
 	}
 	return nil
 }

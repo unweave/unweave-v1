@@ -221,6 +221,40 @@ func (d *execDriver) Get(ctx context.Context, id string) (types.Exec, error) {
 	panic("implement me")
 }
 
+func (d *execDriver) GetStatus(ctx context.Context, execID string) (types.Status, error) {
+	res, err := d.client.GetInstanceWithResponse(ctx, execID)
+	if err != nil {
+		return "", err
+	}
+
+	if res.JSON200 == nil {
+		if res.JSON401 != nil {
+			return "", err401(res.JSON401.Error.Message, nil)
+		}
+		if res.JSON403 != nil {
+			return "", err403(res.JSON403.Error.Message, nil)
+		}
+		if res.JSON404 != nil {
+			return "", err500(res.JSON404.Error.Message, fmt.Errorf("instance not found, %s", res.JSON404.Error.Message))
+		}
+		return "", errUnknown(res.StatusCode(), nil)
+	}
+
+	switch res.JSON200.Data.Status {
+	case client.Active:
+		return types.StatusRunning, nil
+	case client.Booting:
+		return types.StatusInitializing, nil
+	case client.Terminated:
+		return types.StatusTerminated, nil
+	case client.Unhealthy:
+		return types.StatusError, nil
+	default:
+		log.Ctx(ctx).Error().Msgf("Unknown lambda status %s", res.JSON200.Data.Status)
+		return "", fmt.Errorf("unknown lambda status %s", res.JSON200.Data.Status)
+	}
+}
+
 func (d *execDriver) List(ctx context.Context, project string) ([]types.Exec, error) {
 	//TODO implement me
 	panic("implement me")

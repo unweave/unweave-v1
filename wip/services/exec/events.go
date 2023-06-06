@@ -6,22 +6,29 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+type State struct {
+	Status types.Status
+	Error  error
+}
+
 // StateInformer informs observers of state changes in registered execs. There should only
 // ever be one StateInformer per driver guaranteeing that exec state change is only ever
 // transmitted once.
 type StateInformer interface {
-	Inform(id string, status types.Status)
+	Inform(id string, state State)
 	Register(o StateObserver)
 	Unregister(o StateObserver)
 	Watch()
 }
+
+type StateInformerFunc func(exec types.Exec) StateInformer
 
 // StateObserver listens for exec state changes and handles them based on the implementation
 // of the Update method
 type StateObserver interface {
 	ID() string
 	ExecID() string
-	Update(status types.Status)
+	Update(state State)
 }
 
 type StateObserverFunc func(exec types.Exec) StateObserver
@@ -42,6 +49,8 @@ type StatsInformer interface {
 	Unregister(o StatsObserver)
 	Watch()
 }
+
+type StatsInformerFunc func(exec types.Exec) StatsInformer
 
 // StatsObserver listens for exec stats and updates the exec based on the implementing
 // policy
@@ -66,6 +75,8 @@ type HeartbeatInformer interface {
 	Unregister(o HeartbeatObserver)
 	Watch()
 }
+
+type HeartbeatInformerFunc func(exec types.Exec) HeartbeatInformer
 
 // HeartbeatObserver listens for heartbeats and handles them based on the implementation
 // of the Update method.

@@ -19,6 +19,7 @@ type Store interface {
 type Driver interface {
 	Create(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error)
 	DriverName() string
+	GetStatus(ctx context.Context, execID string) (types.Status, error)
 	Provider() types.Provider
 	Terminate(ctx context.Context, id string) error
 	Spec(ctx context.Context, id string) (types.HardwareSpec, error)
