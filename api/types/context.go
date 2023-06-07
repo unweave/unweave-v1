@@ -11,5 +11,6 @@ const (
 	BuildIDCtxKey    = "buildID"
 	ProjectIDCtxKey  = "projectID"
 	ExecIDCtxKey     = "execID"
-	ExecStatusCtxKey = "sessionStatus"
+	ExecStatusCtxKey = "execStatus"
+	ObserverCtxKey   = "observer"
 )

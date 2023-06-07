@@ -74,6 +74,8 @@ func NewService(
 		}
 
 		informer := s.stateInformerFunc(e)
+		informer.Watch()
+		
 		for _, f := range s.stateObserversFuncs {
 			o := f(e)
 			informer.Register(o)
@@ -89,7 +91,6 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		image = *params.Image
 	}
 
-	// Setup hardware spec
 	spec := types.SetSpecDefaultValues(params.Spec)
 
 	// TODO: currently assumes only one SSH key - need to support multiple
@@ -129,6 +130,8 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 	}
 
 	informer := s.stateInformerFunc(exec)
+	informer.Watch()
+
 	for _, so := range s.stateObserversFuncs {
 		o := so(exec)
 		informer.Register(o)
@@ -180,12 +183,16 @@ func (s *Service) Monitor(ctx context.Context, execID string) error {
 	}
 
 	stInformer := s.statsInformerFunc(exec)
+	stInformer.Watch()
+
 	for _, so := range s.statsObserversFuncs {
 		o := so(exec)
 		stInformer.Register(o)
 	}
 
 	hbInformer := s.heartbeatInformerFunc(exec)
+	hbInformer.Watch()
+
 	for _, ho := range s.heartbeatObserversFuncs {
 		o := ho(exec)
 		hbInformer.Register(o)

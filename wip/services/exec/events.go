@@ -26,8 +26,13 @@ type StateInformerFunc func(exec types.Exec) StateInformer
 // StateObserver listens for exec state changes and handles them based on the implementation
 // of the Update method
 type StateObserver interface {
+	// ID returns the ID of the observer. This should be unique across all observers.
 	ID() string
+	// ExecID returns the ID of the exec that the observer is observing.
 	ExecID() string
+	// Name returns the name of the observer and should identify the function of the observer.
+	Name() string
+	// Update handles the state change of the exec.
 	Update(state State)
 }
 

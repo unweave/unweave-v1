@@ -16,12 +16,16 @@ func NewStateObserverFunc(s *Service) StateObserverFunc {
 	}
 }
 
+func (o *stateObserver) ExecID() string {
+	return o.exec.ID
+}
+
 func (o *stateObserver) ID() string {
 	return o.exec.ID
 }
 
-func (o *stateObserver) ExecID() string {
-	return o.exec.ID
+func (o *stateObserver) Name() string {
+	return "state-observer"
 }
 
 func (o *stateObserver) Update(state State) {
