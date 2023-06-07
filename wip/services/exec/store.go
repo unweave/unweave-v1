@@ -34,7 +34,7 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 	if exec.BuildID != nil {
 		bid = sql.NullString{String: *exec.BuildID, Valid: true}
 	}
-	if exec.Name != "" {
+	if exec.Name == "" {
 		exec.Name = random.GenerateRandomPhrase(4, "-")
 	}
 	spec, err := json.Marshal(&exec.Spec)

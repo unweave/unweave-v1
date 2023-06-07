@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/tools/random"
 )
 
 var (
@@ -88,8 +89,11 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		image = *params.Image
 	}
 
+	// Setup hardware spec
+	spec := types.SetSpecDefaultValues(params.Spec)
+
 	// TODO: currently assumes only one SSH key - need to support multiple
-	execID, err := s.driver.Create(ctx, project, image, params.Spec, []string{params.SSHPublicKey}, nil)
+	execID, err := s.driver.Create(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -98,6 +102,7 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 
 	exec := types.Exec{
 		ID:        execID,
+		Name:      random.GenerateRandomPhrase(4, "-"),
 		CreatedAt: time.Now(),
 		CreatedBy: creator,
 		Image:     image,
@@ -112,7 +117,7 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		},
 		Volumes:  nil,
 		Network:  types.ExecNetwork{},
-		Spec:     types.HardwareSpec{},
+		Spec:     spec,
 		CommitID: params.CommitID,
 		GitURL:   params.GitURL,
 		Region:   "", // Set later once the exec has been successfully scheduled
