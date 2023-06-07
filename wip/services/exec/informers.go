@@ -151,33 +151,35 @@ func (i *pollingStateInformer) Unregister(o StateObserver) {
 // the exec's running state i.e. whether it transitioned from initializing to
 // running, failed, stopped etc.
 func (i *pollingStateInformer) Watch() {
-	for {
-		select {
-		case <-time.After(5 * time.Second):
-			// Check the store for changes in the exec's state.
-			dbExec, err := i.store.Get(i.execID)
-			if err != nil {
-				log.Err(err).Msg("failed to get exec from store")
-			}
+	go func() {
+		for {
+			select {
+			case <-time.After(5 * time.Second):
+				// Check the store for changes in the exec's state.
+				dbExec, err := i.store.Get(i.execID)
+				if err != nil {
+					log.Err(err).Msg("failed to get exec from store")
+				}
 
-			if dbExec.Status != i.prevStatus {
-				i.prevStatus = dbExec.Status
-				i.Inform(i.execID, State{Status: dbExec.Status})
-			}
+				if dbExec.Status != i.prevStatus {
+					i.prevStatus = dbExec.Status
+					i.Inform(i.execID, State{Status: dbExec.Status})
+				}
 
-		case <-time.After(10 * time.Second):
-			// Check the driver for changes in the exec's state.
-			status, err := i.driver.GetStatus(context.Background(), i.execID)
-			if err != nil {
-				log.Err(err).Msg("failed to get exec from driver")
-			}
+			case <-time.After(10 * time.Second):
+				// Check the driver for changes in the exec's state.
+				status, err := i.driver.GetStatus(context.Background(), i.execID)
+				if err != nil {
+					log.Err(err).Msg("failed to get exec from driver")
+				}
 
-			if status != i.prevStatus {
-				i.prevStatus = status
-				i.Inform(i.execID, State{Status: status})
+				if status != i.prevStatus {
+					i.prevStatus = status
+					i.Inform(i.execID, State{Status: status})
+				}
 			}
 		}
-	}
+	}()
 }
 
 type statsInformer struct {

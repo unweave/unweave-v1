@@ -252,6 +252,23 @@ func (q *Queries) ExecSetError(ctx context.Context, arg ExecSetErrorParams) erro
 	return err
 }
 
+const ExecSetFailed = `-- name: ExecSetFailed :exec
+update unweave.exec
+set status = 'failed'::unweave.exec_status,
+    error  = $2
+where id = $1
+`
+
+type ExecSetFailedParams struct {
+	ID    string         `json:"id"`
+	Error sql.NullString `json:"error"`
+}
+
+func (q *Queries) ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error {
+	_, err := q.db.ExecContext(ctx, ExecSetFailed, arg.ID, arg.Error)
+	return err
+}
+
 const ExecStatusUpdate = `-- name: ExecStatusUpdate :exec
 update unweave.exec
 set status    = $2,

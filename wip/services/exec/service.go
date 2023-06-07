@@ -75,7 +75,7 @@ func NewService(
 
 		informer := s.stateInformerFunc(e)
 		informer.Watch()
-		
+
 		for _, f := range s.stateObserversFuncs {
 			o := f(e)
 			informer.Register(o)
@@ -99,7 +99,10 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		return types.Exec{}, err
 	}
 
-	log.Ctx(ctx).Info().Str(types.ExecIDCtxKey, execID).Msgf("Created new exec with image %q", image)
+	log.Ctx(ctx).
+		Info().
+		Str(types.ExecIDCtxKey, execID).
+		Msgf("Created new exec with image %q", image)
 
 	exec := types.Exec{
 		ID:        execID,
@@ -163,6 +166,20 @@ func (s *Service) Terminate(ctx context.Context, id string) error {
 			return nil
 		}
 	}
+
+	// We don't want to overwrite the status if it's already terminated, failed or errored
+	if exec.Status == types.StatusTerminated ||
+		exec.Status == types.StatusFailed ||
+		exec.Status == types.StatusError {
+		return nil
+	}
+
+	fmt.Println(exec)
+
+	log.Ctx(ctx).
+		Info().
+		Str(types.ExecIDCtxKey, exec.ID).
+		Msg("Terminating exec")
 
 	if err = s.driver.Terminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate exec: %w", err)

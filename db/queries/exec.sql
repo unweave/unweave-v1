@@ -46,6 +46,12 @@ set status = 'error'::unweave.exec_status,
     error  = $2
 where id = $1;
 
+-- name: ExecSetFailed :exec
+update unweave.exec
+set status = 'failed'::unweave.exec_status,
+    error  = $2
+where id = $1;
+
 -- name: ExecStatusUpdate :exec
 update unweave.exec
 set status    = $2,

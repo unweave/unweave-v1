@@ -19,6 +19,7 @@ type Querier interface {
 	ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
 	ExecListByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
 	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error
+	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
 	ExecsGet(ctx context.Context, arg ExecsGetParams) ([]UnweaveExec, error)
