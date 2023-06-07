@@ -41,6 +41,10 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal spec to JSON: %w", err)
 	}
+	metadata, err := json.Marshal(&types.NodeMetadataV1{})
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
+	}
 
 	dbp := db.ExecCreateParams{
 		ID:           exec.ID,
@@ -49,7 +53,7 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 		Region:       exec.Region,
 		Name:         exec.Name,
 		Spec:         spec,
-		Metadata:     nil,
+		Metadata:     metadata,
 		CommitID:     commitID,
 		GitRemoteUrl: gitRemoteURL,
 		Command:      command,

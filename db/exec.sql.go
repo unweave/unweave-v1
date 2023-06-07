@@ -15,9 +15,10 @@ import (
 
 const ExecCreate = `-- name: ExecCreate :exec
 insert into unweave.exec (id, created_by, project_id,
-                          region, name, spec, metadata, commit_id, git_remote_url, command,
+                          region, name, spec, metadata, commit_id, git_remote_url,
+                          command,
                           build_id, image, provider)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,  $13)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 `
 
 type ExecCreateParams struct {
