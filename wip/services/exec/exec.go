@@ -2,8 +2,14 @@ package exec
 
 import (
 	"context"
+	"errors"
 
 	"github.com/unweave/unweave/api/types"
+)
+
+var (
+	ErrNotFound      = errors.New("not found")
+	ErrAlreadyExists = errors.New("already exists")
 )
 
 type Store interface {
@@ -14,6 +20,7 @@ type Store interface {
 	ListByProvider(provider types.Provider, filterActive bool) ([]types.Exec, error)
 	Delete(project, id string) error
 	Update(id string, exec types.Exec) error
+	UpdateStatus(id string, status types.Status) error
 }
 
 type Driver interface {

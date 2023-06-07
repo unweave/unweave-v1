@@ -18,6 +18,9 @@ type heartbeatInformer struct {
 	failCount int
 }
 
+// NewPollingHeartbeatInformerFunc returns a HeartbeatInformerFunc that polls the driver
+// for the exec status. If the driver fails to return the status for maxFail times, the
+// informer will inform all observers that the exec has failed and exit.
 func NewPollingHeartbeatInformerFunc(driver Driver, maxFail int) HeartbeatInformerFunc {
 	return func(exec types.Exec) HeartbeatInformer {
 		return &heartbeatInformer{

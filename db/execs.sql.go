@@ -14,8 +14,9 @@ import (
 const ExecListActiveByProvider = `-- name: ExecListActiveByProvider :many
 select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec as e
-where provider = $1 and (status = 'initializing'
-   or status = 'running')
+where provider = $1
+  and (status = 'initializing'
+    or status = 'running')
 `
 
 func (q *Queries) ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error) {

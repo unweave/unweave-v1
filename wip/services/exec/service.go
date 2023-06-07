@@ -129,14 +129,36 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 }
 
 func (s *Service) Get(ctx context.Context, id string) (types.Exec, error) {
-	return types.Exec{}, nil
+	exec, err := s.store.Get(id)
+	if err != nil {
+		return types.Exec{}, err
+	}
+	return exec, err
 }
 
 func (s *Service) List(ctx context.Context, project string) ([]types.Exec, error) {
-	return nil, nil
+	execs, err := s.store.List(project)
+	if err != nil {
+		return nil, err
+	}
+	return execs, nil
 }
 
 func (s *Service) Terminate(ctx context.Context, id string) error {
+	exec, err := s.store.Get(id)
+	if err != nil {
+		if err == ErrNotFound {
+			return nil
+		}
+	}
+
+	if err = s.driver.Terminate(ctx, exec.ID); err != nil {
+		return fmt.Errorf("failed to terminate exec: %w", err)
+	}
+
+	if err = s.store.UpdateStatus(exec.ID, types.StatusTerminated); err != nil {
+		return fmt.Errorf("failed to update exec status in store: %w", err)
+	}
 	return nil
 }
 
