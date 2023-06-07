@@ -80,7 +80,6 @@ ALTER TABLE unweave.build OWNER TO postgres;
 CREATE TABLE unweave.exec (
     id text DEFAULT ('se_'::text || public.nanoid()) NOT NULL,
     name text DEFAULT ''::text NOT NULL,
-    node_id text NOT NULL,
     region text NOT NULL,
     created_by text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -88,7 +87,6 @@ CREATE TABLE unweave.exec (
     exited_at timestamp with time zone,
     status unweave.exec_status DEFAULT 'initializing'::unweave.exec_status NOT NULL,
     project_id text NOT NULL,
-    ssh_key_id text,
     error text,
     build_id text,
     spec jsonb DEFAULT '{}'::jsonb NOT NULL,
@@ -111,20 +109,6 @@ CREATE TABLE unweave.project (
 
 ALTER TABLE unweave.project OWNER TO postgres;
 
-CREATE TABLE unweave.node (
-    id text NOT NULL,
-    provider text NOT NULL,
-    region text NOT NULL,
-    metadata jsonb NOT NULL,
-    status text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    ready_at timestamp with time zone,
-    owner_id text NOT NULL,
-    terminated_at timestamp with time zone
-);
-
-ALTER TABLE unweave.node OWNER TO postgres;
-
 CREATE TABLE unweave.ssh_key (
     id text DEFAULT ('ss_'::text || public.nanoid()) NOT NULL,
     name text NOT NULL,
@@ -143,6 +127,13 @@ CREATE TABLE unweave.account (
 
 ALTER TABLE unweave.account OWNER TO postgres;
 
+CREATE TABLE unweave.exec_ssh_key (
+    exec_id text NOT NULL,
+    ssh_key_id text NOT NULL
+);
+
+ALTER TABLE unweave.exec_ssh_key OWNER TO postgres;
+
 CREATE TABLE unweave.exec_volume (
     exec_id text NOT NULL,
     volume_id text NOT NULL,
@@ -150,6 +141,20 @@ CREATE TABLE unweave.exec_volume (
 );
 
 ALTER TABLE unweave.exec_volume OWNER TO postgres;
+
+CREATE TABLE unweave.node (
+    id text NOT NULL,
+    provider text NOT NULL,
+    region text NOT NULL,
+    metadata jsonb NOT NULL,
+    status text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    ready_at timestamp with time zone,
+    owner_id text NOT NULL,
+    terminated_at timestamp with time zone
+);
+
+ALTER TABLE unweave.node OWNER TO postgres;
 
 CREATE TABLE unweave.node_ssh_key (
     node_id text NOT NULL,
@@ -175,6 +180,9 @@ ALTER TABLE ONLY unweave.account
 
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.exec_ssh_key
+    ADD CONSTRAINT exec_ssh_key_pkey PRIMARY KEY (exec_id, ssh_key_id);
 
 ALTER TABLE ONLY unweave.exec_volume
     ADD CONSTRAINT exec_volume_pkey PRIMARY KEY (exec_id, volume_id, mount_path);
@@ -218,8 +226,11 @@ ALTER TABLE ONLY unweave.exec
 ALTER TABLE ONLY unweave.exec
     ADD CONSTRAINT exec_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
 
-ALTER TABLE ONLY unweave.exec
-    ADD CONSTRAINT exec_ssh_key_id_fkey FOREIGN KEY (ssh_key_id) REFERENCES unweave.ssh_key(id);
+ALTER TABLE ONLY unweave.exec_ssh_key
+    ADD CONSTRAINT exec_ssh_key_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
+
+ALTER TABLE ONLY unweave.exec_ssh_key
+    ADD CONSTRAINT exec_ssh_key_ssh_key_id_fkey FOREIGN KEY (ssh_key_id) REFERENCES unweave.ssh_key(id);
 
 ALTER TABLE ONLY unweave.exec_volume
     ADD CONSTRAINT exec_volume_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);

@@ -118,6 +118,7 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 		Region:   "", // Set later once the exec has been successfully scheduled
 		Provider: params.Provider,
 	}
+
 	if err = s.store.Create(project, exec); err != nil {
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}

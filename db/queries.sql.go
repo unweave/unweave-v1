@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.image, s.provider, n.provider
+select s.id, s.name, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.image, s.provider, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.exec s
               on s.build_id = b.id
@@ -80,7 +80,6 @@ from (select id from unweave.build as ub where ub.id = $1) as b
 type BuildGetUsedByRow struct {
 	ID           string            `json:"id"`
 	Name         string            `json:"name"`
-	NodeID       string            `json:"nodeID"`
 	Region       string            `json:"region"`
 	CreatedBy    string            `json:"createdBy"`
 	CreatedAt    time.Time         `json:"createdAt"`
@@ -88,7 +87,6 @@ type BuildGetUsedByRow struct {
 	ExitedAt     sql.NullTime      `json:"exitedAt"`
 	Status       UnweaveExecStatus `json:"status"`
 	ProjectID    string            `json:"projectID"`
-	SshKeyID     sql.NullString    `json:"sshKeyID"`
 	Error        sql.NullString    `json:"error"`
 	BuildID      sql.NullString    `json:"buildID"`
 	Spec         json.RawMessage   `json:"spec"`
@@ -113,7 +111,6 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -121,7 +118,6 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
@@ -180,35 +176,25 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 
 const MxExecGet = `-- name: MxExecGet :one
 
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.id = $1
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.id = $1
 `
 
 type MxExecGetRow struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Status          UnweaveExecStatus `json:"status"`
-	NodeID          string            `json:"nodeID"`
-	Provider        string            `json:"provider"`
-	Region          string            `json:"region"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	Metadata        json.RawMessage   `json:"metadata"`
-	SshKeyName      string            `json:"sshKeyName"`
-	PublicKey       string            `json:"publicKey"`
-	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Status    UnweaveExecStatus `json:"status"`
+	Provider  string            `json:"provider"`
+	Region    string            `json:"region"`
+	CreatedAt time.Time         `json:"createdAt"`
+	Metadata  json.RawMessage   `json:"metadata"`
 }
 
 // -----------------------------------------------------------------
@@ -221,48 +207,34 @@ func (q *Queries) MxExecGet(ctx context.Context, id string) (MxExecGetRow, error
 		&i.ID,
 		&i.Name,
 		&i.Status,
-		&i.NodeID,
 		&i.Provider,
 		&i.Region,
 		&i.CreatedAt,
 		&i.Metadata,
-		&i.SshKeyName,
-		&i.PublicKey,
-		&i.SshKeyCreatedAt,
 	)
 	return i, err
 }
 
 const MxExecsGet = `-- name: MxExecsGet :many
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.project_id = $1
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.project_id = $1
 `
 
 type MxExecsGetRow struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Status          UnweaveExecStatus `json:"status"`
-	NodeID          string            `json:"nodeID"`
-	Provider        string            `json:"provider"`
-	Region          string            `json:"region"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	Metadata        json.RawMessage   `json:"metadata"`
-	SshKeyName      string            `json:"sshKeyName"`
-	PublicKey       string            `json:"publicKey"`
-	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Status    UnweaveExecStatus `json:"status"`
+	Provider  string            `json:"provider"`
+	Region    string            `json:"region"`
+	CreatedAt time.Time         `json:"createdAt"`
+	Metadata  json.RawMessage   `json:"metadata"`
 }
 
 func (q *Queries) MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGetRow, error) {
@@ -278,14 +250,10 @@ func (q *Queries) MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGe
 			&i.ID,
 			&i.Name,
 			&i.Status,
-			&i.NodeID,
 			&i.Provider,
 			&i.Region,
 			&i.CreatedAt,
 			&i.Metadata,
-			&i.SshKeyName,
-			&i.PublicKey,
-			&i.SshKeyCreatedAt,
 		); err != nil {
 			return nil, err
 		}

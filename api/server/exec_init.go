@@ -21,7 +21,7 @@ func (s *ExecService) assignNode(ctx context.Context, hardwareSpec types.Hardwar
 	}
 	node.OwnerID = owner
 
-	metadata := DBNodeMetadataFromNode(node)
+	metadata := types.DBNodeMetadataFromNode(node)
 	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return types.Node{}, fmt.Errorf("failed to marshal metadata: %w", err)
@@ -133,7 +133,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 	if err != nil {
 		return nil, fmt.Errorf("failed to init exec: %w", err)
 	}
-	metadata := DBNodeMetadataFromNode(node)
+	metadata := types.DBNodeMetadataFromNode(node)
 	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
@@ -147,7 +147,6 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 
 	dbp := db.ExecCreateParams{
 		ID:           execID,
-		NodeID:       node.ID,
 		CreatedBy:    s.srv.cid,
 		ProjectID:    projectID,
 		Region:       node.Region,
@@ -159,7 +158,6 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		BuildID:      bid,
 		Image:        imageURI,
 		Provider:     node.Provider.String(),
-		SshKeyName:   cfg.Keys[0].Name, // TODO: support multiple keys
 	}
 
 	if err := db.Q.ExecCreate(ctx, dbp); err != nil {

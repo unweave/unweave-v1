@@ -3,6 +3,7 @@ package exec
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/unweave/unweave/api/types"
@@ -36,14 +37,18 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 	if exec.Name != "" {
 		exec.Name = random.GenerateRandomPhrase(4, "-")
 	}
+	spec, err := json.Marshal(&exec.Spec)
+	if err != nil {
+		return fmt.Errorf("failed to marshal spec to JSON: %w", err)
+	}
 
 	dbp := db.ExecCreateParams{
 		ID:           exec.ID,
-		NodeID:       "",
 		CreatedBy:    exec.CreatedBy,
 		ProjectID:    project,
 		Region:       exec.Region,
 		Name:         exec.Name,
+		Spec:         spec,
 		Metadata:     nil,
 		CommitID:     commitID,
 		GitRemoteUrl: gitRemoteURL,
@@ -51,7 +56,6 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 		BuildID:      bid,
 		Image:        exec.Image,
 		Provider:     exec.Provider.String(),
-		SshKeyName:   "",
 	}
 
 	if err := db.Q.ExecCreate(context.Background(), dbp); err != nil {

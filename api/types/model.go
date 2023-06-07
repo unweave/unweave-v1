@@ -143,7 +143,6 @@ type Exec struct {
 func NewExec(
 	ID string,
 	name string,
-	sshKey SSHKey,
 	image string,
 	status Status,
 	createdAt time.Time,
@@ -156,7 +155,6 @@ func NewExec(
 		Name:      name,
 		Spec:      spec,
 		Image:     image,
-		Keys:      []SSHKey{sshKey},
 		Status:    status,
 		CreatedAt: createdAt,
 		Region:    region,

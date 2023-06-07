@@ -19,84 +19,6 @@ import (
 
 var DefaultImageURI = "ubuntu:latest"
 
-type ConnectionInfoV1 struct {
-	Version int    `json:"version"`
-	Host    string `json:"host"`
-	Port    int    `json:"port"`
-	User    string `json:"user"`
-}
-
-func (c ConnectionInfoV1) GetConnectionInfo() *types.ConnectionInfo {
-	return &types.ConnectionInfo{
-		Host: c.Host,
-		Port: c.Port,
-		User: c.User,
-	}
-}
-
-type NodeMetadataV1 struct {
-	ID             string           `json:"id"`
-	TypeID         string           `json:"typeID"`
-	Price          int              `json:"price"`
-	VCPUs          int              `json:"vcpus"`
-	Memory         int              `json:"memory"`
-	HDD            int              `json:"hdd"`
-	GpuType        string           `json:"gpuType"`
-	GPUCount       int              `json:"gpuCount"`
-	GPUMemory      int              `json:"gpuMemory"`
-	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
-}
-
-func (m NodeMetadataV1) GetHardwareSpec() types.HardwareSpec {
-	return types.HardwareSpec{
-		GPU: types.GPU{
-			Count: types.HardwareRequestRange{
-				Min: m.GPUCount,
-				Max: m.GPUCount,
-			},
-			Type: m.GpuType,
-			RAM: types.HardwareRequestRange{
-				Min: m.GPUMemory,
-				Max: m.GPUMemory,
-			},
-		},
-		CPU: types.HardwareRequestRange{
-			Min: m.VCPUs,
-			Max: m.VCPUs,
-		},
-		RAM: types.HardwareRequestRange{
-			Min: m.Memory,
-			Max: m.Memory,
-		},
-		HDD: types.HardwareRequestRange{
-			Min: m.HDD,
-			Max: m.HDD,
-		},
-	}
-}
-
-func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
-	n := NodeMetadataV1{
-		ID:        node.ID,
-		TypeID:    node.TypeID,
-		Price:     node.Price,
-		VCPUs:     node.Specs.CPU.Min,
-		Memory:    node.Specs.RAM.Min,
-		HDD:       node.Specs.HDD.Min,
-		GpuType:   node.Specs.GPU.Type,
-		GPUCount:  node.Specs.GPU.Count.Min,
-		GPUMemory: node.Specs.GPU.RAM.Min,
-
-		ConnectionInfo: ConnectionInfoV1{
-			Version: 1,
-			Host:    node.Host,
-			Port:    node.Port,
-			User:    node.User,
-		},
-	}
-	return n
-}
-
 func handleExecError(execID string, err error, msg string) {
 	// Make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
@@ -224,7 +146,7 @@ func fetchCredentials(ctx context.Context, userID, sshKeyName, sshPublicKey stri
 	}, nil
 }
 
-func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
+func updateConnectionInfo(rt runtime.Exec, execID string) error {
 	// New ctx to make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	connInfo, err := rt.GetConnectionInfo(ctx, execID)
@@ -232,7 +154,6 @@ func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 		return fmt.Errorf("failed to get connection info: %w", err)
 	}
 
-	log.Info().Str("node_id", nodeID).Str("exec_id", execID).Msgf("Updating connection info %v", connInfo)
 	connInfoJSON, err := json.Marshal(connInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection info: %w", err)
@@ -334,7 +255,7 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 		return nil, fmt.Errorf("failed to get session from db: %w", err)
 	}
 
-	metadata := &NodeMetadataV1{}
+	metadata := &types.NodeMetadataV1{}
 	if err := json.Unmarshal(dbs.Metadata, metadata); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 	}
@@ -342,11 +263,6 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 	session := types.NewExec(
 		execID,
 		dbs.Name,
-		types.SSHKey{
-			Name:      dbs.SshKeyName,
-			PublicKey: &dbs.PublicKey,
-			CreatedAt: &dbs.SshKeyCreatedAt,
-		},
 		"",
 		types.Status(dbs.Status),
 		dbs.CreatedAt,
@@ -371,18 +287,13 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 		if !listAll && (s.Status == db.UnweaveExecStatusTerminated || s.Status == db.UnweaveExecStatusError) {
 			continue
 		}
-		metadata := &NodeMetadataV1{}
+		metadata := &types.NodeMetadataV1{}
 		if err := json.Unmarshal(s.Metadata, metadata); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
 		session := types.NewExec(
 			s.ID,
 			s.Name,
-			types.SSHKey{
-				Name:      s.SshKeyName,
-				PublicKey: &s.PublicKey,
-				CreatedAt: &s.SshKeyCreatedAt,
-			},
 			"",
 			types.Status(s.Status),
 			s.CreatedAt,
@@ -432,7 +343,7 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 					Msg("Exec status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(rt.Exec, exec.NodeID, execID); e != nil {
+					if e := updateConnectionInfo(rt.Exec, execID); e != nil {
 						// Use new context to make sure terminate is not cancelled
 						terminateCtx := context.Background()
 						terminateCtx = log.With().Logger().WithContext(terminateCtx)
@@ -531,9 +442,6 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	if err = rt.Exec.Terminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
 	}
-	if err = s.srv.vault.DeleteSecret(ctx, exec.NodeID); err != nil {
-		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", exec.NodeID)
-	}
 
 	params := db.ExecStatusUpdateParams{
 		ID:     execID,
@@ -551,7 +459,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	}
 
 	np := db.NodeStatusUpdateParams{
-		ID:           exec.NodeID,
+		//ID:           exec.NodeID,
 		Status:       "terminated",
 		TerminatedAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
@@ -559,7 +467,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		log.Ctx(ctx).
 			Error().
 			Err(err).
-			Msgf("Failed to set node %q as terminated", exec.NodeID)
+			Msgf("Failed to set node %q as terminated")
 	}
 	return nil
 }

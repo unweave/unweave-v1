@@ -14,22 +14,19 @@ import (
 )
 
 const ExecCreate = `-- name: ExecCreate :exec
-insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
-                          region, name, metadata, commit_id, git_remote_url, command,
+insert into unweave.exec (id, created_by, project_id,
+                          region, name, spec, metadata, commit_id, git_remote_url, command,
                           build_id, image, provider)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $14
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,  $13)
 `
 
 type ExecCreateParams struct {
 	ID           string          `json:"id"`
-	NodeID       string          `json:"nodeID"`
 	CreatedBy    string          `json:"createdBy"`
 	ProjectID    string          `json:"projectID"`
 	Region       string          `json:"region"`
 	Name         string          `json:"name"`
+	Spec         json.RawMessage `json:"spec"`
 	Metadata     json.RawMessage `json:"metadata"`
 	CommitID     sql.NullString  `json:"commitID"`
 	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
@@ -37,17 +34,16 @@ type ExecCreateParams struct {
 	BuildID      sql.NullString  `json:"buildID"`
 	Image        string          `json:"image"`
 	Provider     string          `json:"provider"`
-	SshKeyName   string          `json:"sshKeyName"`
 }
 
 func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
 	_, err := q.db.ExecContext(ctx, ExecCreate,
 		arg.ID,
-		arg.NodeID,
 		arg.CreatedBy,
 		arg.ProjectID,
 		arg.Region,
 		arg.Name,
+		arg.Spec,
 		arg.Metadata,
 		arg.CommitID,
 		arg.GitRemoteUrl,
@@ -55,15 +51,15 @@ func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
 		arg.BuildID,
 		arg.Image,
 		arg.Provider,
-		arg.SshKeyName,
 	)
 	return err
 }
 
 const ExecGet = `-- name: ExecGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
-where id = $1 or name = $1
+where id = $1
+   or name = $1
 `
 
 func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error) {
@@ -72,7 +68,6 @@ func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, er
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.NodeID,
 		&i.Region,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -80,7 +75,6 @@ func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, er
 		&i.ExitedAt,
 		&i.Status,
 		&i.ProjectID,
-		&i.SshKeyID,
 		&i.Error,
 		&i.BuildID,
 		&i.Spec,
@@ -95,7 +89,7 @@ func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, er
 }
 
 const ExecGetAllActive = `-- name: ExecGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
 where status = 'initializing'
    or status = 'running'
@@ -113,7 +107,6 @@ func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -121,7 +114,6 @@ func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
@@ -146,7 +138,7 @@ func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 }
 
 const ExecListActiveByProvider = `-- name: ExecListActiveByProvider :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec as e
 where provider = $1
   and (status = 'initializing'
@@ -165,7 +157,6 @@ func (q *Queries) ExecListActiveByProvider(ctx context.Context, provider string)
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -173,7 +164,6 @@ func (q *Queries) ExecListActiveByProvider(ctx context.Context, provider string)
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
@@ -198,7 +188,7 @@ func (q *Queries) ExecListActiveByProvider(ctx context.Context, provider string)
 }
 
 const ExecListByProvider = `-- name: ExecListByProvider :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec as e
 where e.provider = $1
 `
@@ -215,7 +205,6 @@ func (q *Queries) ExecListByProvider(ctx context.Context, provider string) ([]Un
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -223,7 +212,6 @@ func (q *Queries) ExecListByProvider(ctx context.Context, provider string) ([]Un
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
@@ -306,7 +294,7 @@ func (q *Queries) ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateCo
 }
 
 const ExecsGet = `-- name: ExecsGet :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
 where project_id = $1
 order by unweave.exec.created_at desc
@@ -331,7 +319,6 @@ func (q *Queries) ExecsGet(ctx context.Context, arg ExecsGetParams) ([]UnweaveEx
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -339,7 +326,6 @@ func (q *Queries) ExecsGet(ctx context.Context, arg ExecsGetParams) ([]UnweaveEx
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,

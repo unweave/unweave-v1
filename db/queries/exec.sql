@@ -1,16 +1,14 @@
 -- name: ExecCreate :exec
-insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
-                          region, name, metadata, commit_id, git_remote_url, command,
+insert into unweave.exec (id, created_by, project_id,
+                          region, name, spec, metadata, commit_id, git_remote_url, command,
                           build_id, image, provider)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = @ssh_key_name
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13);
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12,  $13);
 
 -- name: ExecGet :one
 select *
 from unweave.exec
-where id = @id_or_name or name = @id_or_name;
+where id = @id_or_name
+   or name = @id_or_name;
 
 -- name: ExecGetAllActive :many
 select *

@@ -125,7 +125,6 @@ type UnweaveBuild struct {
 type UnweaveExec struct {
 	ID           string            `json:"id"`
 	Name         string            `json:"name"`
-	NodeID       string            `json:"nodeID"`
 	Region       string            `json:"region"`
 	CreatedBy    string            `json:"createdBy"`
 	CreatedAt    time.Time         `json:"createdAt"`
@@ -133,7 +132,6 @@ type UnweaveExec struct {
 	ExitedAt     sql.NullTime      `json:"exitedAt"`
 	Status       UnweaveExecStatus `json:"status"`
 	ProjectID    string            `json:"projectID"`
-	SshKeyID     sql.NullString    `json:"sshKeyID"`
 	Error        sql.NullString    `json:"error"`
 	BuildID      sql.NullString    `json:"buildID"`
 	Spec         json.RawMessage   `json:"spec"`
@@ -143,6 +141,11 @@ type UnweaveExec struct {
 	Metadata     json.RawMessage   `json:"metadata"`
 	Image        string            `json:"image"`
 	Provider     string            `json:"provider"`
+}
+
+type UnweaveExecSshKey struct {
+	ExecID   string `json:"execID"`
+	SshKeyID string `json:"sshKeyID"`
 }
 
 type UnweaveExecVolume struct {

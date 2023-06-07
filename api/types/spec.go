@@ -64,3 +64,81 @@ func setDefaultMinGPUCount(gpu GPU) int {
 	// If no GPU type and no min count assume the user does not want a GPU
 	return 0
 }
+
+type NodeMetadataV1 struct {
+	ID             string           `json:"id"`
+	TypeID         string           `json:"typeID"`
+	Price          int              `json:"price"`
+	VCPUs          int              `json:"vcpus"`
+	Memory         int              `json:"memory"`
+	HDD            int              `json:"hdd"`
+	GpuType        string           `json:"gpuType"`
+	GPUCount       int              `json:"gpuCount"`
+	GPUMemory      int              `json:"gpuMemory"`
+	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
+}
+
+func (m NodeMetadataV1) GetHardwareSpec() HardwareSpec {
+	return HardwareSpec{
+		GPU: GPU{
+			Count: HardwareRequestRange{
+				Min: m.GPUCount,
+				Max: m.GPUCount,
+			},
+			Type: m.GpuType,
+			RAM: HardwareRequestRange{
+				Min: m.GPUMemory,
+				Max: m.GPUMemory,
+			},
+		},
+		CPU: HardwareRequestRange{
+			Min: m.VCPUs,
+			Max: m.VCPUs,
+		},
+		RAM: HardwareRequestRange{
+			Min: m.Memory,
+			Max: m.Memory,
+		},
+		HDD: HardwareRequestRange{
+			Min: m.HDD,
+			Max: m.HDD,
+		},
+	}
+}
+
+func DBNodeMetadataFromNode(node Node) NodeMetadataV1 {
+	n := NodeMetadataV1{
+		ID:        node.ID,
+		TypeID:    node.TypeID,
+		Price:     node.Price,
+		VCPUs:     node.Specs.CPU.Min,
+		Memory:    node.Specs.RAM.Min,
+		HDD:       node.Specs.HDD.Min,
+		GpuType:   node.Specs.GPU.Type,
+		GPUCount:  node.Specs.GPU.Count.Min,
+		GPUMemory: node.Specs.GPU.RAM.Min,
+
+		ConnectionInfo: ConnectionInfoV1{
+			Version: 1,
+			Host:    node.Host,
+			Port:    node.Port,
+			User:    node.User,
+		},
+	}
+	return n
+}
+
+type ConnectionInfoV1 struct {
+	Version int    `json:"version"`
+	Host    string `json:"host"`
+	Port    int    `json:"port"`
+	User    string `json:"user"`
+}
+
+func (c ConnectionInfoV1) GetConnectionInfo() *ConnectionInfo {
+	return &ConnectionInfo{
+		Host: c.Host,
+		Port: c.Port,
+		User: c.User,
+	}
+}

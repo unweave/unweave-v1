@@ -83,35 +83,23 @@ where public_key = $1
 -------------------------------------------------------------------
 
 -- name: MxExecGet :one
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.id = $1;
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.id = $1;
 
 -- name: MxExecsGet :many
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.project_id = $1;
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.project_id = $1;
