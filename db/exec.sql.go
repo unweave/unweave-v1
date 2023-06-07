@@ -16,11 +16,11 @@ import (
 const ExecCreate = `-- name: ExecCreate :exec
 insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
                           region, name, metadata, commit_id, git_remote_url, command,
-                          build_id, image)
+                          build_id, image, provider)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $13
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12)
+                         where ssh_keys.name = $14
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
 `
 
 type ExecCreateParams struct {
@@ -36,6 +36,7 @@ type ExecCreateParams struct {
 	Command      []string        `json:"command"`
 	BuildID      sql.NullString  `json:"buildID"`
 	Image        string          `json:"image"`
+	Provider     string          `json:"provider"`
 	SshKeyName   string          `json:"sshKeyName"`
 }
 
@@ -53,6 +54,7 @@ func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
 		pq.Array(arg.Command),
 		arg.BuildID,
 		arg.Image,
+		arg.Provider,
 		arg.SshKeyName,
 	)
 	return err
@@ -101,6 +103,108 @@ where status = 'initializing'
 
 func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 	rows, err := q.db.QueryContext(ctx, ExecGetAllActive)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveExec
+	for rows.Next() {
+		var i UnweaveExec
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NodeID,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.SshKeyID,
+			&i.Error,
+			&i.BuildID,
+			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
+			&i.Metadata,
+			&i.Image,
+			&i.Provider,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ExecListActiveByProvider = `-- name: ExecListActiveByProvider :many
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+from unweave.exec as e
+where provider = $1
+  and (status = 'initializing'
+    or status = 'running')
+`
+
+func (q *Queries) ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error) {
+	rows, err := q.db.QueryContext(ctx, ExecListActiveByProvider, provider)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveExec
+	for rows.Next() {
+		var i UnweaveExec
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.NodeID,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.SshKeyID,
+			&i.Error,
+			&i.BuildID,
+			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
+			&i.Metadata,
+			&i.Image,
+			&i.Provider,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const ExecListByProvider = `-- name: ExecListByProvider :many
+select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+from unweave.exec as e
+where e.provider = $1
+`
+
+func (q *Queries) ExecListByProvider(ctx context.Context, provider string) ([]UnweaveExec, error) {
+	rows, err := q.db.QueryContext(ctx, ExecListByProvider, provider)
 	if err != nil {
 		return nil, err
 	}

@@ -158,6 +158,7 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		Command:      command,
 		BuildID:      bid,
 		Image:        imageURI,
+		Provider:     node.Provider.String(),
 		SshKeyName:   cfg.Keys[0].Name, // TODO: support multiple keys
 	}
 

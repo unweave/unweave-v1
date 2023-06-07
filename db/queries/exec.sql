@@ -1,11 +1,11 @@
 -- name: ExecCreate :exec
 insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
                           region, name, metadata, commit_id, git_remote_url, command,
-                          build_id, image)
+                          build_id, image, provider)
 values ($1, $2, $3, $4, (select id
                          from unweave.ssh_key as ssh_keys
                          where ssh_keys.name = @ssh_key_name
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12);
+                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13);
 
 -- name: ExecGet :one
 select *
@@ -17,6 +17,18 @@ select *
 from unweave.exec
 where status = 'initializing'
    or status = 'running';
+
+-- name: ExecListByProvider :many
+select *
+from unweave.exec as e
+where e.provider = $1;
+
+-- name: ExecListActiveByProvider :many
+select *
+from unweave.exec as e
+where provider = $1
+  and (status = 'initializing'
+    or status = 'running');
 
 -- name: ExecUpdateConnectionInfo :exec
 update unweave.exec

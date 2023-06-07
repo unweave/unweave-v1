@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 )
 
@@ -92,6 +93,8 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 	if err != nil {
 		return types.Exec{}, err
 	}
+
+	log.Ctx(ctx).Info().Str(types.ExecIDCtxKey, execID).Msgf("Created new exec with image %q", image)
 
 	exec := types.Exec{
 		ID:        execID,

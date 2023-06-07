@@ -50,6 +50,7 @@ func (p postgresStore) Create(project string, exec types.Exec) error {
 		Command:      command,
 		BuildID:      bid,
 		Image:        exec.Image,
+		Provider:     exec.Provider.String(),
 		SshKeyName:   "",
 	}
 

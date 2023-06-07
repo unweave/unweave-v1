@@ -13,24 +13,12 @@ import (
 	"github.com/unweave/unweave/db"
 )
 
-// Context Keys should only be used inside the API package while parsing incoming requests
-// either in the middleware or in the handlers. They should not be passed further into
-// the call stack.
-const (
-	UserIDCtxKey     = "userID"
-	AccountIDCtxKey  = "accountID"
-	BuildIDCtxKey    = "buildID"
-	ProjectIDCtxKey  = "projectID"
-	ExecIDCtxKey     = "execID"
-	ExecStatusCtxKey = "sessionStatus"
-)
-
 func SetAccountIDInContext(ctx context.Context, aid string) context.Context {
-	return context.WithValue(ctx, AccountIDCtxKey, aid)
+	return context.WithValue(ctx, types.AccountIDCtxKey, aid)
 }
 
 func GetAccountIDFromContext(ctx context.Context) string {
-	uid, ok := ctx.Value(AccountIDCtxKey).(string)
+	uid, ok := ctx.Value(types.AccountIDCtxKey).(string)
 	if !ok || uid == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("account not found in context")
@@ -40,11 +28,11 @@ func GetAccountIDFromContext(ctx context.Context) string {
 }
 
 func SetUserIDInContext(ctx context.Context, aid string) context.Context {
-	return context.WithValue(ctx, UserIDCtxKey, aid)
+	return context.WithValue(ctx, types.UserIDCtxKey, aid)
 }
 
 func GetUserIDFromContext(ctx context.Context) string {
-	uid, ok := ctx.Value(UserIDCtxKey).(string)
+	uid, ok := ctx.Value(types.UserIDCtxKey).(string)
 	if !ok || uid == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("account not found in context")
@@ -54,11 +42,11 @@ func GetUserIDFromContext(ctx context.Context) string {
 }
 
 func SetProjectIDInContext(ctx context.Context, projectID string) context.Context {
-	return context.WithValue(ctx, ProjectIDCtxKey, projectID)
+	return context.WithValue(ctx, types.ProjectIDCtxKey, projectID)
 }
 
 func GetProjectIDFromContext(ctx context.Context) string {
-	projectID, ok := ctx.Value(ProjectIDCtxKey).(string)
+	projectID, ok := ctx.Value(types.ProjectIDCtxKey).(string)
 	if !ok || projectID == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("project not found in context")
@@ -68,11 +56,11 @@ func GetProjectIDFromContext(ctx context.Context) string {
 }
 
 func SetExecIDInContext(ctx context.Context, execID string) context.Context {
-	return context.WithValue(ctx, ExecIDCtxKey, execID)
+	return context.WithValue(ctx, types.ExecIDCtxKey, execID)
 }
 
 func GetExecIDFromContext(ctx context.Context) string {
-	execID, ok := ctx.Value(ExecIDCtxKey).(string)
+	execID, ok := ctx.Value(types.ExecIDCtxKey).(string)
 	if !ok || execID == "" {
 		// This should never happen at runtime.
 		log.Error().Msg("exec not found in context")
@@ -89,7 +77,7 @@ func WithAccountCtx(next http.Handler) http.Handler {
 		userID := "uid_1234"
 		ctx = SetUserIDInContext(ctx, userID)
 		ctx = SetAccountIDInContext(ctx, userID)
-		ctx = log.With().Str(UserIDCtxKey, userID).Logger().WithContext(ctx)
+		ctx = log.With().Str(types.UserIDCtxKey, userID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -118,8 +106,8 @@ func WithProjectCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, ProjectIDCtxKey, projectID)
-		ctx = log.With().Str(ProjectIDCtxKey, projectID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, types.ProjectIDCtxKey, projectID)
+		ctx = log.With().Str(types.ProjectIDCtxKey, projectID).Logger().WithContext(ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -148,8 +136,8 @@ func WithExecCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, ExecIDCtxKey, exec)
-		ctx = log.With().Str(ExecIDCtxKey, exec.ID).Logger().WithContext(ctx)
+		ctx = context.WithValue(ctx, types.ExecIDCtxKey, exec)
+		ctx = log.With().Str(types.ExecIDCtxKey, exec.ID).Logger().WithContext(ctx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

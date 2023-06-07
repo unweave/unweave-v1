@@ -11,6 +11,7 @@ import (
 	"github.com/rs/zerolog/log"
 	middleware2 "github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/router"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
@@ -34,9 +35,9 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Str(middleware2.UserIDCtxKey, sess.CreatedBy).
-				Str(middleware2.ProjectIDCtxKey, sess.ProjectID).
-				Str(middleware2.ExecIDCtxKey, sess.ID).
+				Str(types.UserIDCtxKey, sess.CreatedBy).
+				Str(types.ProjectIDCtxKey, sess.ProjectID).
+				Str(types.ExecIDCtxKey, sess.ID).
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, "", sess.CreatedBy)

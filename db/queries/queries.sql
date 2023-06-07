@@ -32,7 +32,6 @@ set status      = $2,
 where id = $1;
 
 
-
 -- name: ProjectGet :one
 select *
 from unweave.project
@@ -55,7 +54,6 @@ set status        = $2,
     ready_at      = coalesce(sqlc.narg('ready_at'), ready_at),
     terminated_at = coalesce(sqlc.narg('terminated_at'), terminated_at)
 where id = $1;
-
 
 
 -- name: SSHKeyAdd :exec
