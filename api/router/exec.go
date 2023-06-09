@@ -80,3 +80,63 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	render.JSON(w, r, exec)
 }
+
+func (e *ExecRouter) ExecGetHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log.Ctx(ctx).Info().Msgf("Executing ExecGet request")
+
+	execID := chi.URLParam(r, "execID")
+	if execID == "" {
+		err := fmt.Errorf("missing execID")
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request"))
+		return
+	}
+
+	exec, err := e.store.Get(execID)
+	if err != nil {
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
+		return
+	}
+	render.JSON(w, r, exec)
+}
+
+func (e *ExecRouter) ExecListHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log.Ctx(ctx).Info().Msgf("Executing ExecList request")
+
+	projectID := middleware.GetProjectIDFromContext(ctx)
+
+	execs, err := e.store.List(projectID)
+	if err != nil {
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list sessions"))
+		return
+	}
+
+	render.JSON(w, r, execs)
+}
+
+func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	log.Ctx(ctx).Info().Msgf("Executing ExecTerminate request")
+
+	execID := chi.URLParam(r, "execID")
+	if execID == "" {
+		err := fmt.Errorf("missing execID")
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request"))
+		return
+	}
+
+	exec, err := e.store.Get(execID)
+	if err != nil {
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
+		return
+	}
+
+	err = e.service(exec.Provider).Terminate(ctx, execID)
+	if err != nil {
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to terminate session"))
+		return
+	}
+
+	render.Status(r, http.StatusOK)
+}

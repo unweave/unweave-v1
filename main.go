@@ -33,6 +33,7 @@ func main() {
 
 	// Initialize unweave from environment variables
 	runtimeCfg := &EnvInitializer{}
+	execStore := execsrv.NewPostgresStore()
 
 	// TODO: init store
 	lDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
@@ -40,17 +41,17 @@ func main() {
 		panic(err)
 	}
 
-	lStateInf := execsrv.NewPollingStateInformerFunc(nil, lDriver)
-	lStatsInf := execsrv.NewPollingStatsInformerFunc(nil, lDriver)
+	lStateInf := execsrv.NewPollingStateInformerFunc(execStore, lDriver)
+	lStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, lDriver)
 	lHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(lDriver, 10)
 
-	lls, err := execsrv.NewService(nil, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
+	lls, err := execsrv.NewService(execStore, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
 	if err != nil {
 		panic(err)
 	}
 	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
 
-	execRouter := router.NewExecRouter(nil, lls, nil)
+	execRouter := router.NewExecRouter(execStore, lls, nil)
 
 	server.API(cfg, runtimeCfg, execRouter)
 }

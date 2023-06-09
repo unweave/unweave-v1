@@ -91,12 +91,12 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 
 		r.Route("/sessions", func(r chi.Router) {
 
-			r.Get("/", ExecsList(rti))
+			r.Get("/", execRouter.ExecListHandler)
 
 			r.Route("/{exec}", func(r chi.Router) {
 				r.Use(middleware2.WithExecCtx)
-				r.Get("/", ExecsGet(rti))
-				r.Put("/terminate", ExecsTerminate(rti))
+				r.Get("/", execRouter.ExecGetHandler)
+				r.Put("/terminate", execRouter.ExecTerminateHandler)
 			})
 		})
 
