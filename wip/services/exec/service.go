@@ -95,7 +95,6 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	// TODO: currently assumes only one SSH key - need to support multiple
 	execID, err := s.driver.Create(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
@@ -106,7 +105,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 		Str(types.ExecIDCtxKey, execID).
 		Msgf("Created new exec with image %q", image)
 
-	exec := types.Exec{
+	unscheduledExec := types.Exec{
 		ID:        execID,
 		Name:      random.GenerateRandomPhrase(4, "-"),
 		CreatedAt: time.Now(),
@@ -122,27 +121,28 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 			},
 		},
 		Volumes:  nil,
-		Network:  types.ExecNetwork{},
 		Spec:     spec,
 		CommitID: params.CommitID,
 		GitURL:   params.GitURL,
-		Region:   "", // Set later once the exec has been successfully scheduled
 		Provider: params.Provider,
+		// Set when a connection is established to the exec
+		Network: types.ExecNetwork{},
+		Region:  "",
 	}
 
-	if err = s.store.Create(project, exec); err != nil {
+	if err = s.store.Create(context.Background(), project, unscheduledExec); err != nil {
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	informer := s.stateInformerFunc(exec)
+	informer := s.stateInformerFunc(unscheduledExec)
 	informer.Watch()
 
 	for _, so := range s.stateObserversFuncs {
-		o := so(exec)
+		o := so(unscheduledExec)
 		informer.Register(o)
 	}
 
-	return exec, nil
+	return unscheduledExec, nil
 }
 
 func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error) {
@@ -188,6 +188,8 @@ func (s *ProviderService) Terminate(ctx context.Context, id string) error {
 	if err = s.store.UpdateStatus(exec.ID, types.StatusTerminated); err != nil {
 		return fmt.Errorf("failed to update exec status in store: %w", err)
 	}
+
+	// TODO Clean up SSH keys associated with the terminated exec
 	return nil
 }
 

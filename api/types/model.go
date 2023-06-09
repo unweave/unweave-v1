@@ -140,22 +140,14 @@ type Exec struct {
 	Provider  Provider     `json:"provider"`
 }
 
-func NewExec(
-	ID string,
-	name string,
-	image string,
-	status Status,
-	createdAt time.Time,
-	region string,
-	provider Provider,
-	spec HardwareSpec,
-) *Exec {
+func NewExec(ID string, name string, image string, status Status, createdAt time.Time, region string, provider Provider, nodeMetadata *NodeMetadataV1) *Exec {
 	return &Exec{
 		ID:        ID,
 		Name:      name,
-		Spec:      spec,
+		Spec:      nodeMetadata.GetHardwareSpec(),
 		Image:     image,
 		Status:    status,
+		Network:   nodeMetadata.GetExecNetwork(),
 		CreatedAt: createdAt,
 		Region:    region,
 		Provider:  provider,
@@ -178,4 +170,28 @@ type GitConfig struct {
 type SourceContext struct {
 	MountPath string        `json:"mountPath"`
 	Context   io.ReadCloser `json:"-"`
+}
+
+func FilterKeysWithPublicKey(keys []SSHKey) []SSHKey {
+	filteredKeys := make([]SSHKey, 0)
+
+	for _, key := range keys {
+		if key.PublicKey != nil {
+			filteredKeys = append(filteredKeys, key)
+		}
+	}
+
+	return filteredKeys
+}
+
+func GetPublicKeys(keys []SSHKey) []string {
+	filteredStrings := make([]string, 0)
+
+	for _, key := range keys {
+		if key.PublicKey != nil {
+			filteredStrings = append(filteredStrings, *key.PublicKey)
+		}
+	}
+
+	return filteredStrings
 }

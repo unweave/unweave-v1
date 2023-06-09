@@ -19,11 +19,15 @@ type Querier interface {
 	ExecList(ctx context.Context, arg ExecListParams) ([]UnweaveExec, error)
 	ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
 	ExecListByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
+	ExecSSHKeyDelete(ctx context.Context, arg ExecSSHKeyDeleteParams) error
+	ExecSSHKeyGet(ctx context.Context, arg ExecSSHKeyGetParams) (UnweaveExecSshKey, error)
+	ExecSSHKeyInsert(ctx context.Context, arg ExecSSHKeyInsertParams) error
+	ExecSSHKeysByExecIDGet(ctx context.Context, execID string) ([]UnweaveExecSshKey, error)
 	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error
 	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
-	ExecsGet(ctx context.Context, arg ExecsGetParams) ([]UnweaveExec, error)
+	ExecsGetActive(ctx context.Context, arg ExecsGetActiveParams) ([]UnweaveExec, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
@@ -36,6 +40,7 @@ type Querier interface {
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
+	SSHKeysGetByIDs(ctx context.Context, ids []string) ([]UnweaveSshKey, error)
 	VolumeCreate(ctx context.Context, arg VolumeCreateParams) (UnweaveVolume, error)
 	VolumeDelete(ctx context.Context, id string) error
 	VolumeGet(ctx context.Context, id string) (UnweaveVolume, error)

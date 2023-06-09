@@ -268,7 +268,7 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 		dbs.CreatedAt,
 		dbs.Region,
 		types.Provider(dbs.Provider),
-		metadata.GetHardwareSpec(),
+		metadata,
 	)
 	return session, nil
 }
@@ -299,7 +299,7 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 			s.CreatedAt,
 			s.Region,
 			types.Provider(s.Provider),
-			metadata.GetHardwareSpec(),
+			metadata,
 		)
 		res = append(res, *session)
 	}
