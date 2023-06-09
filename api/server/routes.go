@@ -9,6 +9,9 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	middleware2 "github.com/unweave/unweave/api/middleware"
+	"github.com/unweave/unweave/api/router"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
@@ -32,9 +35,9 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 		go func() {
 			c := context.Background()
 			c = log.With().
-				Str(UserIDCtxKey, sess.CreatedBy).
-				Str(ProjectIDCtxKey, sess.ProjectID).
-				Str(ExecIDCtxKey, sess.ID).
+				Str(types.UserIDCtxKey, sess.CreatedBy).
+				Str(types.ProjectIDCtxKey, sess.ProjectID).
+				Str(types.ExecIDCtxKey, sess.ID).
 				Logger().WithContext(c)
 
 			srv := NewCtxService(rti, "", sess.CreatedBy)
@@ -46,7 +49,7 @@ func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
 	return nil
 }
 
-func API(cfg Config, rti runtime.Initializer) {
+func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -73,9 +76,9 @@ func API(cfg Config, rti runtime.Initializer) {
 		},
 	}))
 
-	r.Use(withAccountCtx) // fakes an authenticated user
+	r.Use(middleware2.WithAccountCtx) // fakes an authenticated user
 	r.Route("/projects/{owner}/{project}", func(r chi.Router) {
-		r.Use(withProjectCtx)
+		r.Use(middleware2.WithProjectCtx)
 
 		r.Route("/builds", func(r chi.Router) {
 			r.Post("/", BuildsCreate(rti))
@@ -83,14 +86,22 @@ func API(cfg Config, rti runtime.Initializer) {
 		})
 
 		r.Route("/sessions", func(r chi.Router) {
-			r.Post("/", ExecCreate(rti))
+			r.Post("/", execRouter.ExecCreateHandler)
+		})
+
+		r.Route("/sessions", func(r chi.Router) {
+
 			r.Get("/", ExecsList(rti))
 
 			r.Route("/{exec}", func(r chi.Router) {
-				r.Use(withExecCtx)
+				r.Use(middleware2.WithExecCtx)
 				r.Get("/", ExecsGet(rti))
 				r.Put("/terminate", ExecsTerminate(rti))
 			})
+		})
+
+		r.Route("/volumes", func(r chi.Router) {
+			r.Post("/", VolumeCreate(rti))
 		})
 	})
 

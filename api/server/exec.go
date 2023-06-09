@@ -13,96 +13,17 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
 )
 
 var DefaultImageURI = "ubuntu:latest"
 
-type ConnectionInfoV1 struct {
-	Version int    `json:"version"`
-	Host    string `json:"host"`
-	Port    int    `json:"port"`
-	User    string `json:"user"`
-}
-
-func (c ConnectionInfoV1) GetConnectionInfo() *types.ConnectionInfo {
-	return &types.ConnectionInfo{
-		Host: c.Host,
-		Port: c.Port,
-		User: c.User,
-	}
-}
-
-type NodeMetadataV1 struct {
-	ID             string           `json:"id"`
-	TypeID         string           `json:"typeID"`
-	Price          int              `json:"price"`
-	VCPUs          int              `json:"vcpus"`
-	Memory         int              `json:"memory"`
-	HDD            int              `json:"hdd"`
-	GpuType        string           `json:"gpuType"`
-	GPUCount       int              `json:"gpuCount"`
-	GPUMemory      int              `json:"gpuMemory"`
-	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
-}
-
-func (m NodeMetadataV1) GetHardwareSpec() types.HardwareSpec {
-	return types.HardwareSpec{
-		GPU: types.GPU{
-			Count: types.HardwareRequestRange{
-				Min: m.GPUCount,
-				Max: m.GPUCount,
-			},
-			Type: m.GpuType,
-			RAM: types.HardwareRequestRange{
-				Min: m.GPUMemory,
-				Max: m.GPUMemory,
-			},
-		},
-		CPU: types.HardwareRequestRange{
-			Min: m.VCPUs,
-			Max: m.VCPUs,
-		},
-		RAM: types.HardwareRequestRange{
-			Min: m.Memory,
-			Max: m.Memory,
-		},
-		HDD: types.HardwareRequestRange{
-			Min: m.HDD,
-			Max: m.HDD,
-		},
-	}
-}
-
-func DBNodeMetadataFromNode(node types.Node) NodeMetadataV1 {
-	n := NodeMetadataV1{
-		ID:        node.ID,
-		TypeID:    node.TypeID,
-		Price:     node.Price,
-		VCPUs:     node.Specs.CPU.Min,
-		Memory:    node.Specs.RAM.Min,
-		HDD:       node.Specs.HDD.Min,
-		GpuType:   node.Specs.GPU.Type,
-		GPUCount:  node.Specs.GPU.Count.Min,
-		GPUMemory: node.Specs.GPU.RAM.Min,
-
-		ConnectionInfo: ConnectionInfoV1{
-			Version: 1,
-			Host:    node.Host,
-			Port:    node.Port,
-			User:    node.User,
-		},
-	}
-	return n
-}
-
 func handleExecError(execID string, err error, msg string) {
 	// Make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
-	ctx = log.Ctx(ctx).With().Str(ExecIDCtxKey, execID).Logger().WithContext(ctx)
+	ctx = log.Ctx(ctx).With().Str(types.ExecIDCtxKey, execID).Logger().WithContext(ctx)
 
 	var e *types.Error
 	if errors.As(err, &e) {
@@ -145,16 +66,16 @@ func registerCredentials(ctx context.Context, rt *runtime.Runtime, keys []types.
 	return nil
 }
 
-func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicKey *string) (types.SSHKey, error) {
-	if sshKeyName == nil && sshPublicKey == nil {
+func fetchCredentials(ctx context.Context, userID, sshKeyName, sshPublicKey string) (types.SSHKey, error) {
+	if sshKeyName == "" && sshPublicKey == "" {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "Either Key name or Public Key must be provided",
 		}
 	}
 
-	if sshKeyName != nil {
-		params := db.SSHKeyGetByNameParams{Name: *sshKeyName, OwnerID: userID}
+	if sshKeyName != "" {
+		params := db.SSHKeyGetByNameParams{Name: sshKeyName, OwnerID: userID}
 		k, err := db.Q.SSHKeyGetByName(ctx, params)
 		if err == nil {
 			return types.SSHKey{
@@ -173,8 +94,8 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}
 
 	// Not found by name, try public key
-	if sshPublicKey != nil {
-		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(*sshPublicKey))
+	if sshPublicKey != "" {
+		pk, _, _, _, err := ssh.ParseAuthorizedKey([]byte(sshPublicKey))
 		if err != nil {
 			return types.SSHKey{}, &types.Error{
 				Code:    http.StatusBadRequest,
@@ -202,30 +123,30 @@ func fetchCredentials(ctx context.Context, userID string, sshKeyName, sshPublicK
 	}
 
 	// Public key wasn't provided and key wasn't found by name
-	if sshPublicKey == nil {
+	if sshPublicKey == "" {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusBadRequest,
 			Message: "SSH key not found",
 		}
 	}
-	if sshKeyName == nil || *sshKeyName == "" {
-		sshKeyName = tools.Stringy("uw:" + random.GenerateRandomPhrase(4, "-") + ".pub")
+	if sshKeyName == "" {
+		sshKeyName = "uw:" + random.GenerateRandomPhrase(4, "-") + ".pub"
 	}
 
 	// Key doesn't exist in db, but the user provided a public key, so add it to the db
-	if err := saveSSHKey(ctx, userID, *sshKeyName, *sshPublicKey); err != nil {
+	if err := saveSSHKey(ctx, userID, sshKeyName, sshPublicKey); err != nil {
 		return types.SSHKey{}, &types.Error{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to save SSH key",
 		}
 	}
 	return types.SSHKey{
-		Name:      *sshKeyName,
-		PublicKey: sshPublicKey,
+		Name:      sshKeyName,
+		PublicKey: &sshPublicKey,
 	}, nil
 }
 
-func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
+func updateConnectionInfo(rt runtime.Exec, execID string) error {
 	// New ctx to make sure this doesn't fail because of a parent cancelled context
 	ctx := context.Background()
 	connInfo, err := rt.GetConnectionInfo(ctx, execID)
@@ -233,7 +154,6 @@ func updateConnectionInfo(rt runtime.Exec, nodeID string, execID string) error {
 		return fmt.Errorf("failed to get connection info: %w", err)
 	}
 
-	log.Info().Str("node_id", nodeID).Str("exec_id", execID).Msgf("Updating connection info %v", connInfo)
 	connInfoJSON, err := json.Marshal(connInfo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal connection info: %w", err)
@@ -268,7 +188,8 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 		return nil, fmt.Errorf("failed to setup credentials: %w", err)
 	}
 
-	node, err := s.assignNode(ctx, types.SetSpecDefaultValues(params.HardwareSpec), params.Region, keys)
+	spec := types.SetSpecDefaultValues(params.Spec)
+	node, err := s.assignNode(ctx, spec, params.Region, keys)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assign node: %w", err)
 	}
@@ -309,9 +230,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	go func() {
 		c := context.Background()
 		c = log.With().
-			Str(UserIDCtxKey, s.srv.cid).
-			Str(ProjectIDCtxKey, projectID).
-			Str(ExecIDCtxKey, exec.ID).
+			Str(types.UserIDCtxKey, s.srv.cid).
+			Str(types.ProjectIDCtxKey, projectID).
+			Str(types.ExecIDCtxKey, exec.ID).
 			Logger().WithContext(c)
 
 		if e := s.srv.Exec.Watch(c, exec.ID); e != nil {
@@ -320,11 +241,6 @@ func (s *ExecService) Create(ctx context.Context, projectID string, params types
 	}()
 
 	return exec, nil
-}
-
-func (s *ExecService) CreateFromSnapshot(ctx context.Context, projectID string, filesystemID string) error {
-	// TODO: if filesystem is not a root filesystem, return error
-	return nil
 }
 
 func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, error) {
@@ -339,7 +255,7 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 		return nil, fmt.Errorf("failed to get session from db: %w", err)
 	}
 
-	metadata := &NodeMetadataV1{}
+	metadata := &types.NodeMetadataV1{}
 	if err := json.Unmarshal(dbs.Metadata, metadata); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 	}
@@ -347,20 +263,12 @@ func (s *ExecService) Get(ctx context.Context, execID string) (*types.Exec, erro
 	session := types.NewExec(
 		execID,
 		dbs.Name,
-		types.SSHKey{
-			Name:      dbs.SshKeyName,
-			PublicKey: &dbs.PublicKey,
-			CreatedAt: &dbs.SshKeyCreatedAt,
-		},
 		"",
-		metadata.ConnectionInfo.GetConnectionInfo(),
 		types.Status(dbs.Status),
-		&dbs.CreatedAt,
-		metadata.TypeID,
+		dbs.CreatedAt,
 		dbs.Region,
 		types.Provider(dbs.Provider),
 		metadata.GetHardwareSpec(),
-		false, // Assuming `hasPersistentFS` value is always `false` in this case
 	)
 	return session, nil
 }
@@ -379,27 +287,19 @@ func (s *ExecService) List(ctx context.Context, projectID string, listAll bool) 
 		if !listAll && (s.Status == db.UnweaveExecStatusTerminated || s.Status == db.UnweaveExecStatusError) {
 			continue
 		}
-		metadata := &NodeMetadataV1{}
+		metadata := &types.NodeMetadataV1{}
 		if err := json.Unmarshal(s.Metadata, metadata); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal connection info: %w", err)
 		}
 		session := types.NewExec(
 			s.ID,
 			s.Name,
-			types.SSHKey{
-				Name:      s.SshKeyName,
-				PublicKey: &s.PublicKey,
-				CreatedAt: &s.SshKeyCreatedAt,
-			},
 			"",
-			metadata.ConnectionInfo.GetConnectionInfo(),
 			types.Status(s.Status),
-			&s.CreatedAt,
-			metadata.TypeID,
+			s.CreatedAt,
 			s.Region,
 			types.Provider(s.Provider),
 			metadata.GetHardwareSpec(),
-			false, // Assuming `hasPersistentFS` value is always `false` in this case
 		)
 		res = append(res, *session)
 	}
@@ -439,11 +339,11 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 			case status := <-statusch:
 				log.Ctx(ctx).
 					Info().
-					Str(ExecStatusCtxKey, string(status)).
+					Str(types.ExecStatusCtxKey, string(status)).
 					Msg("Exec status changed")
 
 				if status == types.StatusRunning {
-					if e := updateConnectionInfo(rt.Exec, exec.NodeID, execID); e != nil {
+					if e := updateConnectionInfo(rt.Exec, execID); e != nil {
 						// Use new context to make sure terminate is not cancelled
 						terminateCtx := context.Background()
 						terminateCtx = log.With().Logger().WithContext(terminateCtx)
@@ -506,43 +406,6 @@ func (s *ExecService) Watch(ctx context.Context, execID string) error {
 	return nil
 }
 
-func (s *ExecService) Snapshot(ctx context.Context, execID string) error {
-	exec, err := db.Q.MxExecGet(ctx, execID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return &types.Error{
-				Code:       http.StatusNotFound,
-				Message:    "Exec not found",
-				Suggestion: "Make sure the session id is valid",
-			}
-		}
-		return fmt.Errorf("failed to fetch session from db %q: %w", execID, err)
-	}
-
-	if !exec.PersistFs {
-		log.Ctx(ctx).Info().Msgf("Exec %q is not configured to persist filesystem. No-op.", execID)
-		return nil
-	}
-
-	fs, e := db.Q.FilesystemGetByExecID(ctx, execID)
-	if e != nil {
-		return fmt.Errorf("failed to get filesystem for exec %q: %w", execID, e)
-	}
-
-	provider := types.Provider(exec.Provider)
-	rt, err := s.srv.InitializeRuntime(ctx, provider)
-	if err != nil {
-		return fmt.Errorf("failed to create runtime %q: %w", exec.Provider, err)
-	}
-
-	err = rt.Exec.SnapshotFS(ctx, execID, fs.ID)
-	if err != nil {
-		return fmt.Errorf("failed to snapshot filesystem: %w", err)
-	}
-
-	return nil
-}
-
 func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	exec, err := db.Q.MxExecGet(ctx, execID)
 	if err != nil {
@@ -576,15 +439,8 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		Logger().
 		WithContext(ctx)
 
-	if err = s.Snapshot(ctx, execID); err != nil {
-		// We don't want to fail the termination because of this. Log and continue.
-		log.Ctx(ctx).Error().Err(err).Msgf("Failed to snapshot filesystem for exec %q", execID)
-	}
 	if err = rt.Exec.Terminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate node: %w", err)
-	}
-	if err = s.srv.vault.DeleteSecret(ctx, exec.NodeID); err != nil {
-		log.Ctx(ctx).Error().Err(err).Msgf("Failed to delete secret for node %q", exec.NodeID)
 	}
 
 	params := db.ExecStatusUpdateParams{
@@ -603,7 +459,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 	}
 
 	np := db.NodeStatusUpdateParams{
-		ID:           exec.NodeID,
+		//ID:           exec.NodeID,
 		Status:       "terminated",
 		TerminatedAt: sql.NullTime{Time: time.Now(), Valid: true},
 	}
@@ -611,7 +467,7 @@ func (s *ExecService) Terminate(ctx context.Context, execID string) error {
 		log.Ctx(ctx).
 			Error().
 			Err(err).
-			Msgf("Failed to set node %q as terminated", exec.NodeID)
+			Msgf("Failed to set node %q as terminated")
 	}
 	return nil
 }

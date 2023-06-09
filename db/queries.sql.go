@@ -70,7 +70,7 @@ func (q *Queries) BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 }
 
 const BuildGetUsedBy = `-- name: BuildGetUsedBy :many
-select s.id, s.name, s.node_id, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.ssh_key_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.persist_fs, s.image, n.provider
+select s.id, s.name, s.region, s.created_by, s.created_at, s.ready_at, s.exited_at, s.status, s.project_id, s.error, s.build_id, s.spec, s.commit_id, s.git_remote_url, s.command, s.metadata, s.image, s.provider, n.provider
 from (select id from unweave.build as ub where ub.id = $1) as b
          join unweave.exec s
               on s.build_id = b.id
@@ -80,7 +80,6 @@ from (select id from unweave.build as ub where ub.id = $1) as b
 type BuildGetUsedByRow struct {
 	ID           string            `json:"id"`
 	Name         string            `json:"name"`
-	NodeID       string            `json:"nodeID"`
 	Region       string            `json:"region"`
 	CreatedBy    string            `json:"createdBy"`
 	CreatedAt    time.Time         `json:"createdAt"`
@@ -88,7 +87,6 @@ type BuildGetUsedByRow struct {
 	ExitedAt     sql.NullTime      `json:"exitedAt"`
 	Status       UnweaveExecStatus `json:"status"`
 	ProjectID    string            `json:"projectID"`
-	SshKeyID     sql.NullString    `json:"sshKeyID"`
 	Error        sql.NullString    `json:"error"`
 	BuildID      sql.NullString    `json:"buildID"`
 	Spec         json.RawMessage   `json:"spec"`
@@ -96,9 +94,9 @@ type BuildGetUsedByRow struct {
 	GitRemoteUrl sql.NullString    `json:"gitRemoteUrl"`
 	Command      []string          `json:"command"`
 	Metadata     json.RawMessage   `json:"metadata"`
-	PersistFs    bool              `json:"persistFs"`
 	Image        string            `json:"image"`
 	Provider     string            `json:"provider"`
+	Provider_2   string            `json:"provider2"`
 }
 
 func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error) {
@@ -113,7 +111,6 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.NodeID,
 			&i.Region,
 			&i.CreatedBy,
 			&i.CreatedAt,
@@ -121,7 +118,6 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.ExitedAt,
 			&i.Status,
 			&i.ProjectID,
-			&i.SshKeyID,
 			&i.Error,
 			&i.BuildID,
 			&i.Spec,
@@ -129,9 +125,9 @@ func (q *Queries) BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsed
 			&i.GitRemoteUrl,
 			pq.Array(&i.Command),
 			&i.Metadata,
-			&i.PersistFs,
 			&i.Image,
 			&i.Provider,
+			&i.Provider_2,
 		); err != nil {
 			return nil, err
 		}
@@ -178,459 +174,27 @@ func (q *Queries) BuildUpdate(ctx context.Context, arg BuildUpdateParams) error 
 	return err
 }
 
-const ExecCreate = `-- name: ExecCreate :exec
-insert into unweave.exec (id, node_id, created_by, project_id, ssh_key_id,
-                             region, name, metadata, commit_id, git_remote_url, command,
-                             build_id, image,  persist_fs)
-values ($1, $2, $3, $4, (select id
-                         from unweave.ssh_key as ssh_keys
-                         where ssh_keys.name = $14
-                           and owner_id = $3), $5, $6, $7, $8, $9, $10, $11, $12, $13)
-`
-
-type ExecCreateParams struct {
-	ID           string          `json:"id"`
-	NodeID       string          `json:"nodeID"`
-	CreatedBy    string          `json:"createdBy"`
-	ProjectID    string          `json:"projectID"`
-	Region       string          `json:"region"`
-	Name         string          `json:"name"`
-	Metadata     json.RawMessage `json:"metadata"`
-	CommitID     sql.NullString  `json:"commitID"`
-	GitRemoteUrl sql.NullString  `json:"gitRemoteUrl"`
-	Command      []string        `json:"command"`
-	BuildID      sql.NullString  `json:"buildID"`
-	Image        string          `json:"image"`
-	PersistFs    bool            `json:"persistFs"`
-	SshKeyName   string          `json:"sshKeyName"`
-}
-
-func (q *Queries) ExecCreate(ctx context.Context, arg ExecCreateParams) error {
-	_, err := q.db.ExecContext(ctx, ExecCreate,
-		arg.ID,
-		arg.NodeID,
-		arg.CreatedBy,
-		arg.ProjectID,
-		arg.Region,
-		arg.Name,
-		arg.Metadata,
-		arg.CommitID,
-		arg.GitRemoteUrl,
-		pq.Array(arg.Command),
-		arg.BuildID,
-		arg.Image,
-		arg.PersistFs,
-		arg.SshKeyName,
-	)
-	return err
-}
-
-const ExecGet = `-- name: ExecGet :one
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
-from unweave.exec
-where id = $1 or name = $1
-`
-
-func (q *Queries) ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error) {
-	row := q.db.QueryRowContext(ctx, ExecGet, idOrName)
-	var i UnweaveExec
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.NodeID,
-		&i.Region,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.ReadyAt,
-		&i.ExitedAt,
-		&i.Status,
-		&i.ProjectID,
-		&i.SshKeyID,
-		&i.Error,
-		&i.BuildID,
-		&i.Spec,
-		&i.CommitID,
-		&i.GitRemoteUrl,
-		pq.Array(&i.Command),
-		&i.Metadata,
-		&i.PersistFs,
-		&i.Image,
-	)
-	return i, err
-}
-
-const ExecGetAllActive = `-- name: ExecGetAllActive :many
-select id, name, node_id, region, created_by, created_at, ready_at, exited_at, status, project_id, ssh_key_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, persist_fs, image
-from unweave.exec
-where status = 'initializing'
-   or status = 'running'
-`
-
-func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
-	rows, err := q.db.QueryContext(ctx, ExecGetAllActive)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []UnweaveExec
-	for rows.Next() {
-		var i UnweaveExec
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.NodeID,
-			&i.Region,
-			&i.CreatedBy,
-			&i.CreatedAt,
-			&i.ReadyAt,
-			&i.ExitedAt,
-			&i.Status,
-			&i.ProjectID,
-			&i.SshKeyID,
-			&i.Error,
-			&i.BuildID,
-			&i.Spec,
-			&i.CommitID,
-			&i.GitRemoteUrl,
-			pq.Array(&i.Command),
-			&i.Metadata,
-			&i.PersistFs,
-			&i.Image,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const ExecSetError = `-- name: ExecSetError :exec
-update unweave.exec
-set status = 'error'::unweave.exec_status,
-    error  = $2
-where id = $1
-`
-
-type ExecSetErrorParams struct {
-	ID    string         `json:"id"`
-	Error sql.NullString `json:"error"`
-}
-
-func (q *Queries) ExecSetError(ctx context.Context, arg ExecSetErrorParams) error {
-	_, err := q.db.ExecContext(ctx, ExecSetError, arg.ID, arg.Error)
-	return err
-}
-
-const ExecStatusUpdate = `-- name: ExecStatusUpdate :exec
-update unweave.exec
-set status    = $2,
-    ready_at  = coalesce($3, ready_at),
-    exited_at = coalesce($4, exited_at)
-where id = $1
-`
-
-type ExecStatusUpdateParams struct {
-	ID       string            `json:"id"`
-	Status   UnweaveExecStatus `json:"status"`
-	ReadyAt  sql.NullTime      `json:"readyAt"`
-	ExitedAt sql.NullTime      `json:"exitedAt"`
-}
-
-func (q *Queries) ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, ExecStatusUpdate,
-		arg.ID,
-		arg.Status,
-		arg.ReadyAt,
-		arg.ExitedAt,
-	)
-	return err
-}
-
-const ExecUpdateConnectionInfo = `-- name: ExecUpdateConnectionInfo :exec
-update unweave.exec
-set metadata = jsonb_set(metadata, '{connection_info}', $2::jsonb)
-where id = $1
-`
-
-type ExecUpdateConnectionInfoParams struct {
-	ID             string          `json:"id"`
-	ConnectionInfo json.RawMessage `json:"connectionInfo"`
-}
-
-func (q *Queries) ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error {
-	_, err := q.db.ExecContext(ctx, ExecUpdateConnectionInfo, arg.ID, arg.ConnectionInfo)
-	return err
-}
-
-const ExecsGet = `-- name: ExecsGet :many
-select exec.id, ssh_key.name as ssh_key_name, exec.status
-from unweave.exec
-         left join unweave.ssh_key
-                   on ssh_key.id = exec.ssh_key_id
-where project_id = $1
-order by unweave.exec.created_at desc
-limit $2 offset $3
-`
-
-type ExecsGetParams struct {
-	ProjectID string `json:"projectID"`
-	Limit     int32  `json:"limit"`
-	Offset    int32  `json:"offset"`
-}
-
-type ExecsGetRow struct {
-	ID         string            `json:"id"`
-	SshKeyName sql.NullString    `json:"sshKeyName"`
-	Status     UnweaveExecStatus `json:"status"`
-}
-
-func (q *Queries) ExecsGet(ctx context.Context, arg ExecsGetParams) ([]ExecsGetRow, error) {
-	rows, err := q.db.QueryContext(ctx, ExecsGet, arg.ProjectID, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ExecsGetRow
-	for rows.Next() {
-		var i ExecsGetRow
-		if err := rows.Scan(&i.ID, &i.SshKeyName, &i.Status); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const FilesystemCreate = `-- name: FilesystemCreate :one
-insert into unweave.filesystem (name, project_id, owner_id, exec_id, src_path)
-values ($1, $2, $3, $4, $5)
-returning id, name, project_id, exec_id, owner_id, created_at, src_path
-`
-
-type FilesystemCreateParams struct {
-	Name      string `json:"name"`
-	ProjectID string `json:"projectID"`
-	OwnerID   string `json:"ownerID"`
-	ExecID    string `json:"execID"`
-	SrcPath   string `json:"srcPath"`
-}
-
-func (q *Queries) FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemCreate,
-		arg.Name,
-		arg.ProjectID,
-		arg.OwnerID,
-		arg.ExecID,
-		arg.SrcPath,
-	)
-	var i UnweaveFilesystem
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.ProjectID,
-		&i.ExecID,
-		&i.OwnerID,
-		&i.CreatedAt,
-		&i.SrcPath,
-	)
-	return i, err
-}
-
-const FilesystemCreateVersion = `-- name: FilesystemCreateVersion :one
-select filesystem_id, exec_id, version, created_at, build_id
-from unweave.insert_filesystem_version($1, $2)
-`
-
-type FilesystemCreateVersionParams struct {
-	FilesystemID string `json:"filesystemID"`
-	ExecID       string `json:"execID"`
-}
-
-func (q *Queries) FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemCreateVersion, arg.FilesystemID, arg.ExecID)
-	var i UnweaveFilesystemVersion
-	err := row.Scan(
-		&i.FilesystemID,
-		&i.ExecID,
-		&i.Version,
-		&i.CreatedAt,
-		&i.BuildID,
-	)
-	return i, err
-}
-
-const FilesystemGet = `-- name: FilesystemGet :one
-select id, name, project_id, exec_id, owner_id, created_at, src_path
-from unweave.filesystem
-where id = $1
-`
-
-func (q *Queries) FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemGet, id)
-	var i UnweaveFilesystem
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.ProjectID,
-		&i.ExecID,
-		&i.OwnerID,
-		&i.CreatedAt,
-		&i.SrcPath,
-	)
-	return i, err
-}
-
-const FilesystemGetByExecID = `-- name: FilesystemGetByExecID :one
-select b.id, b.name, b.project_id, b.exec_id, b.owner_id, b.created_at, b.src_path
-from (select filesystem_id
-      from unweave.filesystem_version
-      where filesystem_version.exec_id = $1) as bv
-         join unweave.filesystem b on b.id = filesystem_id
-`
-
-func (q *Queries) FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemGetByExecID, execID)
-	var i UnweaveFilesystem
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.ProjectID,
-		&i.ExecID,
-		&i.OwnerID,
-		&i.CreatedAt,
-		&i.SrcPath,
-	)
-	return i, err
-}
-
-const FilesystemGetByProject = `-- name: FilesystemGetByProject :one
-select id, name, project_id, exec_id, owner_id, created_at, src_path
-from unweave.filesystem
-where project_id = $1
-  and (name = $2 or id = $2)
-`
-
-type FilesystemGetByProjectParams struct {
-	ProjectID string `json:"projectID"`
-	NameOrID  string `json:"nameOrID"`
-}
-
-func (q *Queries) FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemGetByProject, arg.ProjectID, arg.NameOrID)
-	var i UnweaveFilesystem
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.ProjectID,
-		&i.ExecID,
-		&i.OwnerID,
-		&i.CreatedAt,
-		&i.SrcPath,
-	)
-	return i, err
-}
-
-const FilesystemGetLatestVersion = `-- name: FilesystemGetLatestVersion :one
-select filesystem_id, exec_id, version, created_at, build_id
-from unweave.filesystem_version
-where filesystem_id = $1
-order by version desc
-limit 1
-`
-
-func (q *Queries) FilesystemGetLatestVersion(ctx context.Context, filesystemID string) (UnweaveFilesystemVersion, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemGetLatestVersion, filesystemID)
-	var i UnweaveFilesystemVersion
-	err := row.Scan(
-		&i.FilesystemID,
-		&i.ExecID,
-		&i.Version,
-		&i.CreatedAt,
-		&i.BuildID,
-	)
-	return i, err
-}
-
-const FilesystemVersionAddBuildID = `-- name: FilesystemVersionAddBuildID :exec
-update unweave.filesystem_version
-set build_id = $2
-where exec_id = $1
-`
-
-type FilesystemVersionAddBuildIDParams struct {
-	ExecID  string         `json:"execID"`
-	BuildID sql.NullString `json:"buildID"`
-}
-
-func (q *Queries) FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error {
-	_, err := q.db.ExecContext(ctx, FilesystemVersionAddBuildID, arg.ExecID, arg.BuildID)
-	return err
-}
-
-const FilesystemVersionGet = `-- name: FilesystemVersionGet :one
-select filesystem_id, exec_id, version, created_at, build_id
-from unweave.filesystem_version
-where exec_id = $1
-`
-
-func (q *Queries) FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error) {
-	row := q.db.QueryRowContext(ctx, FilesystemVersionGet, execID)
-	var i UnweaveFilesystemVersion
-	err := row.Scan(
-		&i.FilesystemID,
-		&i.ExecID,
-		&i.Version,
-		&i.CreatedAt,
-		&i.BuildID,
-	)
-	return i, err
-}
-
 const MxExecGet = `-- name: MxExecGet :one
 
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       s.persist_fs,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.id = $1
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.id = $1
 `
 
 type MxExecGetRow struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Status          UnweaveExecStatus `json:"status"`
-	NodeID          string            `json:"nodeID"`
-	Provider        string            `json:"provider"`
-	Region          string            `json:"region"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	Metadata        json.RawMessage   `json:"metadata"`
-	PersistFs       bool              `json:"persistFs"`
-	SshKeyName      string            `json:"sshKeyName"`
-	PublicKey       string            `json:"publicKey"`
-	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Status    UnweaveExecStatus `json:"status"`
+	Provider  string            `json:"provider"`
+	Region    string            `json:"region"`
+	CreatedAt time.Time         `json:"createdAt"`
+	Metadata  json.RawMessage   `json:"metadata"`
 }
 
 // -----------------------------------------------------------------
@@ -643,51 +207,34 @@ func (q *Queries) MxExecGet(ctx context.Context, id string) (MxExecGetRow, error
 		&i.ID,
 		&i.Name,
 		&i.Status,
-		&i.NodeID,
 		&i.Provider,
 		&i.Region,
 		&i.CreatedAt,
 		&i.Metadata,
-		&i.PersistFs,
-		&i.SshKeyName,
-		&i.PublicKey,
-		&i.SshKeyCreatedAt,
 	)
 	return i, err
 }
 
 const MxExecsGet = `-- name: MxExecsGet :many
-select s.id,
-       s.name,
-       s.status,
-       s.node_id,
-       n.provider,
-       s.region,
-       s.created_at,
-       s.metadata,
-       s.persist_fs,
-       ssh_key.name       as ssh_key_name,
-       ssh_key.public_key,
-       ssh_key.created_at as ssh_key_created_at
-from unweave.exec as s
-         join unweave.ssh_key on s.ssh_key_id = ssh_key.id
-         join unweave.node as n on s.node_id = n.id
-where s.project_id = $1
+select e.id,
+       e.name,
+       e.status,
+       e.provider,
+       e.region,
+       e.created_at,
+       e.metadata
+from unweave.exec as e
+where e.project_id = $1
 `
 
 type MxExecsGetRow struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Status          UnweaveExecStatus `json:"status"`
-	NodeID          string            `json:"nodeID"`
-	Provider        string            `json:"provider"`
-	Region          string            `json:"region"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	Metadata        json.RawMessage   `json:"metadata"`
-	PersistFs       bool              `json:"persistFs"`
-	SshKeyName      string            `json:"sshKeyName"`
-	PublicKey       string            `json:"publicKey"`
-	SshKeyCreatedAt time.Time         `json:"sshKeyCreatedAt"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Status    UnweaveExecStatus `json:"status"`
+	Provider  string            `json:"provider"`
+	Region    string            `json:"region"`
+	CreatedAt time.Time         `json:"createdAt"`
+	Metadata  json.RawMessage   `json:"metadata"`
 }
 
 func (q *Queries) MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGetRow, error) {
@@ -703,15 +250,10 @@ func (q *Queries) MxExecsGet(ctx context.Context, projectID string) ([]MxExecsGe
 			&i.ID,
 			&i.Name,
 			&i.Status,
-			&i.NodeID,
 			&i.Provider,
 			&i.Region,
 			&i.CreatedAt,
 			&i.Metadata,
-			&i.PersistFs,
-			&i.SshKeyName,
-			&i.PublicKey,
-			&i.SshKeyCreatedAt,
 		); err != nil {
 			return nil, err
 		}

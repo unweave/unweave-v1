@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
@@ -22,7 +21,7 @@ func (s *ExecService) assignNode(ctx context.Context, hardwareSpec types.Hardwar
 	}
 	node.OwnerID = owner
 
-	metadata := DBNodeMetadataFromNode(node)
+	metadata := types.DBNodeMetadataFromNode(node)
 	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return types.Node{}, fmt.Errorf("failed to marshal metadata: %w", err)
@@ -90,7 +89,7 @@ func (s *ExecService) getExecImage(ctx context.Context, projectID string, imageO
 	return "", imageURI, nil
 }
 
-func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey *string) ([]types.SSHKey, error) {
+func (s *ExecService) setupUserCreds(ctx context.Context, keyName, pubKey string) ([]types.SSHKey, error) {
 	user := s.srv.cid
 	userKey, err := fetchCredentials(ctx, user, keyName, pubKey)
 	if err != nil {
@@ -134,12 +133,12 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 	if err != nil {
 		return nil, fmt.Errorf("failed to init exec: %w", err)
 	}
-	metadata := DBNodeMetadataFromNode(node)
+	metadata := types.DBNodeMetadataFromNode(node)
 	metadataJSON, err := json.Marshal(&metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal metadata: %w", err)
 	}
-	createdAt := time.Now()
+	//createdAt := time.Now()
 
 	bid := sql.NullString{}
 	if buildID != "" {
@@ -148,7 +147,6 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 
 	dbp := db.ExecCreateParams{
 		ID:           execID,
-		NodeID:       node.ID,
 		CreatedBy:    s.srv.cid,
 		ProjectID:    projectID,
 		Region:       node.Region,
@@ -159,14 +157,25 @@ func (s *ExecService) init(ctx context.Context, projectID string, node types.Nod
 		Command:      command,
 		BuildID:      bid,
 		Image:        imageURI,
-		PersistFs:    len(cfg.Volumes) != 0, // TODO: implement this properly
-		SshKeyName:   cfg.Keys[0].Name,      // TODO: support multiple keys
+		Provider:     node.Provider.String(),
 	}
 
 	if err := db.Q.ExecCreate(ctx, dbp); err != nil {
 		return nil, fmt.Errorf("failed to create exec in db: %w", err)
 	}
 
-	exec := types.NewExec(execID, dbp.Name, cfg.Keys[0], cfg.Image, nil, types.StatusInitializing, &createdAt, node.TypeID, node.Region, node.Provider, node.Specs, false)
+	exec := &types.Exec{
+		ID:   execID,
+		Name: dbp.Name,
+		//SSHKey:       cfg.Keys[0],
+		Image: cfg.Image,
+		//Connection:   nil,
+		Status: types.StatusInitializing,
+		//CreatedAt:    &createdAt,
+		//NodeTypeID:   node.TypeID,
+		Region:   node.Region,
+		Provider: node.Provider,
+		//PersistentFS: false,
+	}
 	return exec, nil
 }

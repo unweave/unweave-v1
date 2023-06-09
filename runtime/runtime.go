@@ -7,11 +7,13 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/vault"
+	"github.com/unweave/unweave/wip/conductor/volume"
 )
 
 type Runtime struct {
-	Node Node
-	Exec Exec
+	Node   Node
+	Exec   Exec
+	Volume volume.Provider
 }
 
 // Node represents an interactive session on a node. You can connect to it via SSH and
@@ -64,9 +66,6 @@ type Exec interface {
 	Init(ctx context.Context, node types.Node, config types.ExecConfig) (execID string, err error)
 	// GetConnectionInfo returns the connection information for exec.
 	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
-	// SnapshotFS snapshots the file system of the exec. If filesystemID is not nil,
-	// the snapshot will be an incremental on based on the filesystem with the given ID.
-	SnapshotFS(ctx context.Context, execID string, filesystemID string) error
 	// Terminate terminates a session.
 	Terminate(ctx context.Context, execID string) error
 	// Watch watches the status of the exec.
