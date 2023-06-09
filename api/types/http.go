@@ -190,11 +190,11 @@ type ProvidersListResponse struct {
 }
 
 type ExecGetResponse struct {
-	Session Exec `json:"session"`
+	Exec Exec `json:"session"`
 }
 
 type ExecsListResponse struct {
-	Sessions []Exec `json:"sessions"`
+	Execs []Exec `json:"sessions"`
 }
 
 type ExecTerminateResponse struct {

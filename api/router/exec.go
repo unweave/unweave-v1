@@ -104,6 +104,7 @@ func (e *ExecRouter) ExecListHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ExecList request")
 
+	listTerminated := r.URL.Query().Get("terminated") == "true"
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
 	execs, err := e.store.List(projectID)
@@ -112,7 +113,23 @@ func (e *ExecRouter) ExecListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, types.ExecsListResponse{Sessions: execs})
+	if listTerminated {
+		render.JSON(w, r, types.ExecsListResponse{Execs: execs})
+		return
+	}
+
+	var res []types.Exec
+
+	for _, exec := range execs {
+		if exec.Status == types.StatusTerminated ||
+			exec.Status == types.StatusError ||
+			exec.Status == types.StatusFailed {
+			continue
+		}
+		res = append(res, exec)
+	}
+
+	render.JSON(w, r, types.ExecsListResponse{Execs: res})
 }
 
 func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request) {
