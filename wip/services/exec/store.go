@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/tools/random"
@@ -171,6 +172,15 @@ func dbExecToExec(dbe db.UnweaveExec) types.Exec {
 	if dbe.BuildID.Valid {
 		bid = &dbe.BuildID.String
 	}
+	var commitID *string
+	if dbe.CommitID.Valid {
+		commitID = &dbe.CommitID.String
+	}
+
+	spec := types.HardwareSpec{}
+	if err := json.Unmarshal(dbe.Spec, &spec); err != nil {
+		log.Err(err).Msg("failed to unmarshal spec")
+	}
 
 	return types.Exec{
 		ID:        dbe.ID,
@@ -184,8 +194,8 @@ func dbExecToExec(dbe db.UnweaveExec) types.Exec {
 		Keys:      nil,
 		Volumes:   nil,
 		Network:   types.ExecNetwork{},
-		Spec:      types.HardwareSpec{},
-		CommitID:  nil,
+		Spec:      spec,
+		CommitID:  commitID,
 		GitURL:    nil,
 		Region:    "",
 		Provider:  types.Provider(dbe.Provider),

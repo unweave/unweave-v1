@@ -85,7 +85,7 @@ func (e *ExecRouter) ExecGetHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ExecGet request")
 
-	execID := chi.URLParam(r, "execID")
+	execID := chi.URLParam(r, "exec")
 	if execID == "" {
 		err := fmt.Errorf("missing execID")
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request"))
@@ -119,7 +119,7 @@ func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ExecTerminate request")
 
-	execID := chi.URLParam(r, "execID")
+	execID := chi.URLParam(r, "exec")
 	if execID == "" {
 		err := fmt.Errorf("missing execID")
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request"))
