@@ -112,7 +112,7 @@ func (e *ExecRouter) ExecListHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.JSON(w, r, execs)
+	render.JSON(w, r, types.ExecsListResponse{Sessions: execs})
 }
 
 func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request) {

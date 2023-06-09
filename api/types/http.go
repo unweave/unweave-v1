@@ -189,15 +189,15 @@ type ProvidersListResponse struct {
 	Providers []Provider `json:"providers"`
 }
 
-type SessionGetResponse struct {
+type ExecGetResponse struct {
 	Session Exec `json:"session"`
 }
 
-type SessionsListResponse struct {
+type ExecsListResponse struct {
 	Sessions []Exec `json:"sessions"`
 }
 
-type SessionTerminateResponse struct {
+type ExecTerminateResponse struct {
 	Success bool `json:"success"`
 }
 
