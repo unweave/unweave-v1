@@ -42,19 +42,6 @@ func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execs
 	}
 }
 
-//func (e *ExecRouter) service(provider types.Provider) *execsrv.service {
-//	switch provider {
-//	case types.LambdaLabsProvider:
-//		return e.llService
-//	case types.UnweaveProvider:
-//		return e.unweaveService
-//	default:
-//		// This is unreachable. Using panic for now until we have the conductor
-//		// implemented for AWS, GCP etc
-//		panic(fmt.Errorf("unknown provider: %s", provider))
-//	}
-//}
-
 func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ExecCreate request")
