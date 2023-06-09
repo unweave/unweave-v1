@@ -174,8 +174,6 @@ func (s *Service) Terminate(ctx context.Context, id string) error {
 		return nil
 	}
 
-	fmt.Println(exec)
-
 	log.Ctx(ctx).
 		Info().
 		Str(types.ExecIDCtxKey, exec.ID).
