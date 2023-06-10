@@ -75,7 +75,7 @@ func (e *ExecRouter) ExecGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exec, err := e.store.Get(execID)
+	exec, err := e.service.Get(ctx, execID)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
 		return
@@ -126,13 +126,7 @@ func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	_, err := e.service.Get(ctx, execID)
-	if err != nil {
-		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
-		return
-	}
-
-	err = e.service.Terminate(ctx, execID)
+	err := e.service.Terminate(ctx, execID)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to terminate session"))
 		return
