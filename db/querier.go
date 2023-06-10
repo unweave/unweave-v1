@@ -22,7 +22,7 @@ type Querier interface {
 	ExecSSHKeyDelete(ctx context.Context, arg ExecSSHKeyDeleteParams) error
 	ExecSSHKeyGet(ctx context.Context, arg ExecSSHKeyGetParams) (UnweaveExecSshKey, error)
 	ExecSSHKeyInsert(ctx context.Context, arg ExecSSHKeyInsertParams) error
-	ExecSSHKeysByExecIDGet(ctx context.Context, execID string) ([]UnweaveExecSshKey, error)
+	ExecSSHKeysGetByExecID(ctx context.Context, execID string) ([]UnweaveExecSshKey, error)
 	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error
 	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error

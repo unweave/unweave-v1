@@ -105,7 +105,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 		Str(types.ExecIDCtxKey, execID).
 		Msgf("Created new exec with image %q", image)
 
-	unscheduledExec := types.Exec{
+	exec := types.Exec{
 		ID:        execID,
 		Name:      random.GenerateRandomPhrase(4, "-"),
 		CreatedAt: time.Now(),
@@ -130,19 +130,19 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 		Region:  "",
 	}
 
-	if err = s.store.Create(context.Background(), project, unscheduledExec); err != nil {
+	if err = s.store.Create(project, exec); err != nil {
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	informer := s.stateInformerFunc(unscheduledExec)
+	informer := s.stateInformerFunc(exec)
 	informer.Watch()
 
 	for _, so := range s.stateObserversFuncs {
-		o := so(unscheduledExec)
+		o := so(exec)
 		informer.Register(o)
 	}
 
-	return unscheduledExec, nil
+	return exec, nil
 }
 
 func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error) {

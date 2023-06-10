@@ -8,7 +8,7 @@ FROM unweave.exec_ssh_key
 WHERE exec_id = $1
   AND ssh_key_id = $2;
 
--- name: ExecSSHKeysByExecIDGet :many
+-- name: ExecSSHKeysGetByExecID :many
 SELECT *
 FROM unweave.exec_ssh_key
 WHERE exec_id = $1;

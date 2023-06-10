@@ -59,14 +59,14 @@ func (q *Queries) ExecSSHKeyInsert(ctx context.Context, arg ExecSSHKeyInsertPara
 	return err
 }
 
-const ExecSSHKeysByExecIDGet = `-- name: ExecSSHKeysByExecIDGet :many
+const ExecSSHKeysGetByExecID = `-- name: ExecSSHKeysGetByExecID :many
 SELECT exec_id, ssh_key_id
 FROM unweave.exec_ssh_key
 WHERE exec_id = $1
 `
 
-func (q *Queries) ExecSSHKeysByExecIDGet(ctx context.Context, execID string) ([]UnweaveExecSshKey, error) {
-	rows, err := q.db.QueryContext(ctx, ExecSSHKeysByExecIDGet, execID)
+func (q *Queries) ExecSSHKeysGetByExecID(ctx context.Context, execID string) ([]UnweaveExecSshKey, error) {
+	rows, err := q.db.QueryContext(ctx, ExecSSHKeysGetByExecID, execID)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ var (
 )
 
 type Store interface {
-	Create(ctx context.Context, project string, exec types.Exec) error
+	Create(project string, exec types.Exec) error
 	Get(id string) (types.Exec, error)
 	GetDriver(id string) (string, error)
 	List(filterProject *string, filterProvider *types.Provider, filterActive bool) ([]types.Exec, error)

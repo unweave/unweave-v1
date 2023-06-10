@@ -17,7 +17,9 @@ func NewPostgresStore() Store {
 	return postgresStore{}
 }
 
-func (p postgresStore) Create(ctx context.Context, projectID string, exec types.Exec) error {
+func (p postgresStore) Create(projectID string, exec types.Exec) error {
+	ctx := context.Background()
+
 	if projectID == "" {
 		return fmt.Errorf("an Exec must be attached to a project")
 	}
@@ -89,7 +91,7 @@ func (p postgresStore) Get(id string) (types.Exec, error) {
 		}
 		return types.Exec{}, err
 	}
-	keyRefs, err := db.Q.ExecSSHKeysByExecIDGet(ctx, id)
+	keyRefs, err := db.Q.ExecSSHKeysGetByExecID(ctx, id)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -139,7 +141,7 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 	res := make([]types.Exec, len(execs))
 
 	for _, exec := range execs {
-		keyRefs, err := db.Q.ExecSSHKeysByExecIDGet(ctx, exec.ID)
+		keyRefs, err := db.Q.ExecSSHKeysGetByExecID(ctx, exec.ID)
 		if err != nil {
 			return nil, err
 		}
