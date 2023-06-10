@@ -16,6 +16,7 @@ type Querier interface {
 	ExecCreate(ctx context.Context, arg ExecCreateParams) error
 	ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error)
 	ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error)
+	ExecList(ctx context.Context, arg ExecListParams) ([]UnweaveExec, error)
 	ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
 	ExecListByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
 	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error

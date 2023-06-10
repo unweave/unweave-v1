@@ -22,6 +22,14 @@ select *
 from unweave.exec as e
 where e.provider = $1;
 
+-- name: ExecList :many
+select *
+from unweave.exec as e
+where (e.provider = coalesce(sqlc.narg('filter_provider'), e.provider))
+  and project_id = coalesce(sqlc.narg('filter_project_id'), project_id)
+  and ((@filter_active = true and (status = 'initializing' or status = 'running'))
+    or @filter_active = false);
+
 -- name: ExecListActiveByProvider :many
 select *
 from unweave.exec as e

@@ -17,6 +17,7 @@ var (
 type ProviderService struct {
 	store                 Store
 	driver                Driver
+	provider              types.Provider
 	stateInformerFunc     StateInformerFunc
 	statsInformerFunc     StatsInformerFunc
 	heartbeatInformerFunc HeartbeatInformerFunc
@@ -51,12 +52,13 @@ func NewProviderService(
 	s := &ProviderService{
 		store:                 store,
 		driver:                driver,
+		provider:              driver.Provider(),
 		stateInformerFunc:     stateInformerFunc,
 		statsInformerFunc:     statsInformerFunc,
 		heartbeatInformerFunc: heartbeatInformerFunc,
 	}
 
-	execs, err := store.ListByProvider(driver.Provider(), true)
+	execs, err := store.List(nil, &s.provider, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
@@ -152,7 +154,7 @@ func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error
 }
 
 func (s *ProviderService) List(ctx context.Context, project string) ([]types.Exec, error) {
-	execs, err := s.store.List(project)
+	execs, err := s.store.List(&project, &s.provider, false)
 	if err != nil {
 		return nil, err
 	}

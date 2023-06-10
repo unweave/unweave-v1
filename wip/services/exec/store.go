@@ -15,7 +15,7 @@ import (
 type postgresStore struct{}
 
 func NewPostgresStore() Store {
-	return &postgresStore{}
+	return postgresStore{}
 }
 
 func (p postgresStore) Create(project string, exec types.Exec) error {
@@ -94,22 +94,27 @@ func (p postgresStore) GetDriver(id string) (string, error) {
 	return exec.Provider.String(), nil
 }
 
-func (p postgresStore) List(project string) ([]types.Exec, error) {
+func (p postgresStore) List(projectID *string, filterProvider *types.Provider, filterActive bool) ([]types.Exec, error) {
 	ctx := context.Background()
 
-	params := db.ExecsGetParams{
-		ProjectID: project,
-		Limit:     1000,
-		Offset:    0,
+	var project, provider sql.NullString
+
+	if projectID != nil {
+		project = sql.NullString{String: *projectID, Valid: true}
 	}
-	execs, err := db.Q.ExecsGet(ctx, params)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, ErrNotFound
-		}
-		return nil, err
+	if filterProvider != nil {
+		provider = sql.NullString{String: filterProvider.String(), Valid: true}
 	}
 
+	params := db.ExecListParams{
+		FilterProvider:  provider,
+		FilterProjectID: project,
+		FilterActive:    filterActive,
+	}
+	execs, err := db.Q.ExecList(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list execs: %w", err)
+	}
 	res := make([]types.Exec, len(execs))
 
 	for idx, exec := range execs {
@@ -117,33 +122,6 @@ func (p postgresStore) List(project string) ([]types.Exec, error) {
 		res[idx] = dbExecToExec(exec)
 	}
 	return res, nil
-}
-
-func (p postgresStore) ListByProvider(provider types.Provider, filterActive bool) ([]types.Exec, error) {
-	ctx := context.Background()
-
-	var err error
-	var dbExecs []db.UnweaveExec
-
-	if filterActive {
-		dbExecs, err = db.Q.ExecListActiveByProvider(ctx, provider.String())
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		dbExecs, err = db.Q.ExecListByProvider(ctx, provider.String())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	execs := make([]types.Exec, len(dbExecs))
-
-	for idx, dbe := range dbExecs {
-		dbe := dbe
-		execs[idx] = dbExecToExec(dbe)
-	}
-	return execs, nil
 }
 
 func (p postgresStore) Delete(project, id string) error {

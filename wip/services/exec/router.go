@@ -25,8 +25,9 @@ type ServiceRouter struct {
 	unweaveService *ProviderService
 }
 
-func NewServiceRouter(lambdaLabsService, unweaveService *ProviderService) Service {
+func NewServiceRouter(store Store, lambdaLabsService, unweaveService *ProviderService) Service {
 	return &ServiceRouter{
+		store:          store,
 		llService:      lambdaLabsService,
 		unweaveService: unweaveService,
 	}
@@ -45,27 +46,19 @@ func (s *ServiceRouter) Create(ctx context.Context, project string, creator stri
 
 // Get returns a single session irrespective of the provider.
 func (s *ServiceRouter) Get(ctx context.Context, execID string) (types.Exec, error) {
-	// TODO: we probably want to clean this up somewhat and use a global store instead
-	exec, err := s.llService.Get(ctx, execID)
-	if err == nil {
-		return exec, nil
+	exec, err := s.store.Get(execID)
+	if err != nil {
+		return types.Exec{}, err
 	}
-	return s.unweaveService.Get(ctx, execID)
+	return exec, nil
 }
 
 // List returns a list of sessions for a given project irrespective of the providers.
 func (s *ServiceRouter) List(ctx context.Context, projectID string) ([]types.Exec, error) {
-	llExecs, err := s.llService.List(ctx, projectID)
+	execs, err := s.store.List(&projectID, nil, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list LambdaLabs execs: %w", err)
+		return nil, err
 	}
-
-	uwExecs, err := s.unweaveService.List(ctx, projectID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list Unweave execs: %w", err)
-	}
-
-	execs := append(llExecs, uwExecs...)
 	return execs, nil
 }
 

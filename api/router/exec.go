@@ -35,7 +35,7 @@ func (e *ExecRouter) Routes() []Route {
 }
 
 func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ProviderService) *ExecRouter {
-	router := execsrv.NewServiceRouter(lambdaLabsService, unweaveService)
+	router := execsrv.NewServiceRouter(store, lambdaLabsService, unweaveService)
 	return &ExecRouter{
 		store:   store,
 		service: router,
