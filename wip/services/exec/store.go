@@ -17,13 +17,13 @@ func NewPostgresStore() Store {
 	return postgresStore{}
 }
 
-func (p postgresStore) Create(ctx context.Context, project string, exec types.Exec) error {
-	if project == "" {
+func (p postgresStore) Create(ctx context.Context, projectID string, exec types.Exec) error {
+	if projectID == "" {
 		return fmt.Errorf("an Exec must be attached to a project")
 	}
 
-	// every exec should be created with a public key
-	publicKeys := types.FilterKeysWithPublicKey(exec.Keys)
+	// Every exec should be created with a public key
+	publicKeys := filterNullPublicKeys(exec.Keys)
 	if len(publicKeys) > 1 || len(publicKeys) == 0 {
 		return fmt.Errorf("an Exec must be created with one and only one SSH public key")
 	}
@@ -43,100 +43,37 @@ func (p postgresStore) Create(ctx context.Context, project string, exec types.Ex
 
 	err = createSSHKeys(ctx, exec.CreatedBy, publicKeys)
 	if err != nil {
-		return err
-	}
-	err = createExec(project, spec, metadata, exec)
-	if err != nil {
-		return err
-	}
-	keys, err := getSSHKeysByPublicKey(ctx, exec.CreatedBy, types.GetPublicKeys(publicKeys))
-	if err != nil {
-		return err
-	}
-	err = addSSHKeyToExec(ctx, exec, keys)
-	if err != nil {
-		return err
+		return fmt.Errorf("failed to create SSH keys: %w", err)
 	}
 
-	return nil
-}
-
-func createExec(projectID string, spec []byte, metadata []byte, exec types.Exec) error {
-	if err := db.Q.ExecCreate(context.Background(), db.ExecCreateParams{
-		ID:        exec.ID,
-		CreatedBy: exec.CreatedBy,
-		ProjectID: projectID,
-		Region:    exec.Region,
-		Name:      exec.Name,
-		Spec:      spec,
-		Metadata:  metadata,
-		BuildID:   db.NullStringFrom(exec.BuildID),
-		Image:     exec.Image,
-		Provider:  exec.Provider.String(),
-
-		// Note: These fields are members of the Exec, but currently unused in any feature.
+	params := db.ExecCreateParams{
+		ID:           exec.ID,
+		CreatedBy:    exec.CreatedBy,
+		ProjectID:    projectID,
+		Region:       exec.Region,
+		Name:         exec.Name,
+		Spec:         spec,
+		Metadata:     metadata,
+		BuildID:      db.NullStringFrom(exec.BuildID),
+		Image:        exec.Image,
+		Provider:     exec.Provider.String(),
 		CommitID:     db.NullStringFrom(exec.CommitID),
 		GitRemoteUrl: db.NullStringFrom(exec.GitURL),
 		Command:      []string{},
-	}); err != nil {
+	}
+
+	if err = db.Q.ExecCreate(ctx, params); err != nil {
+		return fmt.Errorf("failed to create exec: %w", err)
+	}
+
+	keys, err := getSSHKeysByPublicKey(ctx, exec.CreatedBy, extractPublicKeys(publicKeys))
+	if err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func createSSHKeys(ctx context.Context, createdByID string, keys []types.SSHKey) error {
-	for _, key := range keys {
-		exists, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
-			PublicKey: *key.PublicKey,
-			OwnerID:   createdByID,
-		})
-		if err != nil && err != sql.ErrNoRows {
-			return err
-		}
-		if exists.PublicKey != "" {
-			continue
-		}
-		err = db.Q.SSHKeyAdd(ctx, db.SSHKeyAddParams{
-			OwnerID:   createdByID,
-			Name:      key.Name,
-			PublicKey: *key.PublicKey,
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func getSSHKeysByPublicKey(ctx context.Context, ownerID string, pubs []string) ([]db.UnweaveSshKey, error) {
-	keys := make([]db.UnweaveSshKey, 0, len(pubs))
-
-	for _, pub := range pubs {
-		key, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
-			PublicKey: pub,
-			OwnerID:   ownerID,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		keys = append(keys, key)
-	}
-
-	return keys, nil
-}
-
-func addSSHKeyToExec(ctx context.Context, exec types.Exec, keys []db.UnweaveSshKey) error {
-	for _, key := range keys {
-		err := db.Q.ExecSSHKeyInsert(ctx, db.ExecSSHKeyInsertParams{
-			ExecID:   exec.ID,
-			SshKeyID: key.ID,
-		})
-		if err != nil {
-			return err
-		}
+	err = addSSHKeyToExec(ctx, exec, keys)
+	if err != nil {
+		return fmt.Errorf("failed to add SSH key to exec: %w", err)
 	}
 
 	return nil
@@ -241,8 +178,49 @@ func (p postgresStore) UpdateStatus(id string, status types.Status) error {
 	return nil
 }
 
+func addSSHKeyToExec(ctx context.Context, exec types.Exec, keys []db.UnweaveSshKey) error {
+	for _, key := range keys {
+		err := db.Q.ExecSSHKeyInsert(ctx, db.ExecSSHKeyInsertParams{
+			ExecID:   exec.ID,
+			SshKeyID: key.ID,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createSSHKeys(ctx context.Context, createdByID string, keys []types.SSHKey) error {
+	for _, key := range keys {
+		key := key
+		exists, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
+			PublicKey: *key.PublicKey,
+			OwnerID:   createdByID,
+		})
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if exists.PublicKey != "" {
+			continue
+		}
+		err = db.Q.SSHKeyAdd(ctx, db.SSHKeyAddParams{
+			OwnerID:   createdByID,
+			Name:      key.Name,
+			PublicKey: *key.PublicKey,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func dbSSHKeyToSSHKey(ks []db.UnweaveSshKey) (res []types.SSHKey) {
 	for _, k := range ks {
+		k := k
 		res = append(res, types.SSHKey{
 			Name:       k.Name,
 			PublicKey:  &k.PublicKey,
@@ -299,4 +277,46 @@ func dbExecToExec(dbe db.UnweaveExec, keys []types.SSHKey) types.Exec {
 		Region:    dbe.Region,
 		Provider:  types.Provider(dbe.Provider),
 	}
+}
+
+func getSSHKeysByPublicKey(ctx context.Context, ownerID string, pubs []string) ([]db.UnweaveSshKey, error) {
+	keys := make([]db.UnweaveSshKey, 0, len(pubs))
+
+	for _, pub := range pubs {
+		key, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
+			PublicKey: pub,
+			OwnerID:   ownerID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		keys = append(keys, key)
+	}
+
+	return keys, nil
+}
+
+func filterNullPublicKeys(keys []types.SSHKey) []types.SSHKey {
+	filteredKeys := make([]types.SSHKey, 0)
+
+	for _, key := range keys {
+		if key.PublicKey != nil {
+			filteredKeys = append(filteredKeys, key)
+		}
+	}
+
+	return filteredKeys
+}
+
+func extractPublicKeys(keys []types.SSHKey) []string {
+	filteredStrings := make([]string, 0)
+
+	for _, key := range keys {
+		if key.PublicKey != nil {
+			filteredStrings = append(filteredStrings, *key.PublicKey)
+		}
+	}
+
+	return filteredStrings
 }
