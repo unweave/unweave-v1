@@ -42,13 +42,6 @@ update unweave.exec
 set metadata = jsonb_set(metadata, '{connection_info}', @connection_info::jsonb)
 where id = $1;
 
--- name: ExecsGetActive :many
-select *
-from unweave.exec
-where project_id = $1 and (status <> 'terminated') and provider = $2
-order by unweave.exec.created_at desc
-limit $3 offset $4;
-
 -- name: ExecSetError :exec
 update unweave.exec
 set status = 'error'::unweave.exec_status,
