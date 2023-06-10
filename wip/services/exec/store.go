@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/tools"
 )
 
 type postgresStore struct{}
@@ -95,7 +96,7 @@ func (p postgresStore) Get(id string) (types.Exec, error) {
 	if err != nil {
 		return types.Exec{}, err
 	}
-	keyIDs := db.MapStrings(keyRefs, func(key db.UnweaveExecSshKey) string {
+	keyIDs := tools.MapToStrings(keyRefs, func(key db.UnweaveExecSshKey) string {
 		return key.SshKeyID
 	})
 
@@ -138,22 +139,25 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 	if err != nil {
 		return nil, fmt.Errorf("failed to list execs: %w", err)
 	}
+
 	res := make([]types.Exec, len(execs))
 
-	for _, exec := range execs {
+	for idx, exec := range execs {
 		keyRefs, err := db.Q.ExecSSHKeysGetByExecID(ctx, exec.ID)
 		if err != nil {
 			return nil, err
 		}
-		keyIDs := db.MapStrings(keyRefs, func(key db.UnweaveExecSshKey) string {
+
+		keyIDs := tools.MapToStrings(keyRefs, func(key db.UnweaveExecSshKey) string {
 			return key.SshKeyID
 		})
+
 		keys, err := db.Q.SSHKeysGetByIDs(ctx, keyIDs)
 		if err != nil {
 			return []types.Exec{}, err
 		}
 
-		res = append(res, dbExecToExec(exec, dbSSHKeyToSSHKey(keys)))
+		res[idx] = dbExecToExec(exec, dbSSHKeyToSSHKey(keys))
 	}
 
 	return res, nil
