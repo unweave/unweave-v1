@@ -1,5 +1,10 @@
 package types
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type HardwareRequestRange struct {
 	Min int `json:"min,omitempty"`
 	Max int `json:"max,omitempty"`
@@ -22,6 +27,15 @@ const (
 	defaultMinCPU = 4
 	defaultMinHDD = 50
 )
+
+func HardwareSpecFromJSON(data []byte) (*HardwareSpec, error) {
+	var spec HardwareSpec
+	err := json.Unmarshal(data, &spec)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
+	}
+	return &spec, nil
+}
 
 func SetSpecDefaultValues(spec HardwareSpec) HardwareSpec {
 	spec.GPU.Count.Min = setDefaultMinGPUCount(spec.GPU)
@@ -66,9 +80,6 @@ func setDefaultMinGPUCount(gpu GPU) int {
 }
 
 type NodeMetadataV1 struct {
-	ID             string           `json:"id"`
-	TypeID         string           `json:"typeID"`
-	Price          int              `json:"price"`
 	VCPUs          int              `json:"vcpus"`
 	Memory         int              `json:"memory"`
 	HDD            int              `json:"hdd"`
@@ -78,7 +89,10 @@ type NodeMetadataV1 struct {
 	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
 }
 
-func (m NodeMetadataV1) GetHardwareSpec() HardwareSpec {
+func (m *NodeMetadataV1) GetHardwareSpec() HardwareSpec {
+	if m == nil {
+		return HardwareSpec{}
+	}
 	return HardwareSpec{
 		GPU: GPU{
 			Count: HardwareRequestRange{
@@ -106,11 +120,28 @@ func (m NodeMetadataV1) GetHardwareSpec() HardwareSpec {
 	}
 }
 
+func NodeMetadataFromJSON(data []byte) (*NodeMetadataV1, error) {
+	var metadata NodeMetadataV1
+	err := json.Unmarshal(data, &metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON: %v", err)
+	}
+	return &metadata, nil
+}
+
+func (m *NodeMetadataV1) GetExecNetwork() ExecNetwork {
+	if m == nil {
+		return ExecNetwork{}
+	}
+	return ExecNetwork{
+		Host:  m.ConnectionInfo.Host,
+		Ports: []int{m.ConnectionInfo.Port},
+		User:  m.ConnectionInfo.User,
+	}
+}
+
 func DBNodeMetadataFromNode(node Node) NodeMetadataV1 {
 	n := NodeMetadataV1{
-		ID:        node.ID,
-		TypeID:    node.TypeID,
-		Price:     node.Price,
 		VCPUs:     node.Specs.CPU.Min,
 		Memory:    node.Specs.RAM.Min,
 		HDD:       node.Specs.HDD.Min,

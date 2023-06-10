@@ -368,22 +368,28 @@ func (q *Queries) ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateCo
 	return err
 }
 
-const ExecsGet = `-- name: ExecsGet :many
+const ExecsGetActive = `-- name: ExecsGetActive :many
 select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec
-where project_id = $1
+where project_id = $1 and (status <> 'terminated') and provider = $2
 order by unweave.exec.created_at desc
-limit $2 offset $3
+limit $3 offset $4
 `
 
-type ExecsGetParams struct {
+type ExecsGetActiveParams struct {
 	ProjectID string `json:"projectID"`
+	Provider  string `json:"provider"`
 	Limit     int32  `json:"limit"`
 	Offset    int32  `json:"offset"`
 }
 
-func (q *Queries) ExecsGet(ctx context.Context, arg ExecsGetParams) ([]UnweaveExec, error) {
-	rows, err := q.db.QueryContext(ctx, ExecsGet, arg.ProjectID, arg.Limit, arg.Offset)
+func (q *Queries) ExecsGetActive(ctx context.Context, arg ExecsGetActiveParams) ([]UnweaveExec, error) {
+	rows, err := q.db.QueryContext(ctx, ExecsGetActive,
+		arg.ProjectID,
+		arg.Provider,
+		arg.Limit,
+		arg.Offset,
+	)
 	if err != nil {
 		return nil, err
 	}

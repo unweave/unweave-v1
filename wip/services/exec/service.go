@@ -95,7 +95,6 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	// TODO: currently assumes only one SSH key - need to support multiple
 	execID, err := s.driver.Create(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
@@ -122,12 +121,13 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 			},
 		},
 		Volumes:  nil,
-		Network:  types.ExecNetwork{},
 		Spec:     spec,
 		CommitID: params.CommitID,
 		GitURL:   params.GitURL,
-		Region:   "", // Set later once the exec has been successfully scheduled
 		Provider: params.Provider,
+		// Set when a connection is established to the exec
+		Network: types.ExecNetwork{},
+		Region:  "",
 	}
 
 	if err = s.store.Create(project, exec); err != nil {
@@ -188,6 +188,8 @@ func (s *ProviderService) Terminate(ctx context.Context, id string) error {
 	if err = s.store.UpdateStatus(exec.ID, types.StatusTerminated); err != nil {
 		return fmt.Errorf("failed to update exec status in store: %w", err)
 	}
+
+	// TODO Clean up SSH keys associated with the terminated exec
 	return nil
 }
 

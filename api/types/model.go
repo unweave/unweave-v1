@@ -148,14 +148,15 @@ func NewExec(
 	createdAt time.Time,
 	region string,
 	provider Provider,
-	spec HardwareSpec,
+	nodeMetadata *NodeMetadataV1,
 ) *Exec {
 	return &Exec{
 		ID:        ID,
 		Name:      name,
-		Spec:      spec,
+		Spec:      nodeMetadata.GetHardwareSpec(),
 		Image:     image,
 		Status:    status,
+		Network:   nodeMetadata.GetExecNetwork(),
 		CreatedAt: createdAt,
 		Region:    region,
 		Provider:  provider,
