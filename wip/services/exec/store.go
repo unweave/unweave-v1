@@ -224,15 +224,17 @@ func createSSHKeys(ctx context.Context, createdByID string, keys []types.SSHKey)
 	return nil
 }
 
-func dbSSHKeyToSSHKey(ks []db.UnweaveSshKey) (res []types.SSHKey) {
-	for _, k := range ks {
+func dbSSHKeyToSSHKey(keys []db.UnweaveSshKey) []types.SSHKey {
+	res := make([]types.SSHKey, len(keys))
+
+	for idx, k := range keys {
 		k := k
-		res = append(res, types.SSHKey{
+		res[idx] = types.SSHKey{
 			Name:       k.Name,
 			PublicKey:  &k.PublicKey,
 			PrivateKey: nil,
 			CreatedAt:  &k.CreatedAt,
-		})
+		}
 	}
 
 	return res
