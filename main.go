@@ -45,7 +45,7 @@ func main() {
 	lStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, lDriver)
 	lHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(lDriver, 10)
 
-	lls, err := execsrv.NewService(execStore, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
+	lls, err := execsrv.NewProviderService(execStore, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
 	if err != nil {
 		panic(err)
 	}

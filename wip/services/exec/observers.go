@@ -7,10 +7,10 @@ import (
 
 type stateObserver struct {
 	exec types.Exec
-	srv  *Service
+	srv  *ProviderService
 }
 
-func NewStateObserverFunc(s *Service) StateObserverFunc {
+func NewStateObserverFunc(s *ProviderService) StateObserverFunc {
 	return func(exec types.Exec) StateObserver {
 		return &stateObserver{exec: exec, srv: s}
 	}

@@ -13,12 +13,9 @@ import (
 )
 
 type ExecRouter struct {
-	r     chi.Router
-	store execsrv.Store
-
-	llService        *execsrv.Service
-	unweaveService   *execsrv.Service
-	conductorService *execsrv.Service
+	r       chi.Router
+	store   execsrv.Store
+	service execsrv.Service
 }
 
 func (e *ExecRouter) Routes() []Route {
@@ -37,25 +34,11 @@ func (e *ExecRouter) Routes() []Route {
 	return routes
 }
 
-func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.Service) *ExecRouter {
+func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ProviderService) *ExecRouter {
+	router := execsrv.NewServiceRouter(store, lambdaLabsService, unweaveService)
 	return &ExecRouter{
-		store:            store,
-		llService:        lambdaLabsService,
-		unweaveService:   unweaveService,
-		conductorService: nil,
-	}
-}
-
-func (e *ExecRouter) service(provider types.Provider) *execsrv.Service {
-	switch provider {
-	case types.LambdaLabsProvider:
-		return e.llService
-	case types.UnweaveProvider:
-		return e.unweaveService
-	default:
-		// This is unreachable. Using panic for now until we have the conductor
-		// implemented for AWS, GCP etc
-		panic(fmt.Errorf("unknown provider: %s", provider))
+		store:   store,
+		service: router,
 	}
 }
 
@@ -73,7 +56,7 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(ctx)
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	exec, err := e.service(scr.Provider).Create(ctx, projectID, userID, *scr)
+	exec, err := e.service.Create(ctx, projectID, userID, *scr)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create session"))
 		return
@@ -92,7 +75,7 @@ func (e *ExecRouter) ExecGetHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exec, err := e.store.Get(execID)
+	exec, err := e.service.Get(ctx, execID)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
 		return
@@ -107,7 +90,7 @@ func (e *ExecRouter) ExecListHandler(w http.ResponseWriter, r *http.Request) {
 	listTerminated := r.URL.Query().Get("terminated") == "true"
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	execs, err := e.store.List(projectID)
+	execs, err := e.service.List(ctx, projectID)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list sessions"))
 		return
@@ -143,13 +126,7 @@ func (e *ExecRouter) ExecTerminateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	exec, err := e.store.Get(execID)
-	if err != nil {
-		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get session"))
-		return
-	}
-
-	err = e.service(exec.Provider).Terminate(ctx, execID)
+	err := e.service.Terminate(ctx, execID)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to terminate session"))
 		return

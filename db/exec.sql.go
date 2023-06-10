@@ -138,6 +138,63 @@ func (q *Queries) ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error) {
 	return items, nil
 }
 
+const ExecList = `-- name: ExecList :many
+select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
+from unweave.exec as e
+where (e.provider = coalesce($1, e.provider))
+  and project_id = coalesce($2, project_id)
+  and (($3 = true and (status = 'initializing' or status = 'running'))
+    or $3 = false)
+`
+
+type ExecListParams struct {
+	FilterProvider  sql.NullString `json:"filterProvider"`
+	FilterProjectID sql.NullString `json:"filterProjectID"`
+	FilterActive    interface{}    `json:"filterActive"`
+}
+
+func (q *Queries) ExecList(ctx context.Context, arg ExecListParams) ([]UnweaveExec, error) {
+	rows, err := q.db.QueryContext(ctx, ExecList, arg.FilterProvider, arg.FilterProjectID, arg.FilterActive)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveExec
+	for rows.Next() {
+		var i UnweaveExec
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Region,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.ReadyAt,
+			&i.ExitedAt,
+			&i.Status,
+			&i.ProjectID,
+			&i.Error,
+			&i.BuildID,
+			&i.Spec,
+			&i.CommitID,
+			&i.GitRemoteUrl,
+			pq.Array(&i.Command),
+			&i.Metadata,
+			&i.Image,
+			&i.Provider,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const ExecListActiveByProvider = `-- name: ExecListActiveByProvider :many
 select id, name, region, created_by, created_at, ready_at, exited_at, status, project_id, error, build_id, spec, commit_id, git_remote_url, command, metadata, image, provider
 from unweave.exec as e

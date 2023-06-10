@@ -14,9 +14,10 @@ var (
 	DefaultImageURI = "ubuntu:latest"
 )
 
-type Service struct {
+type ProviderService struct {
 	store                 Store
 	driver                Driver
+	provider              types.Provider
 	stateInformerFunc     StateInformerFunc
 	statsInformerFunc     StatsInformerFunc
 	heartbeatInformerFunc HeartbeatInformerFunc
@@ -26,37 +27,38 @@ type Service struct {
 	heartbeatObserversFuncs []HeartbeatObserverFunc
 }
 
-func WithStateObserver(s *Service, f StateObserverFunc) *Service {
+func WithStateObserver(s *ProviderService, f StateObserverFunc) *ProviderService {
 	s.stateObserversFuncs = append(s.stateObserversFuncs, f)
 	return s
 }
 
-func WithStatsObserver(s *Service, f StatsObserverFunc) *Service {
+func WithStatsObserver(s *ProviderService, f StatsObserverFunc) *ProviderService {
 	s.statsObserversFuncs = append(s.statsObserversFuncs, f)
 	return s
 }
 
-func WithHeartbeatObserver(s *Service, f HeartbeatObserverFunc) *Service {
+func WithHeartbeatObserver(s *ProviderService, f HeartbeatObserverFunc) *ProviderService {
 	s.heartbeatObserversFuncs = append(s.heartbeatObserversFuncs, f)
 	return s
 }
 
-func NewService(
+func NewProviderService(
 	store Store,
 	driver Driver,
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
 	heartbeatInformerFunc HeartbeatInformerFunc,
-) (*Service, error) {
-	s := &Service{
+) (*ProviderService, error) {
+	s := &ProviderService{
 		store:                 store,
 		driver:                driver,
+		provider:              driver.Provider(),
 		stateInformerFunc:     stateInformerFunc,
 		statsInformerFunc:     statsInformerFunc,
 		heartbeatInformerFunc: heartbeatInformerFunc,
 	}
 
-	execs, err := store.ListByProvider(driver.Provider(), true)
+	execs, err := store.List(nil, &s.provider, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
@@ -85,7 +87,7 @@ func NewService(
 	return s, nil
 }
 
-func (s *Service) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
+func (s *ProviderService) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
 	image := DefaultImageURI
 	if params.Image != nil && *params.Image != "" {
 		image = *params.Image
@@ -143,7 +145,7 @@ func (s *Service) Create(ctx context.Context, project string, creator string, pa
 	return exec, nil
 }
 
-func (s *Service) Get(ctx context.Context, id string) (types.Exec, error) {
+func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error) {
 	exec, err := s.store.Get(id)
 	if err != nil {
 		return types.Exec{}, err
@@ -151,15 +153,15 @@ func (s *Service) Get(ctx context.Context, id string) (types.Exec, error) {
 	return exec, err
 }
 
-func (s *Service) List(ctx context.Context, project string) ([]types.Exec, error) {
-	execs, err := s.store.List(project)
+func (s *ProviderService) List(ctx context.Context, project string) ([]types.Exec, error) {
+	execs, err := s.store.List(&project, &s.provider, false)
 	if err != nil {
 		return nil, err
 	}
 	return execs, nil
 }
 
-func (s *Service) Terminate(ctx context.Context, id string) error {
+func (s *ProviderService) Terminate(ctx context.Context, id string) error {
 	exec, err := s.store.Get(id)
 	if err != nil {
 		if err == ErrNotFound {
@@ -191,7 +193,7 @@ func (s *Service) Terminate(ctx context.Context, id string) error {
 
 // Monitor starts monitoring an exec by registering observers to the stats and heartbeat
 // informers.
-func (s *Service) Monitor(ctx context.Context, execID string) error {
+func (s *ProviderService) Monitor(ctx context.Context, execID string) error {
 	exec, err := s.store.Get(execID)
 	if err != nil {
 		return fmt.Errorf("failed to get exec from store: %w", err)
