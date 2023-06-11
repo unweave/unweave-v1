@@ -11,7 +11,6 @@ import (
 type Status string
 
 const (
-	RuntimeProviderKey        = "Provider"
 	StatusPending      Status = "pending"
 	StatusInitializing Status = "initializing"
 	StatusRunning      Status = "running"

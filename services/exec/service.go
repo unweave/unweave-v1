@@ -63,6 +63,10 @@ func NewProviderService(
 		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
 
+	log.Info().
+		Str(types.ProviderCtxKey, s.provider.String()).
+		Msgf("Found %d existing execs", len(execs))
+
 	for _, e := range execs {
 		e := e
 

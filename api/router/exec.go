@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
-	execsrv "github.com/unweave/unweave/wip/services/exec"
+	execsrv "github.com/unweave/unweave/services/exec"
 )
 
 type ExecRouter struct {

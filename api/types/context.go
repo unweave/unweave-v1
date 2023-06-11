@@ -13,4 +13,5 @@ const (
 	ExecIDCtxKey     = "execID"
 	ExecStatusCtxKey = "execStatus"
 	ObserverCtxKey   = "observer"
+	ProviderCtxKey   = "provider"
 )

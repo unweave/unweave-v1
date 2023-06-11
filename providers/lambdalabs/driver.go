@@ -11,9 +11,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/providers/lambdalabs/client"
+	execsrv "github.com/unweave/unweave/services/exec"
 	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
-	execsrv "github.com/unweave/unweave/wip/services/exec"
 )
 
 // execDriver implements the exec.Driver interface for Lambda Labs.
