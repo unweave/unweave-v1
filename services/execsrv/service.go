@@ -52,7 +52,7 @@ func NewProviderService(
 	s := &ProviderService{
 		store:                 store,
 		driver:                driver,
-		provider:              driver.Provider(),
+		provider:              driver.ExecProvider(),
 		stateInformerFunc:     stateInformerFunc,
 		statsInformerFunc:     statsInformerFunc,
 		heartbeatInformerFunc: heartbeatInformerFunc,
@@ -75,7 +75,7 @@ func NewProviderService(
 			return nil, fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
 		}
 
-		if ed != s.driver.DriverName() {
+		if ed != s.driver.ExecDriverName() {
 			continue
 		}
 
@@ -99,7 +99,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	execID, err := s.driver.Create(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
+	execID, err := s.driver.ExecCreate(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -185,7 +185,7 @@ func (s *ProviderService) Terminate(ctx context.Context, id string) error {
 		Str(types.ExecIDCtxKey, exec.ID).
 		Msg("Terminating exec")
 
-	if err = s.driver.Terminate(ctx, exec.ID); err != nil {
+	if err = s.driver.ExecTerminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate exec: %w", err)
 	}
 

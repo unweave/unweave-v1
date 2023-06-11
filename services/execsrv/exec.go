@@ -23,11 +23,11 @@ type Store interface {
 }
 
 type Driver interface {
-	Create(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error)
-	DriverName() string
-	GetStatus(ctx context.Context, execID string) (types.Status, error)
-	Provider() types.Provider
-	Terminate(ctx context.Context, id string) error
-	Spec(ctx context.Context, id string) (types.HardwareSpec, error)
-	Stats(ctx context.Context, id string) (Stats, error)
+	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error)
+	ExecDriverName() string
+	ExecGetStatus(ctx context.Context, execID string) (types.Status, error)
+	ExecProvider() types.Provider
+	ExecTerminate(ctx context.Context, id string) error
+	ExecSpec(ctx context.Context, id string) (types.HardwareSpec, error)
+	ExecStats(ctx context.Context, id string) (Stats, error)
 }

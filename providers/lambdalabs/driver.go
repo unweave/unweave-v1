@@ -38,7 +38,7 @@ func NewAuthenticatedLambdaLabsDriver(apiKey string) (execsrv.Driver, error) {
 	return &execDriver{client: llClient}, nil
 }
 
-func (d *execDriver) Create(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error) {
+func (d *execDriver) ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error) {
 	if len(pubKeys) == 0 {
 		return "", fmt.Errorf("no ssh keys provided")
 	}
@@ -131,7 +131,7 @@ func (d *execDriver) Create(ctx context.Context, project, image string, spec typ
 	return res.JSON200.Data.InstanceIds[0], nil
 }
 
-func (d *execDriver) DriverName() string {
+func (d *execDriver) ExecDriverName() string {
 	return "lambdalabs"
 }
 
@@ -221,7 +221,7 @@ func (d *execDriver) Get(ctx context.Context, id string) (types.Exec, error) {
 	panic("implement me")
 }
 
-func (d *execDriver) GetStatus(ctx context.Context, execID string) (types.Status, error) {
+func (d *execDriver) ExecGetStatus(ctx context.Context, execID string) (types.Status, error) {
 	res, err := d.client.GetInstanceWithResponse(ctx, execID)
 	if err != nil {
 		return "", err
@@ -260,7 +260,7 @@ func (d *execDriver) List(ctx context.Context, project string) ([]types.Exec, er
 	panic("implement me")
 }
 
-func (d *execDriver) Provider() types.Provider {
+func (d *execDriver) ExecProvider() types.Provider {
 	return types.LambdaLabsProvider
 }
 
@@ -334,7 +334,7 @@ func (d *execDriver) sshKeyRegister(ctx context.Context, pubKey string) (string,
 	return name, nil
 }
 
-func (d *execDriver) Spec(ctx context.Context, execID string) (types.HardwareSpec, error) {
+func (d *execDriver) ExecSpec(ctx context.Context, execID string) (types.HardwareSpec, error) {
 	instance, err := d.client.GetInstanceWithResponse(ctx, execID)
 	if err != nil {
 		return types.HardwareSpec{}, &types.Error{
@@ -375,12 +375,12 @@ func (d *execDriver) Spec(ctx context.Context, execID string) (types.HardwareSpe
 	return spec, nil
 }
 
-func (d *execDriver) Stats(ctx context.Context, id string) (execsrv.Stats, error) {
+func (d *execDriver) ExecStats(ctx context.Context, id string) (execsrv.Stats, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (d *execDriver) Terminate(ctx context.Context, id string) error {
+func (d *execDriver) ExecTerminate(ctx context.Context, id string) error {
 	//TODO implement me
 	panic("implement me")
 }

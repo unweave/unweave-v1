@@ -62,7 +62,7 @@ func (b *heartbeatInformer) Watch() {
 	for {
 		select {
 		case <-time.After(1 * time.Minute):
-			status, err := b.driver.GetStatus(context.Background(), b.execID)
+			status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
 			if err != nil {
 				b.failCount++
 
@@ -168,7 +168,7 @@ func (i *pollingStateInformer) Watch() {
 
 			case <-time.After(10 * time.Second):
 				// Check the driver for changes in the exec's state.
-				status, err := i.driver.GetStatus(context.Background(), i.execID)
+				status, err := i.driver.ExecGetStatus(context.Background(), i.execID)
 				if err != nil {
 					log.Err(err).Msg("failed to get exec from driver")
 				}
