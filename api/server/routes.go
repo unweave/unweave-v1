@@ -69,10 +69,6 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 				r.Put("/terminate", execRouter.ExecTerminateHandler)
 			})
 		})
-
-		r.Route("/volumes", func(r chi.Router) {
-			r.Post("/", VolumeCreate(rti))
-		})
 	})
 
 	r.Route("/ssh-keys/{owner}", func(r chi.Router) {
@@ -80,7 +76,6 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 		r.Get("/", SSHKeyList(rti))
 		r.Post("/generate", SSHKeyGenerate(rti))
 	})
-	r.Get("/providers/{provider}/node-types", NodeTypesList(rti))
 
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
