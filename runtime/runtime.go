@@ -12,7 +12,6 @@ import (
 
 type Runtime struct {
 	Node   Node
-	Exec   Exec
 	Volume volume.Provider
 }
 
@@ -54,22 +53,6 @@ type Node interface {
 	TerminateNode(ctx context.Context, nodeID string) error
 	// Watch watches the status of the node.
 	Watch(ctx context.Context, nodeID string) (<-chan types.Status, <-chan error)
-}
-
-type Exec interface {
-	// Init initializes a new exec on a node. It creates environment the users code
-	// will in with the provided build and configures ssh keys for interactive access.
-	// If the persistentFS flag is set, the exec will be initialized with a persistent
-	// file system. The call to Terminate is still required to handle the lifecycle of
-	// the persistent file system. The flag just ensures the file system is capable of
-	// being persisted.
-	Init(ctx context.Context, node types.Node, config types.ExecConfig) (execID string, err error)
-	// GetConnectionInfo returns the connection information for exec.
-	GetConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
-	// Terminate terminates a session.
-	Terminate(ctx context.Context, execID string) error
-	// Watch watches the status of the exec.
-	Watch(ctx context.Context, execID string) (<-chan types.Status, <-chan error)
 }
 
 type Initializer interface {
