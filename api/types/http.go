@@ -99,10 +99,10 @@ type NodeTypesListResponse struct {
 type ExecCreateParams struct {
 	Name         string         `json:"name,omitempty"`
 	Provider     Provider       `json:"provider"`
-	HardwareSpec HardwareSpec   `json:"hardwareSpec,omitempty"`
+	Spec         HardwareSpec   `json:"hardwareSpec,omitempty"`
+	SSHKeyName   string         `json:"sshKeyName"`
+	SSHPublicKey string         `json:"sshPublicKey"`
 	Region       *string        `json:"region,omitempty"`
-	SSHKeyName   *string        `json:"sshKeyName"`
-	SSHPublicKey *string        `json:"sshPublicKey"`
 	Image        *string        `json:"image"`
 	Command      []string       `json:"command"`
 	CommitID     *string        `json:"commitID,omitempty"`
@@ -143,10 +143,10 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 			Message: "Invalid request body: field 'provider' is required",
 		}
 	}
-	if s.SSHPublicKey == nil && s.SSHKeyName == nil {
+	if s.SSHPublicKey == "" || s.SSHKeyName == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: either 'sshKeyName' or 'sshPublicKey' is required",
+			Message: "Invalid request body: both Public Key and Key Name are required",
 		}
 	}
 
@@ -189,15 +189,15 @@ type ProvidersListResponse struct {
 	Providers []Provider `json:"providers"`
 }
 
-type SessionGetResponse struct {
-	Session Exec `json:"session"`
+type ExecGetResponse struct {
+	Exec Exec `json:"session"`
 }
 
-type SessionsListResponse struct {
-	Sessions []Exec `json:"sessions"`
+type ExecsListResponse struct {
+	Execs []Exec `json:"sessions"`
 }
 
-type SessionTerminateResponse struct {
+type ExecTerminateResponse struct {
 	Success bool `json:"success"`
 }
 
@@ -232,4 +232,27 @@ type SSHKeyResponse struct {
 
 type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
+}
+
+type VolumeCreateParams struct {
+	Name     string   `json:"name"`
+	Size     int      `json:"size"`
+	Provider Provider `json:"provider"`
+}
+
+func (v *VolumeCreateParams) Bind(r *http.Request) error {
+	if v.Provider == "" {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: field 'provider' is required",
+		}
+	}
+
+	if v.Size < 1 {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body: volume size must be at least 10GB",
+		}
+	}
+	return nil
 }

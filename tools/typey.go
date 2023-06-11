@@ -32,3 +32,13 @@ func Float64Inv(f *float64) float64 {
 	}
 	return *f
 }
+
+// MapToStrings is a generic function that takes a list of any type and a function
+// that maps that type to a string. It returns a list of strings.
+func MapToStrings[T any](list []T, field func(T) string) []string {
+	result := make([]string, len(list))
+	for i, item := range list {
+		result[i] = field(item)
+	}
+	return result
+}

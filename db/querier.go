@@ -16,18 +16,18 @@ type Querier interface {
 	ExecCreate(ctx context.Context, arg ExecCreateParams) error
 	ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error)
 	ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error)
+	ExecList(ctx context.Context, arg ExecListParams) ([]UnweaveExec, error)
+	ExecListActiveByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
+	ExecListByProvider(ctx context.Context, provider string) ([]UnweaveExec, error)
+	ExecSSHKeyDelete(ctx context.Context, arg ExecSSHKeyDeleteParams) error
+	ExecSSHKeyGet(ctx context.Context, arg ExecSSHKeyGetParams) (UnweaveExecSshKey, error)
+	ExecSSHKeyInsert(ctx context.Context, arg ExecSSHKeyInsertParams) error
+	ExecSSHKeysGetByExecID(ctx context.Context, execID string) ([]UnweaveExecSshKey, error)
 	ExecSetError(ctx context.Context, arg ExecSetErrorParams) error
+	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
-	ExecsGet(ctx context.Context, arg ExecsGetParams) ([]ExecsGetRow, error)
-	FilesystemCreate(ctx context.Context, arg FilesystemCreateParams) (UnweaveFilesystem, error)
-	FilesystemCreateVersion(ctx context.Context, arg FilesystemCreateVersionParams) (UnweaveFilesystemVersion, error)
-	FilesystemGet(ctx context.Context, id string) (UnweaveFilesystem, error)
-	FilesystemGetByExecID(ctx context.Context, execID string) (UnweaveFilesystem, error)
-	FilesystemGetByProject(ctx context.Context, arg FilesystemGetByProjectParams) (UnweaveFilesystem, error)
-	FilesystemGetLatestVersion(ctx context.Context, filesystemID string) (UnweaveFilesystemVersion, error)
-	FilesystemVersionAddBuildID(ctx context.Context, arg FilesystemVersionAddBuildIDParams) error
-	FilesystemVersionGet(ctx context.Context, execID string) (UnweaveFilesystemVersion, error)
+	ExecsGetActive(ctx context.Context, arg ExecsGetActiveParams) ([]UnweaveExec, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
@@ -40,6 +40,11 @@ type Querier interface {
 	SSHKeyGetByName(ctx context.Context, arg SSHKeyGetByNameParams) (UnweaveSshKey, error)
 	SSHKeyGetByPublicKey(ctx context.Context, arg SSHKeyGetByPublicKeyParams) (UnweaveSshKey, error)
 	SSHKeysGet(ctx context.Context, ownerID string) ([]UnweaveSshKey, error)
+	SSHKeysGetByIDs(ctx context.Context, ids []string) ([]UnweaveSshKey, error)
+	VolumeCreate(ctx context.Context, arg VolumeCreateParams) (UnweaveVolume, error)
+	VolumeDelete(ctx context.Context, id string) error
+	VolumeGet(ctx context.Context, id string) (UnweaveVolume, error)
+	VolumeList(ctx context.Context, projectID string) ([]UnweaveVolume, error)
 }
 
 var _ Querier = (*Queries)(nil)

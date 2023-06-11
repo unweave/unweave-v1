@@ -7,8 +7,11 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/unweave/api/router"
 	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/providers/lambdalabs"
+	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
@@ -30,6 +33,25 @@ func main() {
 
 	// Initialize unweave from environment variables
 	runtimeCfg := &EnvInitializer{}
+	execStore := execsrv.NewPostgresStore()
 
-	server.API(cfg, runtimeCfg)
+	// TODO: init store
+	lDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
+	if err != nil {
+		panic(err)
+	}
+
+	lStateInf := execsrv.NewPollingStateInformerFunc(execStore, lDriver)
+	lStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, lDriver)
+	lHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(lDriver, 10)
+
+	lls, err := execsrv.NewProviderService(execStore, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
+	if err != nil {
+		panic(err)
+	}
+	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
+
+	execRouter := router.NewExecRouter(execStore, lls, nil)
+
+	server.API(cfg, runtimeCfg, execRouter)
 }

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/render"
@@ -75,4 +76,51 @@ func (e *Error) Render(w http.ResponseWriter, r *http.Request) error {
 type UwError interface {
 	Short() string
 	Verbose() string
+}
+
+func ErrHTTPBadRequest(err error, fallbackMessage string) render.Renderer {
+	var e *Error
+	if errors.As(err, &e) {
+		return &Error{
+			Code:       e.Code,
+			Message:    e.Message,
+			Provider:   e.Provider,
+			Suggestion: e.Suggestion,
+			Err:        err,
+		}
+	}
+	return &Error{
+		Code:    http.StatusBadRequest,
+		Message: fallbackMessage,
+		Err:     err,
+	}
+}
+
+func ErrHTTPError(err error, fallbackMessage string) render.Renderer {
+	if err == nil {
+		return nil
+	}
+	var e *Error
+	if errors.As(err, &e) {
+		return &Error{
+			Code:       e.Code,
+			Message:    e.Message,
+			Provider:   e.Provider,
+			Suggestion: e.Suggestion,
+			Err:        err,
+		}
+	}
+	return ErrInternalServer(err, fallbackMessage)
+}
+
+func ErrInternalServer(err error, msg string) render.Renderer {
+	m := "Internal server error"
+	if msg != "" {
+		m = msg
+	}
+	return &Error{
+		Code:    http.StatusInternalServerError,
+		Message: m,
+		Err:     err,
+	}
 }

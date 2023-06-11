@@ -156,7 +156,7 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 
 	go func() {
 		c := context.Background()
-		c = log.With().Str(BuildIDCtxKey, buildID).Logger().WithContext(c)
+		c = log.With().Str(types.BuildIDCtxKey, buildID).Logger().WithContext(c)
 
 		// Upload context to S3
 		if e := builder.Upload(c, buildID, buildContext); e != nil {

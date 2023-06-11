@@ -11,14 +11,13 @@ import (
 type Status string
 
 const (
-	RuntimeProviderKey        = "Provider"
+	StatusPending      Status = "pending"
 	StatusInitializing Status = "initializing"
 	StatusRunning      Status = "running"
 	StatusTerminated   Status = "terminated"
 	StatusError        Status = "error"
 	StatusFailed       Status = "failed"
 	StatusSuccess      Status = "success"
-	StatusSnapshotting Status = "snapshotting"
 )
 
 type NoOpLogHook struct{}
@@ -115,23 +114,52 @@ type ConnectionInfo struct {
 	User string `json:"user"`
 }
 
-type Exec struct {
-	ID           string          `json:"id"`
-	Name         string          `json:"name"`
-	SSHKey       SSHKey          `json:"sshKey"`
-	Specs        HardwareSpec    `json:"specs"`
-	Image        string          `json:"buildID,omitempty"`
-	Connection   *ConnectionInfo `json:"connection,omitempty"`
-	Status       Status          `json:"status"`
-	CreatedAt    *time.Time      `json:"createdAt,omitempty"`
-	NodeTypeID   string          `json:"nodeTypeID"`
-	Region       string          `json:"region"`
-	Provider     Provider        `json:"provider"`
-	PersistentFS bool            `json:"persistentFS"`
+type ExecNetwork struct {
+	Host  string `json:"host"`
+	Ports []int  `json:"ports"`
+	User  string `json:"user"`
 }
 
-func NewExec(ID string, name string, SSHKey SSHKey, image string, connection *ConnectionInfo, status Status, createdAt *time.Time, nodeTypeID string, region string, provider Provider, specs HardwareSpec, hasPersistentFS bool) *Exec {
-	return &Exec{ID: ID, Name: name, Specs: specs, Image: image, SSHKey: SSHKey, Connection: connection, Status: status, CreatedAt: createdAt, NodeTypeID: nodeTypeID, Region: region, Provider: provider, PersistentFS: hasPersistentFS}
+type Exec struct {
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	CreatedAt time.Time    `json:"createdAt,omitempty"`
+	CreatedBy string       `json:"createdBy,omitempty"`
+	Image     string       `json:"image,omitempty"`
+	BuildID   *string      `json:"buildID,omitempty"`
+	Status    Status       `json:"status"`
+	Command   []string     `json:"command"`
+	Keys      []SSHKey     `json:"keys"`
+	Volumes   []Volume     `json:"volumes"`
+	Network   ExecNetwork  `json:"network"`
+	Spec      HardwareSpec `json:"spec"`
+	CommitID  *string      `json:"commitID,omitempty"`
+	GitURL    *string      `json:"gitURL,omitempty"`
+	Region    string       `json:"region"`
+	Provider  Provider     `json:"provider"`
+}
+
+func NewExec(
+	ID string,
+	name string,
+	image string,
+	status Status,
+	createdAt time.Time,
+	region string,
+	provider Provider,
+	nodeMetadata *NodeMetadataV1,
+) *Exec {
+	return &Exec{
+		ID:        ID,
+		Name:      name,
+		Spec:      nodeMetadata.GetHardwareSpec(),
+		Image:     image,
+		Status:    status,
+		Network:   nodeMetadata.GetExecNetwork(),
+		CreatedAt: createdAt,
+		Region:    region,
+		Provider:  provider,
+	}
 }
 
 type ExecConfig struct {
@@ -150,9 +178,4 @@ type GitConfig struct {
 type SourceContext struct {
 	MountPath string        `json:"mountPath"`
 	Context   io.ReadCloser `json:"-"`
-}
-
-type Volume struct {
-	MountPath    string `json:"mountPath"`
-	FilesystemID string `json:"filesystemID"`
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	middleware2 "github.com/unweave/unweave/api/middleware"
+	"github.com/unweave/unweave/api/router"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
 )
@@ -18,35 +20,7 @@ type Config struct {
 	DB      db.Config `json:"db"`
 }
 
-func HandleRestart(ctx context.Context, rti runtime.Initializer) error {
-	// Re-watch all sessions
-	sessions, err := db.Q.ExecGetAllActive(ctx)
-	if err != nil {
-		return err
-	}
-
-	log.Ctx(ctx).Info().Msgf("🔄 Restarting watching %d sessions", len(sessions))
-
-	for _, s := range sessions {
-		sess := s
-		go func() {
-			c := context.Background()
-			c = log.With().
-				Str(UserIDCtxKey, sess.CreatedBy).
-				Str(ProjectIDCtxKey, sess.ProjectID).
-				Str(ExecIDCtxKey, sess.ID).
-				Logger().WithContext(c)
-
-			srv := NewCtxService(rti, "", sess.CreatedBy)
-			if e := srv.Exec.Watch(c, sess.ID); e != nil {
-				log.Ctx(ctx).Error().Err(e).Msgf("Failed to watch session")
-			}
-		}()
-	}
-	return nil
-}
-
-func API(cfg Config, rti runtime.Initializer) {
+func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -73,9 +47,9 @@ func API(cfg Config, rti runtime.Initializer) {
 		},
 	}))
 
-	r.Use(withAccountCtx) // fakes an authenticated user
+	r.Use(middleware2.WithAccountCtx) // fakes an authenticated user
 	r.Route("/projects/{owner}/{project}", func(r chi.Router) {
-		r.Use(withProjectCtx)
+		r.Use(middleware2.WithProjectCtx)
 
 		r.Route("/builds", func(r chi.Router) {
 			r.Post("/", BuildsCreate(rti))
@@ -83,14 +57,22 @@ func API(cfg Config, rti runtime.Initializer) {
 		})
 
 		r.Route("/sessions", func(r chi.Router) {
-			r.Post("/", ExecCreate(rti))
-			r.Get("/", ExecsList(rti))
+			r.Post("/", execRouter.ExecCreateHandler)
+		})
+
+		r.Route("/sessions", func(r chi.Router) {
+
+			r.Get("/", execRouter.ExecListHandler)
 
 			r.Route("/{exec}", func(r chi.Router) {
-				r.Use(withExecCtx)
-				r.Get("/", ExecsGet(rti))
-				r.Put("/terminate", ExecsTerminate(rti))
+				r.Use(middleware2.WithExecCtx)
+				r.Get("/", execRouter.ExecGetHandler)
+				r.Put("/terminate", execRouter.ExecTerminateHandler)
 			})
+		})
+
+		r.Route("/volumes", func(r chi.Router) {
+			r.Post("/", VolumeCreate(rti))
 		})
 	})
 
@@ -103,9 +85,6 @@ func API(cfg Config, rti runtime.Initializer) {
 
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
-	if err := HandleRestart(ctx, rti); err != nil {
-		panic(err)
-	}
 
 	log.Info().Msgf("🚀 API listening on %s", cfg.APIPort)
 	if err := http.ListenAndServe(":"+cfg.APIPort, r); err != nil {

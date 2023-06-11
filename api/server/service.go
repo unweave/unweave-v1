@@ -20,7 +20,6 @@ type Service struct {
 
 	Builder  *BuilderService
 	Provider *ProviderService
-	Exec     *ExecService
 	SSHKey   *SSHKeyService
 }
 
@@ -64,12 +63,10 @@ func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service
 		builder:  nil,
 		Builder:  nil,
 		Provider: nil,
-		Exec:     nil,
 		SSHKey:   nil,
 	}
 	srv.Builder = &BuilderService{srv: srv}
 	srv.Provider = &ProviderService{srv: srv}
-	srv.Exec = &ExecService{srv: srv}
 	srv.SSHKey = &SSHKeyService{srv: srv}
 
 	return srv
