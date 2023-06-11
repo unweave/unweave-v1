@@ -79,7 +79,7 @@ func NewProviderService(
 		informer.Watch()
 
 		for _, f := range s.stateObserversFuncs {
-			o := f(e)
+			o := f(e, informer)
 			informer.Register(o)
 		}
 	}
@@ -112,7 +112,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 		CreatedBy: creator,
 		Image:     image,
 		BuildID:   nil,
-		Status:    types.StatusInitializing,
+		Status:    types.StatusPending,
 		Command:   params.Command,
 		Keys: []types.SSHKey{
 			{
@@ -138,7 +138,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 	informer.Watch()
 
 	for _, so := range s.stateObserversFuncs {
-		o := so(exec)
+		o := so(exec, informer)
 		informer.Register(o)
 	}
 

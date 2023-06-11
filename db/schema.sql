@@ -30,7 +30,8 @@ CREATE TYPE unweave.exec_status AS ENUM (
     'running',
     'terminated',
     'error',
-    'snapshotting'
+    'snapshotting',
+    'pending'
 );
 
 ALTER TYPE unweave.exec_status OWNER TO postgres;
@@ -85,7 +86,7 @@ CREATE TABLE unweave.exec (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     ready_at timestamp with time zone,
     exited_at timestamp with time zone,
-    status unweave.exec_status DEFAULT 'initializing'::unweave.exec_status NOT NULL,
+    status unweave.exec_status DEFAULT 'pending'::unweave.exec_status NOT NULL,
     project_id text NOT NULL,
     error text,
     build_id text,

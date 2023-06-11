@@ -36,7 +36,10 @@ type StateObserver interface {
 	Update(state State)
 }
 
-type StateObserverFunc func(exec types.Exec) StateObserver
+// StateObserverFunc returns a StateObserver for the given exec and StateInformer.
+// It takes a reference to the StateInformer to enable passing back state changes to the
+// informer.
+type StateObserverFunc func(exec types.Exec, inf StateInformer) StateObserver
 
 // Stats represents the resource usage of an exec.
 type Stats struct {

@@ -11,7 +11,7 @@ type stateObserver struct {
 }
 
 func NewStateObserverFunc(s *ProviderService) StateObserverFunc {
-	return func(exec types.Exec) StateObserver {
+	return func(exec types.Exec, informer StateInformer) StateObserver {
 		return &stateObserver{exec: exec, srv: s}
 	}
 }

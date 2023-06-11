@@ -12,13 +12,13 @@ type Status string
 
 const (
 	RuntimeProviderKey        = "Provider"
+	StatusPending      Status = "pending"
 	StatusInitializing Status = "initializing"
 	StatusRunning      Status = "running"
 	StatusTerminated   Status = "terminated"
 	StatusError        Status = "error"
 	StatusFailed       Status = "failed"
 	StatusSuccess      Status = "success"
-	StatusSnapshotting Status = "snapshotting"
 )
 
 type NoOpLogHook struct{}
