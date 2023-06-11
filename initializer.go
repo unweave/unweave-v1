@@ -39,12 +39,7 @@ func (i *EnvInitializer) InitializeRuntime(ctx context.Context, userID string, p
 		if err != nil {
 			return nil, err
 		}
-		sess, err := lambdalabs.NewSessionRuntime(cfg.LambdaLabsAPIKey)
-		if err != nil {
-			return nil, err
-		}
-
-		return &runtime.Runtime{Node: node, Exec: sess}, nil
+		return &runtime.Runtime{Node: node}, nil
 
 	default:
 		return nil, fmt.Errorf("%q provider not supported in the env initializer", provider)

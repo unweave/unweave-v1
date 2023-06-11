@@ -61,7 +61,6 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 		})
 
 		r.Route("/sessions", func(r chi.Router) {
-
 			r.Get("/", execRouter.ExecListHandler)
 
 			r.Route("/{exec}", func(r chi.Router) {
