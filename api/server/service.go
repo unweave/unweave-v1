@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/builder"
 	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/vault"
@@ -14,26 +13,11 @@ type Service struct {
 	rti     runtime.Initializer
 	aid     string // account ID
 	cid     string // caller ID
-	runtime *runtime.Runtime
 	builder builder.Builder
 	vault   vault.Vault
 
-	Builder  *BuilderService
-	Provider *ProviderService
-	SSHKey   *SSHKeyService
-}
-
-// InitializeRuntime initializes the runtime a caches it in memory.
-func (s *Service) InitializeRuntime(ctx context.Context, provider types.Provider) (*runtime.Runtime, error) {
-	if s.runtime != nil {
-		return s.runtime, nil
-	}
-	rt, err := s.rti.InitializeRuntime(ctx, s.cid, provider)
-	if err != nil {
-		return nil, err
-	}
-	s.runtime = rt
-	return s.runtime, nil
+	Builder *BuilderService
+	SSHKey  *SSHKeyService
 }
 
 func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builder.Builder, error) {
@@ -55,18 +39,15 @@ func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service
 	}
 
 	srv := &Service{
-		rti:      rti,
-		aid:      accountID,
-		cid:      callerID,
-		vault:    vlt,
-		runtime:  nil,
-		builder:  nil,
-		Builder:  nil,
-		Provider: nil,
-		SSHKey:   nil,
+		rti:     rti,
+		aid:     accountID,
+		cid:     callerID,
+		vault:   vlt,
+		builder: nil,
+		Builder: nil,
+		SSHKey:  nil,
 	}
 	srv.Builder = &BuilderService{srv: srv}
-	srv.Provider = &ProviderService{srv: srv}
 	srv.SSHKey = &SSHKeyService{srv: srv}
 
 	return srv

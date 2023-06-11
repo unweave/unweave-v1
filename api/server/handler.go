@@ -12,7 +12,6 @@ import (
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/wip/conductor/volume"
 )
 
 // Builder
@@ -139,33 +138,6 @@ func BuildsGet(rti runtime.Initializer) http.HandlerFunc {
 	}
 }
 
-// Provider
-
-// NodeTypesList returns a list of node types available for the user. If the query param
-// `available` is set to true, only node types that are currently available to be
-// scheduled will be returned.
-func NodeTypesList(rti runtime.Initializer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		provider := types.Provider(chi.URLParam(r, "provider"))
-		log.Ctx(ctx).Info().Msgf("Executing NodeTypesList request for provider %s", provider)
-
-		filterAvailable := r.URL.Query().Get("available") == "true"
-
-		userID := middleware.GetUserIDFromContext(ctx)
-		srv := NewCtxService(rti, "", userID)
-
-		nodeTypes, err := srv.Provider.ListNodeTypes(ctx, provider, filterAvailable)
-		if err != nil {
-			render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list node types"))
-			return
-		}
-
-		res := &types.NodeTypesListResponse{NodeTypes: nodeTypes}
-		render.JSON(w, r, res)
-	}
-}
-
 // SSH Keys
 
 // SSHKeyAdd adds an SSH key to the user's account.
@@ -253,39 +225,5 @@ func SSHKeyList(rti runtime.Initializer) http.HandlerFunc {
 
 		res := types.SSHKeyListResponse{Keys: keys}
 		render.JSON(w, r, res)
-	}
-}
-
-func VolumeCreate(rti runtime.Initializer) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		log.Ctx(ctx).Info().Msgf("Executing VolumeCreate request")
-
-		params := types.VolumeCreateParams{}
-		if err := render.Bind(r, &params); err != nil {
-			err = fmt.Errorf("failed to read body: %w", err)
-			render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request body"))
-			return
-		}
-
-		accountID := middleware.GetAccountIDFromContext(ctx)
-		projectID := middleware.GetProjectIDFromContext(ctx)
-		volStore := GetVolumeStore()
-
-		rt, err := rti.InitializeRuntime(ctx, accountID, params.Provider)
-		if err != nil {
-			render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to initialize provider"))
-			return
-		}
-
-		handler := volume.NewVolumeService(projectID, rt.Volume, volStore)
-
-		vol, err := handler.Create(ctx, params.Size)
-		if err != nil {
-			render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
-			return
-		}
-
-		render.JSON(w, r, vol)
 	}
 }
