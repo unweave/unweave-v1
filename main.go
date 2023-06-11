@@ -11,7 +11,7 @@ import (
 	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/providers/lambdalabs"
-	execsrv "github.com/unweave/unweave/services/exec"
+	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 

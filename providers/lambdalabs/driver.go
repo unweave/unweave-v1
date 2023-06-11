@@ -11,12 +11,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/providers/lambdalabs/client"
-	execsrv "github.com/unweave/unweave/services/exec"
+	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/tools"
 	"github.com/unweave/unweave/tools/random"
 )
 
-// execDriver implements the exec.Driver interface for Lambda Labs.
+// execDriver implements the execsrv.Driver interface for Lambda Labs.
 // Lambda Labs needs a special implementation since they don't support Docker on their
 // VMs. This means we currently can't run an Exec as a container and instead default to
 // the bare VM with the pre-configured Lambda Labs image.

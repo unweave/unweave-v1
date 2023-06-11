@@ -1,4 +1,4 @@
-package exec
+package execsrv
 
 import (
 	"time"
