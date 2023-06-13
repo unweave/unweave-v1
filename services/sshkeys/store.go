@@ -10,7 +10,7 @@ import (
 
 type Store struct{}
 
-func (s Store) SSHKeyByNameIfExists(ctx context.Context, name, userID string) (*db.UnweaveSshKey, error) {
+func (s Store) SSHKeyGetByNameIfExists(ctx context.Context, name, userID string) (*db.UnweaveSshKey, error) {
 	p := db.SSHKeyGetByNameParams{Name: name, OwnerID: userID}
 	key, err := db.Q.SSHKeyGetByName(ctx, p)
 	if err != nil {

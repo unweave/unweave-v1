@@ -31,7 +31,7 @@ func (s *Service) Add(ctx context.Context, userID string, params types.SSHKeyAdd
 	}
 
 	if name != "" {
-		sshKey, err := s.store.SSHKeyByNameIfExists(ctx, name, userID)
+		sshKey, err := s.store.SSHKeyGetByNameIfExists(ctx, name, userID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get SSH key from DB: %w", err)
 		}
