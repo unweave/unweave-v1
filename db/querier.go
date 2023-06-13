@@ -27,7 +27,6 @@ type Querier interface {
 	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
-	ExecsGetActive(ctx context.Context, arg ExecsGetActiveParams) ([]UnweaveExec, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
