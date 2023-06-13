@@ -71,12 +71,6 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 		})
 	})
 
-	r.Route("/ssh-keys/{owner}", func(r chi.Router) {
-		r.Post("/", SSHKeyAdd(rti))
-		r.Get("/", SSHKeyList(rti))
-		r.Post("/generate", SSHKeyGenerate(rti))
-	})
-
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
 

@@ -17,7 +17,6 @@ type Service struct {
 	vault   vault.Vault
 
 	Builder *BuilderService
-	SSHKey  *SSHKeyService
 }
 
 func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builder.Builder, error) {
@@ -45,10 +44,8 @@ func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service
 		vault:   vlt,
 		builder: nil,
 		Builder: nil,
-		SSHKey:  nil,
 	}
 	srv.Builder = &BuilderService{srv: srv}
-	srv.SSHKey = &SSHKeyService{srv: srv}
 
 	return srv
 }
