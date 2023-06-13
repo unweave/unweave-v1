@@ -20,8 +20,8 @@ type SSHKeyService struct {
 	store Store
 }
 
-func NewSSHKeyService(store Store) *SSHKeyService {
-	return &SSHKeyService{store: store}
+func NewSSHKeyService() *SSHKeyService {
+	return &SSHKeyService{store: Store{}}
 }
 
 func (s *SSHKeyService) Add(ctx context.Context, userID string, params types.SSHKeyAddParams) (string, error) {

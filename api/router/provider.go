@@ -41,7 +41,7 @@ func (p *ProviderRouter) Routes() []Route {
 	return routes
 }
 
-func (p *ProviderRouter) ProviderListNodeTypes(w http.ResponseWriter, r *http.Request) {
+func (p *ProviderRouter) ProviderListNodeTypesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ProviderListNodeTypes request")
 
