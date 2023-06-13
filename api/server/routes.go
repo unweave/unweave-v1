@@ -20,7 +20,7 @@ type Config struct {
 	DB      db.Config `json:"db"`
 }
 
-func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
+func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter, sshKeysService *router.SSHKeysRouter) {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
 	r := chi.NewRouter()
@@ -71,6 +71,11 @@ func API(cfg Config, rti runtime.Initializer, execRouter *router.ExecRouter) {
 		})
 	})
 
+	r.Route("/ssh-keys/{owner}", func(r chi.Router) {
+		r.Post("/", sshKeysService.SSHKeysAddHandler)
+		r.Get("/", sshKeysService.SSHKeysListHandler)
+		r.Post("/generate", sshKeysService.SSHKeysGenerateHandler)
+	})
 	ctx := context.Background()
 	ctx = log.With().Logger().WithContext(ctx)
 
