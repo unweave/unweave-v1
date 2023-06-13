@@ -1,4 +1,4 @@
-package ssh_keys
+package sshkeys
 
 import (
 	"context"
@@ -16,22 +16,22 @@ import (
 
 var bitSize = 4096
 
-type SSHKeyService struct {
+type Service struct {
 	store Store
 }
 
-func NewSSHKeyService() *SSHKeyService {
-	return &SSHKeyService{store: Store{}}
+func NewService() *Service {
+	return &Service{store: Store{}}
 }
 
-func (s *SSHKeyService) Add(ctx context.Context, userID string, params types.SSHKeyAddParams) (string, error) {
+func (s *Service) Add(ctx context.Context, userID string, params types.SSHKeyAddParams) (string, error) {
 	var name string
 	if params.Name != nil && *params.Name != "" {
 		name = *params.Name
 	}
 
 	if name != "" {
-		sshKey, err := s.store.GetSSHKeyByNameIfExists(ctx, name, userID)
+		sshKey, err := s.store.SSHKeyByNameIfExists(ctx, name, userID)
 		if err != nil {
 			return "", fmt.Errorf("failed to get SSH key from DB: %w", err)
 		}
@@ -51,7 +51,7 @@ func (s *SSHKeyService) Add(ctx context.Context, userID string, params types.SSH
 		name = "uw:" + random.GenerateRandomPhrase(4, "-") + ".pub"
 	}
 
-	err := s.store.AddSSHKey(ctx, userID, name, params.PublicKey)
+	err := s.store.SSHKeyAdd(ctx, userID, name, params.PublicKey)
 	if err != nil {
 		return "", fmt.Errorf("failed to save SSH key: %w", err)
 	}
@@ -59,7 +59,7 @@ func (s *SSHKeyService) Add(ctx context.Context, userID string, params types.SSH
 	return name, nil
 }
 
-func (s *SSHKeyService) Generate(ctx context.Context, userID string, params types.SSHKeyGenerateParams) (name string, prv string, pub string, err error) {
+func (s *Service) Generate(ctx context.Context, userID string, params types.SSHKeyGenerateParams) (name string, prv string, pub string, err error) {
 	privateKey, publicKey, err := generateSSHKeyPair()
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to generate SSH key pair: %w", err)
@@ -76,8 +76,8 @@ func (s *SSHKeyService) Generate(ctx context.Context, userID string, params type
 	return name, privateKey, publicKey, nil
 }
 
-func (s *SSHKeyService) List(ctx context.Context, userID string) ([]types.SSHKey, error) {
-	sshKeys, err := s.store.GetSSHKeys(ctx, userID)
+func (s *Service) List(ctx context.Context, userID string) ([]types.SSHKey, error) {
+	sshKeys, err := s.store.SSHKeysList(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list SSH keys from DB: %w", err)
 	}

@@ -9,12 +9,12 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/services/ssh_keys"
+	"github.com/unweave/unweave/services/sshkeys"
 )
 
 type SSHKeysRouter struct {
 	r       chi.Router
-	service *ssh_keys.SSHKeyService
+	service *sshkeys.Service
 }
 
 func (s *SSHKeysRouter) Routes() []Route {
@@ -33,7 +33,7 @@ func (s *SSHKeysRouter) Routes() []Route {
 	return routes
 }
 
-func NewSSHKeysRouter(service *ssh_keys.SSHKeyService) *SSHKeysRouter {
+func NewSSHKeysRouter(service *sshkeys.Service) *SSHKeysRouter {
 	router := chi.NewRouter()
 	sshKeysRouter := &SSHKeysRouter{
 		r:       router,

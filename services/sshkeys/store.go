@@ -1,4 +1,4 @@
-package ssh_keys
+package sshkeys
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 type Store struct{}
 
-func (s Store) GetSSHKeyByNameIfExists(ctx context.Context, name, userID string) (*db.UnweaveSshKey, error) {
+func (s Store) SSHKeyByNameIfExists(ctx context.Context, name, userID string) (*db.UnweaveSshKey, error) {
 	p := db.SSHKeyGetByNameParams{Name: name, OwnerID: userID}
 	key, err := db.Q.SSHKeyGetByName(ctx, p)
 	if err != nil {
@@ -23,7 +23,7 @@ func (s Store) GetSSHKeyByNameIfExists(ctx context.Context, name, userID string)
 	return &key, err
 }
 
-func (s Store) AddSSHKey(ctx context.Context, userID, name, pub string) error {
+func (s Store) SSHKeyAdd(ctx context.Context, userID, name, pub string) error {
 	err := db.Q.SSHKeyAdd(ctx, db.SSHKeyAddParams{
 		OwnerID:   userID,
 		Name:      name,
@@ -36,7 +36,7 @@ func (s Store) AddSSHKey(ctx context.Context, userID, name, pub string) error {
 	return nil
 }
 
-func (s Store) GetSSHKeys(ctx context.Context, ownerID string) ([]db.UnweaveSshKey, error) {
+func (s Store) SSHKeysList(ctx context.Context, ownerID string) ([]db.UnweaveSshKey, error) {
 	keys, err := db.Q.SSHKeysGet(ctx, ownerID)
 	if err != nil {
 		return nil, err

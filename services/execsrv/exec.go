@@ -30,6 +30,6 @@ type Driver interface {
 	ExecTerminate(ctx context.Context, id string) error
 	ExecSpec(ctx context.Context, id string) (types.HardwareSpec, error)
 	ExecStats(ctx context.Context, id string) (Stats, error)
-	// Ping the driver availability
-	Ping(ctx context.Context) error
+	// Ping the driver availability on behalf of a user
+	ExecPing(ctx context.Context, accountID *string) error
 }
