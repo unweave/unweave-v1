@@ -6,11 +6,13 @@ drop table unweave.filesystem;
 create table unweave.volume
 (
     id         text primary key                              default ('vol_'::text || public.nanoid()) not null,
+    size       int                                  not null,
     name       text                                 not null,
     project_id text references unweave.project (id) not null,
     provider   text                                 not null,
-    created_at timestamp                            not null default now(),
-    updated_at timestamp                            not null default now()
+    created_at timestamptz                          not null default now(),
+    updated_at timestamptz                          not null default now(),
+    deleted_at timestamptz
 );
 
 alter table unweave.exec
