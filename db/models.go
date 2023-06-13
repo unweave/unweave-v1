@@ -67,6 +67,7 @@ const (
 	UnweaveExecStatusTerminated   UnweaveExecStatus = "terminated"
 	UnweaveExecStatusError        UnweaveExecStatus = "error"
 	UnweaveExecStatusSnapshotting UnweaveExecStatus = "snapshotting"
+	UnweaveExecStatusPending      UnweaveExecStatus = "pending"
 )
 
 func (e *UnweaveExecStatus) Scan(src interface{}) error {
