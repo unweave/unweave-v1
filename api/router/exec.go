@@ -18,6 +18,14 @@ type ExecRouter struct {
 	service execsrv.Service
 }
 
+func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ProviderService) *ExecRouter {
+	router := execsrv.NewServiceRouter(store, lambdaLabsService, unweaveService)
+	return &ExecRouter{
+		store:   store,
+		service: router,
+	}
+}
+
 func (e *ExecRouter) Routes() []Route {
 	var routes []Route
 
@@ -32,14 +40,6 @@ func (e *ExecRouter) Routes() []Route {
 	})
 
 	return routes
-}
-
-func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ProviderService) *ExecRouter {
-	router := execsrv.NewServiceRouter(store, lambdaLabsService, unweaveService)
-	return &ExecRouter{
-		store:   store,
-		service: router,
-	}
 }
 
 func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {

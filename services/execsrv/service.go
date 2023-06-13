@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/services/volumesrv"
 	"github.com/unweave/unweave/tools/random"
 )
 
@@ -17,6 +18,7 @@ var (
 type ProviderService struct {
 	store                 Store
 	driver                Driver
+	volume                *volumesrv.Service
 	provider              types.Provider
 	stateInformerFunc     StateInformerFunc
 	statsInformerFunc     StatsInformerFunc
@@ -45,17 +47,22 @@ func WithHeartbeatObserver(s *ProviderService, f HeartbeatObserverFunc) *Provide
 func NewProviderService(
 	store Store,
 	driver Driver,
+	volumeService *volumesrv.Service,
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
 	heartbeatInformerFunc HeartbeatInformerFunc,
 ) (*ProviderService, error) {
 	s := &ProviderService{
-		store:                 store,
-		driver:                driver,
-		provider:              driver.ExecProvider(),
-		stateInformerFunc:     stateInformerFunc,
-		statsInformerFunc:     statsInformerFunc,
-		heartbeatInformerFunc: heartbeatInformerFunc,
+		store:                   store,
+		driver:                  driver,
+		volume:                  volumeService,
+		provider:                driver.ExecProvider(),
+		stateInformerFunc:       stateInformerFunc,
+		statsInformerFunc:       statsInformerFunc,
+		heartbeatInformerFunc:   heartbeatInformerFunc,
+		stateObserversFuncs:     nil,
+		statsObserversFuncs:     nil,
+		heartbeatObserversFuncs: nil,
 	}
 
 	execs, err := store.List(nil, &s.provider, true)
