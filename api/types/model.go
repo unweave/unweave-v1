@@ -179,3 +179,22 @@ type SourceContext struct {
 	MountPath string        `json:"mountPath"`
 	Context   io.ReadCloser `json:"-"`
 }
+
+// UserAccessToken is an internal type to safely pass user tokens, never exposes token or hash
+type UserAccessToken struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	DisplayText string    `json:"displayText"`
+	ExpiresAt   time.Time `json:"expiresAt"`
+	UserID      string    `json:"userId"`
+}
+
+func NewUserAccessToken(userID, tokenID, tokenName, displayText string, expiresAt time.Time) UserAccessToken {
+	return UserAccessToken{
+		UserID:      userID,
+		ID:          tokenID,
+		Name:        tokenName,
+		DisplayText: displayText,
+		ExpiresAt:   expiresAt,
+	}
+}

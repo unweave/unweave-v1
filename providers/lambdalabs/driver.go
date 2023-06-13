@@ -1,6 +1,7 @@
 package lambdalabs
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
@@ -27,4 +28,13 @@ func NewAuthenticatedLambdaLabsDriver(apiKey string) (*Driver, error) {
 	}
 
 	return &Driver{client: llClient}, nil
+}
+
+func (d *Driver) ExecPing(ctx context.Context, accountID *string) error {
+	_, err := d.client.InstanceTypes(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to ping LambdaLabs with err %w", err)
+	}
+
+	return err
 }

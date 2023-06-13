@@ -12,6 +12,7 @@ import (
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/services/execsrv"
+	"github.com/unweave/unweave/services/sshkeys"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
@@ -52,6 +53,7 @@ func main() {
 	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
 
 	execRouter := router.NewExecRouter(execStore, lls, nil)
+	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
 
-	server.API(cfg, runtimeCfg, execRouter)
+	server.API(cfg, runtimeCfg, execRouter, sshKeysRouter)
 }
