@@ -194,4 +194,5 @@ type UnweaveVolume struct {
 	Provider  string    `json:"provider"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
+	Size      int32     `json:"size"`
 }
