@@ -21,7 +21,12 @@ func NewService(store Store, driver Driver) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, projectID, name string, size int) (types.Volume, error) {
-	err := s.driver.VolumeCreate(ctx, name, size)
+	volume, err := types.NewVolume(name, size, s.driver.VolumeProvider())
+	if err != nil {
+		return types.Volume{}, err
+	}
+
+	err = s.driver.VolumeCreate(ctx, volume)
 	if err != nil {
 		return types.Volume{}, err
 	}
@@ -40,13 +45,18 @@ func (s *Service) Create(ctx context.Context, projectID, name string, size int) 
 	return v, nil
 }
 
-func (s *Service) Delete(ctx context.Context, id string) error {
-	err := s.driver.VolumeDelete(ctx, id)
+func (s *Service) Delete(ctx context.Context, projectID, idOrName string) error {
+	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return err
 	}
 
-	err = s.store.VolumeDelete(id)
+	err = s.driver.VolumeDelete(ctx, vol.ID)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.VolumeDelete(vol.ID)
 	if err != nil {
 		// infers a case where a user is being billed for a volume that does not exist
 		return err
@@ -72,6 +82,23 @@ func (s *Service) List(ctx context.Context, projectID string) ([]types.Volume, e
 	return vols, nil
 }
 
-func (s *Service) Resize(ctx context.Context, id string, size int) error {
+func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size int) error {
+	vol, err := s.store.VolumeGet(projectID, idOrName)
+	if err != nil {
+		return err
+	}
+	if vol.Size == size {
+		return nil
+	}
+
+	vol.Size = size
+
+	err = s.driver.VolumeUpdate(ctx, vol)
+	if err != nil {
+		return nil
+	}
+
+	s.store.VolumeUpdate(vol.ID, vol)
+
 	return nil
 }

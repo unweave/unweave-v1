@@ -4,6 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+	"github.com/unweave/unweave/api/middleware"
+	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/services/volumesrv"
 )
 
@@ -37,21 +40,80 @@ func (v *VolumeRouter) Routes() []Route {
 }
 
 func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
+	projectID := middleware.GetProjectIDFromContext(r.Context())
 
+	pcr := &types.VolumeCreateRequest{}
+	if err := render.Bind(r, pcr); err != nil {
+		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
+		return
+	}
+
+	created, err := v.uwService.Create(r.Context(), projectID, pcr.Name, pcr.Size)
+	if err != nil {
+		return
+	}
+
+	render.JSON(w, r, created)
 }
 
 func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	projectID := middleware.GetProjectIDFromContext(r.Context())
 
+	pcr := &types.VolumeDeleteRequest{}
+	if err := render.Bind(r, pcr); err != nil {
+		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
+		return
+	}
+
+	err := v.uwService.Delete(r.Context(), projectID, pcr.IDOrName)
+	if err != nil {
+		return
+	}
+
+	render.Status(r, 200)
 }
 
 func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) {
+	projectID := middleware.GetProjectIDFromContext(r.Context())
 
+	pcr := &types.VolumeDeleteRequest{}
+	if err := render.Bind(r, pcr); err != nil {
+		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
+		return
+	}
+
+	vol, err := v.uwService.Get(r.Context(), projectID, pcr.IDOrName)
+	if err != nil {
+		return
+	}
+
+	render.JSON(w, r, vol)
 }
 
 func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request) {
+	projectID := middleware.GetProjectIDFromContext(r.Context())
 
+	vol, err := v.uwService.List(r.Context(), projectID)
+	if err != nil {
+		return
+	}
+
+	render.JSON(w, r, vol)
 }
 
 func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Request) {
+	projectID := middleware.GetProjectIDFromContext(r.Context())
 
+	pcr := &types.VolumeResizeRequest{}
+	if err := render.Bind(r, pcr); err != nil {
+		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
+		return
+	}
+
+	err := v.uwService.Resize(r.Context(), projectID, pcr.IDOrName, pcr.Size)
+	if err != nil {
+		return
+	}
+
+	render.Status(r, 200)
 }
