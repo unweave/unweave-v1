@@ -38,7 +38,10 @@ func (s *Service) Create(ctx context.Context, projectID, name string, size int) 
 
 	err = s.store.VolumeAdd(projectID, v)
 	if err != nil {
-		s.driver.VolumeDelete(ctx, v.ID)
+		err := s.driver.VolumeDelete(ctx, v.ID)
+		if err != nil {
+			return types.Volume{}, err
+		}
 		return types.Volume{}, err
 	}
 
@@ -79,6 +82,7 @@ func (s *Service) List(ctx context.Context, projectID string) ([]types.Volume, e
 	if err != nil {
 		return vols, err
 	}
+
 	return vols, nil
 }
 
@@ -87,6 +91,7 @@ func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size i
 	if err != nil {
 		return err
 	}
+
 	if vol.Size == size {
 		return nil
 	}
@@ -95,10 +100,13 @@ func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size i
 
 	err = s.driver.VolumeUpdate(ctx, vol)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	s.store.VolumeUpdate(vol.ID, vol)
+	err = s.store.VolumeUpdate(vol.ID, vol)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
