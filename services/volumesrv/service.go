@@ -23,7 +23,7 @@ func NewService(store Store, driver Driver) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, projectID, name string, size int) (types.Volume, error) {
-	id, err := s.driver.VolumeCreate(ctx, size)
+	id, err := s.driver.VolumeCreate(ctx, "", size)
 	if err != nil {
 		return types.Volume{}, err
 	}
@@ -105,12 +105,11 @@ func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size i
 		return nil
 	}
 
-	vol.Size = size
-
-	err = s.driver.VolumeUpdate(ctx, vol)
+	err = s.driver.VolumeResize(ctx, vol.ID, size)
 	if err != nil {
 		return fmt.Errorf("failed to update volume: %w", err)
 	}
+	vol.Size = size
 
 	err = s.store.VolumeUpdate(vol.ID, vol)
 	if err != nil {
