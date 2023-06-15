@@ -2,6 +2,8 @@ package volumesrv
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/unweave/unweave/api/types"
 )
@@ -21,27 +23,35 @@ func NewService(store Store, driver Driver) *Service {
 }
 
 func (s *Service) Create(ctx context.Context, projectID, name string, size int) (types.Volume, error) {
-	volume, err := types.NewVolume(name, size, s.driver.VolumeProvider())
+	id, err := s.driver.VolumeCreate(ctx, size)
 	if err != nil {
 		return types.Volume{}, err
 	}
 
-	err = s.driver.VolumeCreate(ctx, volume)
-	if err != nil {
-		return types.Volume{}, err
-	}
-
-	v, err := s.driver.VolumeGet(ctx, name)
-	if err != nil {
-		return types.Volume{}, err
+	v := types.Volume{
+		ID:   id,
+		Name: name,
+		Size: size,
+		State: types.VolumeState{
+			CreatedAt: time.Now().UTC(),
+			UpdatedAt: time.Now().UTC(),
+		},
+		Provider: s.provider,
 	}
 
 	err = s.store.VolumeAdd(projectID, v)
 	if err != nil {
-		err := s.driver.VolumeDelete(ctx, v.ID)
-		if err != nil {
-			return types.Volume{}, err
+		err = fmt.Errorf("failed to add volume to store: %w", err)
+
+		// Cleanup
+		e := s.driver.VolumeDelete(ctx, v.ID)
+		if e != nil {
+			e = fmt.Errorf("failed to cleanup volume, %w", e)
+			err = fmt.Errorf("%s, %w", err, e)
+			return types.Volume{}, e
+
 		}
+
 		return types.Volume{}, err
 	}
 
@@ -51,18 +61,17 @@ func (s *Service) Create(ctx context.Context, projectID, name string, size int) 
 func (s *Service) Delete(ctx context.Context, projectID, idOrName string) error {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get volume from store: %w", err)
 	}
 
 	err = s.driver.VolumeDelete(ctx, vol.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete volume: %w", err)
 	}
 
 	err = s.store.VolumeDelete(vol.ID)
 	if err != nil {
-		// infers a case where a user is being billed for a volume that does not exist
-		return err
+		return fmt.Errorf("failed to delete volume from store: %w", err)
 	}
 
 	return nil
@@ -100,12 +109,12 @@ func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size i
 
 	err = s.driver.VolumeUpdate(ctx, vol)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update volume: %w", err)
 	}
 
 	err = s.store.VolumeUpdate(vol.ID, vol)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update volume in store: %w", err)
 	}
 
 	return nil

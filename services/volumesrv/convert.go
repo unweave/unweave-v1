@@ -10,7 +10,7 @@ func volumeFromDB(volume db.UnweaveVolume) types.Volume {
 		ID:   volume.ID,
 		Name: volume.Name,
 		Size: int(volume.Size),
-		State: &types.VolumeState{
+		State: types.VolumeState{
 			CreatedAt: volume.CreatedAt,
 			UpdatedAt: volume.UpdatedAt,
 		},

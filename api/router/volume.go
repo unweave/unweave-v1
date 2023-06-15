@@ -1,6 +1,7 @@
 package router
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -40,6 +41,7 @@ func (v *VolumeRouter) Routes() []Route {
 }
 
 func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	projectID := middleware.GetProjectIDFromContext(r.Context())
 
 	pcr := &types.VolumeCreateRequest{}
@@ -48,12 +50,13 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	created, err := v.uwService.Create(r.Context(), projectID, pcr.Name, pcr.Size)
+	vol, err := v.uwService.Create(r.Context(), projectID, pcr.Name, pcr.Size)
 	if err != nil {
-		return
+		err = fmt.Errorf("failed to create volume, %w", err)
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
 	}
 
-	render.JSON(w, r, created)
+	render.JSON(w, r, vol)
 }
 
 func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +70,8 @@ func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Reques
 
 	err := v.uwService.Delete(r.Context(), projectID, pcr.IDOrName)
 	if err != nil {
+		err = fmt.Errorf("failed to delete volume, %w", err)
+		render.Render(w, r, types.ErrHTTPError(err, "Failed to delete volume"))
 		return
 	}
 
@@ -84,6 +89,8 @@ func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) 
 
 	vol, err := v.uwService.Get(r.Context(), projectID, pcr.IDOrName)
 	if err != nil {
+		err = fmt.Errorf("failed to get volume, %w", err)
+		render.Render(w, r, types.ErrHTTPError(err, "Failed to get volume"))
 		return
 	}
 
@@ -95,6 +102,8 @@ func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request)
 
 	vol, err := v.uwService.List(r.Context(), projectID)
 	if err != nil {
+		err = fmt.Errorf("failed to list volumes, %w", err)
+		render.Render(w, r, types.ErrHTTPError(err, "Failed to list volumes"))
 		return
 	}
 
@@ -112,8 +121,10 @@ func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Reques
 
 	err := v.uwService.Resize(r.Context(), projectID, pcr.IDOrName, pcr.Size)
 	if err != nil {
+		err = fmt.Errorf("failed to resize volume, %w", err)
+		render.Render(w, r, types.ErrHTTPError(err, "Failed to resize volume"))
 		return
 	}
 
-	render.Status(r, 200)
+	render.Status(r, http.StatusOK)
 }
