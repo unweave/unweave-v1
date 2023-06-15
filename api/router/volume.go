@@ -44,13 +44,13 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	projectID := middleware.GetProjectIDFromContext(r.Context())
 
-	pcr := &types.VolumeCreateRequest{}
-	if err := render.Bind(r, pcr); err != nil {
+	vcr := &types.VolumeCreateRequest{}
+	if err := render.Bind(r, vcr); err != nil {
 		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
 		return
 	}
 
-	vol, err := v.uwService.Create(r.Context(), projectID, pcr.Name, pcr.Size)
+	vol, err := v.uwService.Create(r.Context(), projectID, vcr.Name, vcr.Size)
 	if err != nil {
 		err = fmt.Errorf("failed to create volume, %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
@@ -62,32 +62,27 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	projectID := middleware.GetProjectIDFromContext(r.Context())
 
-	pcr := &types.VolumeDeleteRequest{}
-	if err := render.Bind(r, pcr); err != nil {
+	vdr := &types.VolumeDeleteRequest{}
+	if err := render.Bind(r, vdr); err != nil {
 		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
 		return
 	}
 
-	err := v.uwService.Delete(r.Context(), projectID, pcr.IDOrName)
+	err := v.uwService.Delete(r.Context(), projectID, vdr.IDOrName)
 	if err != nil {
 		err = fmt.Errorf("failed to delete volume, %w", err)
 		render.Render(w, r, types.ErrHTTPError(err, "Failed to delete volume"))
 		return
 	}
 
-	render.Status(r, 200)
+	render.Status(r, http.StatusOK)
 }
 
 func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) {
 	projectID := middleware.GetProjectIDFromContext(r.Context())
+	idOrName := chi.URLParam(r, "idOrName")
 
-	pcr := &types.VolumeDeleteRequest{}
-	if err := render.Bind(r, pcr); err != nil {
-		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
-		return
-	}
-
-	vol, err := v.uwService.Get(r.Context(), projectID, pcr.IDOrName)
+	vol, err := v.uwService.Get(r.Context(), projectID, idOrName)
 	if err != nil {
 		err = fmt.Errorf("failed to get volume, %w", err)
 		render.Render(w, r, types.ErrHTTPError(err, "Failed to get volume"))
@@ -113,13 +108,13 @@ func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request)
 func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Request) {
 	projectID := middleware.GetProjectIDFromContext(r.Context())
 
-	pcr := &types.VolumeResizeRequest{}
-	if err := render.Bind(r, pcr); err != nil {
+	vrr := &types.VolumeResizeRequest{}
+	if err := render.Bind(r, vrr); err != nil {
 		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
 		return
 	}
 
-	err := v.uwService.Resize(r.Context(), projectID, pcr.IDOrName, pcr.Size)
+	err := v.uwService.Resize(r.Context(), projectID, vrr.IDOrName, vrr.Size)
 	if err != nil {
 		err = fmt.Errorf("failed to resize volume, %w", err)
 		render.Render(w, r, types.ErrHTTPError(err, "Failed to resize volume"))
