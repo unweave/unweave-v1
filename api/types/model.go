@@ -120,6 +120,11 @@ type ExecNetwork struct {
 	User  string `json:"user"`
 }
 
+type ExecVolume struct {
+	Volume    Volume `json:"volume"`
+	MountPath string `json:"mountPath"`
+}
+
 type Exec struct {
 	ID        string       `json:"id"`
 	Name      string       `json:"name"`
@@ -130,7 +135,7 @@ type Exec struct {
 	Status    Status       `json:"status"`
 	Command   []string     `json:"command"`
 	Keys      []SSHKey     `json:"keys"`
-	Volumes   []Volume     `json:"volumes"`
+	Volumes   []ExecVolume `json:"volumes"`
 	Network   ExecNetwork  `json:"network"`
 	Spec      HardwareSpec `json:"spec"`
 	CommitID  *string      `json:"commitID,omitempty"`

@@ -96,18 +96,24 @@ type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`
 }
 
+type VolumeAttachParams struct {
+	VolumeRef string `json:"volumeRef"`
+	MountPath string `json:"mountPath"`
+}
+
 type ExecCreateParams struct {
-	Name         string         `json:"name,omitempty"`
-	Provider     Provider       `json:"provider"`
-	Spec         HardwareSpec   `json:"hardwareSpec,omitempty"`
-	SSHKeyName   string         `json:"sshKeyName"`
-	SSHPublicKey string         `json:"sshPublicKey"`
-	Region       *string        `json:"region,omitempty"`
-	Image        *string        `json:"image"`
-	Command      []string       `json:"command"`
-	CommitID     *string        `json:"commitID,omitempty"`
-	GitURL       *string        `json:"gitURL,omitempty"`
-	Source       *SourceContext `json:"source,omitempty"`
+	Name         string               `json:"name,omitempty"`
+	Provider     Provider             `json:"provider"`
+	Spec         HardwareSpec         `json:"hardwareSpec,omitempty"`
+	SSHKeyName   string               `json:"sshKeyName"`
+	SSHPublicKey string               `json:"sshPublicKey"`
+	Region       *string              `json:"region,omitempty"`
+	Image        *string              `json:"image"`
+	Command      []string             `json:"command"`
+	CommitID     *string              `json:"commitID,omitempty"`
+	GitURL       *string              `json:"gitURL,omitempty"`
+	Source       *SourceContext       `json:"source,omitempty"`
+	Volumes      []VolumeAttachParams `json:"volumes,omitempty"`
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {
@@ -155,6 +161,23 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 			return &Error{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid request body: field 'image' cannot be an empty string",
+			}
+		}
+	}
+
+	if len(s.Volumes) > 0 {
+		for _, v := range s.Volumes {
+			if v.VolumeRef == "" {
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: "Invalid request body: field 'volumeRef' cannot be an empty string",
+				}
+			}
+			if v.MountPath == "" || v.MountPath == "/" {
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: "Invalid request body: field 'mountPath' cannot be an empty string or '/'",
+				}
 			}
 		}
 	}
