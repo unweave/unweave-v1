@@ -21,11 +21,11 @@ type Service interface {
 // providers when needed.
 type ServiceRouter struct {
 	store          Store
-	llService      *ProviderService
-	unweaveService *ProviderService
+	llService      *ExecService
+	unweaveService *ExecService
 }
 
-func NewServiceRouter(store Store, lambdaLabsService, unweaveService *ProviderService) Service {
+func NewServiceRouter(store Store, lambdaLabsService, unweaveService *ExecService) Service {
 	return &ServiceRouter{
 		store:          store,
 		llService:      lambdaLabsService,

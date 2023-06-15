@@ -15,10 +15,10 @@ var (
 	DefaultImageURI = "ubuntu:latest"
 )
 
-type ProviderService struct {
+type ExecService struct {
 	store                 Store
 	driver                Driver
-	volume                *volumesrv.Service
+	volume                *volumesrv.VolumeService
 	provider              types.Provider
 	stateInformerFunc     StateInformerFunc
 	statsInformerFunc     StatsInformerFunc
@@ -29,30 +29,30 @@ type ProviderService struct {
 	heartbeatObserversFuncs []HeartbeatObserverFunc
 }
 
-func WithStateObserver(s *ProviderService, f StateObserverFunc) *ProviderService {
+func WithStateObserver(s *ExecService, f StateObserverFunc) *ExecService {
 	s.stateObserversFuncs = append(s.stateObserversFuncs, f)
 	return s
 }
 
-func WithStatsObserver(s *ProviderService, f StatsObserverFunc) *ProviderService {
+func WithStatsObserver(s *ExecService, f StatsObserverFunc) *ExecService {
 	s.statsObserversFuncs = append(s.statsObserversFuncs, f)
 	return s
 }
 
-func WithHeartbeatObserver(s *ProviderService, f HeartbeatObserverFunc) *ProviderService {
+func WithHeartbeatObserver(s *ExecService, f HeartbeatObserverFunc) *ExecService {
 	s.heartbeatObserversFuncs = append(s.heartbeatObserversFuncs, f)
 	return s
 }
 
-func NewProviderService(
+func NewService(
 	store Store,
 	driver Driver,
-	volumeService *volumesrv.Service,
+	volumeService *volumesrv.VolumeService,
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
 	heartbeatInformerFunc HeartbeatInformerFunc,
-) (*ProviderService, error) {
-	s := &ProviderService{
+) (*ExecService, error) {
+	s := &ExecService{
 		store:                   store,
 		driver:                  driver,
 		volume:                  volumeService,
@@ -98,7 +98,7 @@ func NewProviderService(
 	return s, nil
 }
 
-func (s *ProviderService) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
+func (s *ExecService) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
 	image := DefaultImageURI
 	if params.Image != nil && *params.Image != "" {
 		image = *params.Image
@@ -156,7 +156,7 @@ func (s *ProviderService) Create(ctx context.Context, project string, creator st
 	return exec, nil
 }
 
-func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error) {
+func (s *ExecService) Get(ctx context.Context, id string) (types.Exec, error) {
 	exec, err := s.store.Get(id)
 	if err != nil {
 		return types.Exec{}, err
@@ -164,7 +164,7 @@ func (s *ProviderService) Get(ctx context.Context, id string) (types.Exec, error
 	return exec, err
 }
 
-func (s *ProviderService) List(ctx context.Context, project string) ([]types.Exec, error) {
+func (s *ExecService) List(ctx context.Context, project string) ([]types.Exec, error) {
 	execs, err := s.store.List(&project, &s.provider, false)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (s *ProviderService) List(ctx context.Context, project string) ([]types.Exe
 	return execs, nil
 }
 
-func (s *ProviderService) Terminate(ctx context.Context, id string) error {
+func (s *ExecService) Terminate(ctx context.Context, id string) error {
 	exec, err := s.store.Get(id)
 	if err != nil {
 		if err == ErrNotFound {
@@ -206,7 +206,7 @@ func (s *ProviderService) Terminate(ctx context.Context, id string) error {
 
 // Monitor starts monitoring an exec by registering observers to the stats and heartbeat
 // informers.
-func (s *ProviderService) Monitor(ctx context.Context, execID string) error {
+func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 	exec, err := s.store.Get(execID)
 	if err != nil {
 		return fmt.Errorf("failed to get exec from store: %w", err)

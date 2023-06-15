@@ -6,17 +6,12 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-func (d *Driver) VolumeCreate(ctx context.Context, name string, size int) {
+func (d *Driver) VolumeCreate(ctx context.Context, projectID string, size int) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (d *Driver) VolumeDelete(ctx context.Context, id string) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (d *Driver) VolumeGet(ctx context.Context, id string) (types.Volume, error) {
+func (d *Driver) VolumeDelete(ctx context.Context, id string) error {
 	//TODO implement me
 	panic("implement me")
 }

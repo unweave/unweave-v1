@@ -13,6 +13,7 @@ import (
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/services/sshkeys"
+	"github.com/unweave/unweave/services/volumesrv"
 	"github.com/unweave/unweave/tools/gonfig"
 )
 
@@ -37,16 +38,19 @@ func main() {
 	execStore := execsrv.NewPostgresStore()
 
 	// TODO: init store
-	lDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
+	llDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
 	if err != nil {
 		panic(err)
 	}
 
-	lStateInf := execsrv.NewPollingStateInformerFunc(execStore, lDriver)
-	lStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, lDriver)
-	lHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(lDriver, 10)
+	llStateInf := execsrv.NewPollingStateInformerFunc(execStore, llDriver)
+	llStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, llDriver)
+	llHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(llDriver, 10)
 
-	lls, err := execsrv.NewProviderService(execStore, lDriver, lStateInf, lStatsInf, lHeartbeatInf)
+	volumeStore := volumesrv.NewPostgresStore()
+	llVolumeSrv := volumesrv.NewService(volumeStore, llDriver)
+
+	lls, err := execsrv.NewService(execStore, llDriver, llVolumeSrv, llStateInf, llStatsInf, llHeartbeatInf)
 	if err != nil {
 		panic(err)
 	}

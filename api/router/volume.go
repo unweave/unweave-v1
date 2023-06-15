@@ -12,15 +12,16 @@ import (
 )
 
 type VolumeRouter struct {
-	r         chi.Router
-	llService *volumesrv.Service
-	uwService *volumesrv.Service
+	r       chi.Router
+	store   volumesrv.Store
+	service volumesrv.Service
 }
 
-func NewVolumeRouter(llService, uwService *volumesrv.Service) *VolumeRouter {
+func NewVolumeRouter(store volumesrv.Store, llService, uwService *volumesrv.VolumeService) *VolumeRouter {
+	router := volumesrv.NewServiceRouter(store, llService, uwService)
 	return &VolumeRouter{
-		llService: llService,
-		uwService: uwService,
+		store:   store,
+		service: router,
 	}
 }
 
@@ -42,7 +43,9 @@ func (v *VolumeRouter) Routes() []Route {
 
 func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	projectID := middleware.GetProjectIDFromContext(r.Context())
+
+	accountID := middleware.GetAccountIDFromContext(ctx)
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
 	vcr := &types.VolumeCreateRequest{}
 	if err := render.Bind(r, vcr); err != nil {
@@ -50,7 +53,7 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	vol, err := v.uwService.Create(r.Context(), projectID, vcr.Name, vcr.Size)
+	vol, err := v.service.Create(ctx, accountID, projectID, vcr.Provider, vcr.Name, vcr.Size)
 	if err != nil {
 		err = fmt.Errorf("failed to create volume, %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
@@ -60,14 +63,15 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
-	projectID := middleware.GetProjectIDFromContext(r.Context())
+	ctx := r.Context()
 
 	idOrName := chi.URLParam(r, "volumeRef")
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	err := v.uwService.Delete(r.Context(), projectID, idOrName)
+	err := v.service.Delete(ctx, projectID, idOrName)
 	if err != nil {
 		err = fmt.Errorf("failed to delete volume, %w", err)
-		render.Render(w, r, types.ErrHTTPError(err, "Failed to delete volume"))
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to delete volume"))
 		return
 	}
 
@@ -75,13 +79,15 @@ func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) {
-	projectID := middleware.GetProjectIDFromContext(r.Context())
+	ctx := r.Context()
+
+	projectID := middleware.GetProjectIDFromContext(ctx)
 	idOrName := chi.URLParam(r, "volumeRef")
 
-	vol, err := v.uwService.Get(r.Context(), projectID, idOrName)
+	vol, err := v.service.Get(ctx, projectID, idOrName)
 	if err != nil {
 		err = fmt.Errorf("failed to get volume, %w", err)
-		render.Render(w, r, types.ErrHTTPError(err, "Failed to get volume"))
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to get volume"))
 		return
 	}
 
@@ -89,12 +95,13 @@ func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request) {
-	projectID := middleware.GetProjectIDFromContext(r.Context())
+	ctx := r.Context()
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	vol, err := v.uwService.List(r.Context(), projectID)
+	vol, err := v.service.List(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to list volumes, %w", err)
-		render.Render(w, r, types.ErrHTTPError(err, "Failed to list volumes"))
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list volumes"))
 		return
 	}
 
@@ -102,7 +109,8 @@ func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Request) {
-	projectID := middleware.GetProjectIDFromContext(r.Context())
+	ctx := r.Context()
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
 	vrr := &types.VolumeResizeRequest{}
 	if err := render.Bind(r, vrr); err != nil {
@@ -110,10 +118,10 @@ func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err := v.uwService.Resize(r.Context(), projectID, vrr.IDOrName, vrr.Size)
+	err := v.service.Resize(ctx, projectID, vrr.IDOrName, vrr.Size)
 	if err != nil {
 		err = fmt.Errorf("failed to resize volume, %w", err)
-		render.Render(w, r, types.ErrHTTPError(err, "Failed to resize volume"))
+		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to resize volume"))
 		return
 	}
 

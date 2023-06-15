@@ -8,22 +8,22 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-type Service struct {
+type VolumeService struct {
 	store    Store
 	driver   Driver
 	provider types.Provider
 }
 
-func NewService(store Store, driver Driver) *Service {
-	return &Service{
+func NewService(store Store, driver Driver) *VolumeService {
+	return &VolumeService{
 		store:    store,
 		driver:   driver,
 		provider: driver.VolumeProvider(),
 	}
 }
 
-func (s *Service) Create(ctx context.Context, projectID, name string, size int) (types.Volume, error) {
-	id, err := s.driver.VolumeCreate(ctx, size)
+func (s *VolumeService) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
+	id, err := s.driver.VolumeCreate(ctx, accountID, size)
 	if err != nil {
 		return types.Volume{}, err
 	}
@@ -58,7 +58,7 @@ func (s *Service) Create(ctx context.Context, projectID, name string, size int) 
 	return v, nil
 }
 
-func (s *Service) Delete(ctx context.Context, projectID, idOrName string) error {
+func (s *VolumeService) Delete(ctx context.Context, projectID, idOrName string) error {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return fmt.Errorf("failed to get volume from store: %w", err)
@@ -77,7 +77,7 @@ func (s *Service) Delete(ctx context.Context, projectID, idOrName string) error 
 	return nil
 }
 
-func (s *Service) Get(ctx context.Context, projectID, idOrName string) (types.Volume, error) {
+func (s *VolumeService) Get(ctx context.Context, projectID, idOrName string) (types.Volume, error) {
 	volume, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return types.Volume{}, err
@@ -86,7 +86,7 @@ func (s *Service) Get(ctx context.Context, projectID, idOrName string) (types.Vo
 	return volume, nil
 }
 
-func (s *Service) List(ctx context.Context, projectID string) ([]types.Volume, error) {
+func (s *VolumeService) List(ctx context.Context, projectID string) ([]types.Volume, error) {
 	vols, err := s.store.VolumeList(projectID)
 	if err != nil {
 		return vols, err
@@ -95,7 +95,7 @@ func (s *Service) List(ctx context.Context, projectID string) ([]types.Volume, e
 	return vols, nil
 }
 
-func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size int) error {
+func (s *VolumeService) Resize(ctx context.Context, projectID, idOrName string, size int) error {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return err
@@ -105,12 +105,11 @@ func (s *Service) Resize(ctx context.Context, projectID, idOrName string, size i
 		return nil
 	}
 
-	vol.Size = size
-
-	err = s.driver.VolumeUpdate(ctx, vol)
+	err = s.driver.VolumeResize(ctx, vol.ID, size)
 	if err != nil {
 		return fmt.Errorf("failed to update volume: %w", err)
 	}
+	vol.Size = size
 
 	err = s.store.VolumeUpdate(vol.ID, vol)
 	if err != nil {

@@ -188,11 +188,12 @@ type UnweaveSshKey struct {
 }
 
 type UnweaveVolume struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	ProjectID string    `json:"projectID"`
-	Provider  string    `json:"provider"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	Size      int32     `json:"size"`
+	ID        string       `json:"id"`
+	Size      int32        `json:"size"`
+	Name      string       `json:"name"`
+	ProjectID string       `json:"projectID"`
+	Provider  string       `json:"provider"`
+	CreatedAt time.Time    `json:"createdAt"`
+	UpdatedAt time.Time    `json:"updatedAt"`
+	DeletedAt sql.NullTime `json:"deletedAt"`
 }
