@@ -62,13 +62,9 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	projectID := middleware.GetProjectIDFromContext(r.Context())
 
-	vdr := &types.VolumeDeleteRequest{}
-	if err := render.Bind(r, vdr); err != nil {
-		render.Render(w, r, types.ErrHTTPBadRequest(err, "Failed to parse request"))
-		return
-	}
+	idOrName := chi.URLParam(r, "volumeRef")
 
-	err := v.uwService.Delete(r.Context(), projectID, vdr.IDOrName)
+	err := v.uwService.Delete(r.Context(), projectID, idOrName)
 	if err != nil {
 		err = fmt.Errorf("failed to delete volume, %w", err)
 		render.Render(w, r, types.ErrHTTPError(err, "Failed to delete volume"))
@@ -80,7 +76,7 @@ func (v *VolumeRouter) VolumeDeleteHandler(w http.ResponseWriter, r *http.Reques
 
 func (v *VolumeRouter) VolumeGetHandler(w http.ResponseWriter, r *http.Request) {
 	projectID := middleware.GetProjectIDFromContext(r.Context())
-	idOrName := chi.URLParam(r, "idOrName")
+	idOrName := chi.URLParam(r, "volumeRef")
 
 	vol, err := v.uwService.Get(r.Context(), projectID, idOrName)
 	if err != nil {

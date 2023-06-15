@@ -48,21 +48,6 @@ func (p *VolumeCreateRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-type VolumeDeleteRequest struct {
-	IDOrName string `json:"idOrName"`
-}
-
-func (p *VolumeDeleteRequest) Bind(r *http.Request) error {
-	if p.IDOrName == "" {
-		return &Error{
-			Code:    http.StatusBadRequest,
-			Message: "Name is required",
-		}
-	}
-
-	return nil
-}
-
 type VolumeResizeRequest struct {
 	IDOrName string `json:"idOrName"`
 	Size     int    `json:"size"`
