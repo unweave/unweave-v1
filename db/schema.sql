@@ -171,7 +171,8 @@ CREATE TABLE unweave.volume (
     project_id text NOT NULL,
     provider text NOT NULL,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    size integer DEFAULT 0 NOT NULL
 );
 
 ALTER TABLE unweave.volume OWNER TO postgres;

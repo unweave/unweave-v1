@@ -12,7 +12,7 @@ import (
 const VolumeCreate = `-- name: VolumeCreate :one
 insert into unweave.volume (id, project_id, provider)
 values($1, $2, $3)
-returning id, name, project_id, provider, created_at, updated_at
+returning id, name, project_id, provider, created_at, updated_at, size
 `
 
 type VolumeCreateParams struct {
@@ -31,6 +31,7 @@ func (q *Queries) VolumeCreate(ctx context.Context, arg VolumeCreateParams) (Unw
 		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Size,
 	)
 	return i, err
 }
@@ -46,12 +47,17 @@ func (q *Queries) VolumeDelete(ctx context.Context, id string) error {
 }
 
 const VolumeGet = `-- name: VolumeGet :one
-select id, name, project_id, provider, created_at, updated_at from unweave.volume
-where id = $1
+select id, name, project_id, provider, created_at, updated_at, size from unweave.volume
+where project_id = $1 and (id = $2 or name = $2)
 `
 
-func (q *Queries) VolumeGet(ctx context.Context, id string) (UnweaveVolume, error) {
-	row := q.db.QueryRowContext(ctx, VolumeGet, id)
+type VolumeGetParams struct {
+	ProjectID string `json:"projectID"`
+	ID        string `json:"id"`
+}
+
+func (q *Queries) VolumeGet(ctx context.Context, arg VolumeGetParams) (UnweaveVolume, error) {
+	row := q.db.QueryRowContext(ctx, VolumeGet, arg.ProjectID, arg.ID)
 	var i UnweaveVolume
 	err := row.Scan(
 		&i.ID,
@@ -60,12 +66,13 @@ func (q *Queries) VolumeGet(ctx context.Context, id string) (UnweaveVolume, erro
 		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Size,
 	)
 	return i, err
 }
 
 const VolumeList = `-- name: VolumeList :many
-select id, name, project_id, provider, created_at, updated_at from unweave.volume
+select id, name, project_id, provider, created_at, updated_at, size from unweave.volume
 where project_id = $1
 `
 
@@ -85,6 +92,7 @@ func (q *Queries) VolumeList(ctx context.Context, projectID string) ([]UnweaveVo
 			&i.Provider,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Size,
 		); err != nil {
 			return nil, err
 		}
@@ -97,4 +105,20 @@ func (q *Queries) VolumeList(ctx context.Context, projectID string) ([]UnweaveVo
 		return nil, err
 	}
 	return items, nil
+}
+
+const VolumeUpdate = `-- name: VolumeUpdate :exec
+update unweave.volume
+set size = $2
+where id = $1
+`
+
+type VolumeUpdateParams struct {
+	ID   string `json:"id"`
+	Size int32  `json:"size"`
+}
+
+func (q *Queries) VolumeUpdate(ctx context.Context, arg VolumeUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, VolumeUpdate, arg.ID, arg.Size)
+	return err
 }

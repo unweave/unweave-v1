@@ -7,17 +7,17 @@ import (
 )
 
 type Store interface {
-	VolumeAdd(projectID string, volume types.Volume) error
+	VolumeAdd(projectID string, id string, provider types.Provider) error
+	VolumeList(projectID string) ([]types.Volume, error)
 	VolumeGet(projectID, idOrName string) (types.Volume, error)
-	VolumeDelete(id string)
+	VolumeDelete(id string) error
 	VolumeUpdate(id string, volume types.Volume) error
 }
 
 type Driver interface {
-	VolumeCreate(ctx context.Context, name string, size int)
-	VolumeDelete(ctx context.Context, id string)
-	VolumeGet(ctx context.Context, id string) (types.Volume, error)
+	VolumeCreate(ctx context.Context, size int) (string, error)
+	VolumeDelete(ctx context.Context, id string) error
 	VolumeProvider() types.Provider
 	VolumeDriver(ctx context.Context) string
-	VolumeResize(ctx context.Context, id string, size int) error
+	VolumeUpdate(ctx context.Context, vol types.Volume) error
 }

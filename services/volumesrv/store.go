@@ -1,7 +1,13 @@
 package volumesrv
 
 import (
+	"context"
+	"database/sql"
+	"fmt"
+	"net/http"
+
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/db"
 )
 
 type postgresStore struct{}
@@ -10,22 +16,91 @@ func NewPostgresStore() Store {
 	return postgresStore{}
 }
 
-func (p postgresStore) VolumeAdd(projectID string, volume types.Volume) error {
-	//TODO implement me
-	panic("implement me")
+func (p postgresStore) VolumeAdd(projectID string, id string, provider types.Provider) error {
+	ctx := context.Background()
+	params := db.VolumeCreateParams{
+		ID:        id,
+		ProjectID: projectID,
+		Provider:  provider.String(),
+	}
+	_, err := db.Q.VolumeCreate(ctx, params)
+	if err != nil {
+		return fmt.Errorf("failed to create volume in db: %w", err)
+	}
+
+	return nil
+}
+
+func (p postgresStore) VolumeList(projectID string) ([]types.Volume, error) {
+	vols, err := db.Q.VolumeList(context.Background(), projectID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get volumes from db: %w", err)
+	}
+
+	out := make([]types.Volume, 0, len(vols))
+	for _, v := range vols {
+		out = append(out, volumeFromDB(v))
+	}
+
+	return out, nil
 }
 
 func (p postgresStore) VolumeGet(projectID, idOrName string) (types.Volume, error) {
-	//TODO implement me
-	panic("implement me")
+	vol, err := db.Q.VolumeGet(context.Background(), db.VolumeGetParams{
+		ProjectID: projectID,
+		ID:        idOrName,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return types.Volume{}, &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Volume not found",
+				Err:     err,
+			}
+		}
+		return types.Volume{}, fmt.Errorf("failed to get volume from db: %w", err)
+	}
+
+	return volumeFromDB(vol), nil
 }
 
-func (p postgresStore) VolumeDelete(id string) {
-	//TODO implement me
-	panic("implement me")
+func (p postgresStore) VolumeDelete(id string) error {
+	ctx := context.Background()
+	if err := db.Q.VolumeDelete(ctx, id); err != nil {
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Volume not found",
+				Err:     err,
+			}
+		}
+		return fmt.Errorf("failed to delete volume from db: %w", err)
+	}
+
+	return nil
 }
 
 func (p postgresStore) VolumeUpdate(id string, volume types.Volume) error {
-	//TODO implement me
-	panic("implement me")
+	ctx := context.Background()
+	params := db.VolumeUpdateParams{
+		ID:   id,
+		Size: int32(volume.Size),
+	}
+
+	err := db.Q.VolumeUpdate(ctx, params)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Volume not found",
+				Err:     err,
+			}
+		}
+		return fmt.Errorf("failed to update volume in db: %w", err)
+	}
+
+	return nil
 }

@@ -42,8 +42,9 @@ type Querier interface {
 	SSHKeysGetByIDs(ctx context.Context, ids []string) ([]UnweaveSshKey, error)
 	VolumeCreate(ctx context.Context, arg VolumeCreateParams) (UnweaveVolume, error)
 	VolumeDelete(ctx context.Context, id string) error
-	VolumeGet(ctx context.Context, id string) (UnweaveVolume, error)
+	VolumeGet(ctx context.Context, arg VolumeGetParams) (UnweaveVolume, error)
 	VolumeList(ctx context.Context, projectID string) ([]UnweaveVolume, error)
+	VolumeUpdate(ctx context.Context, arg VolumeUpdateParams) error
 }
 
 var _ Querier = (*Queries)(nil)

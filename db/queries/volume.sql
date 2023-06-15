@@ -9,8 +9,13 @@ where id = $1;
 
 -- name: VolumeGet :one
 select * from unweave.volume
-where id = $1;
+where project_id = $1 and (id = $2 or name = $2);
 
 -- name: VolumeList :many
 select * from unweave.volume
 where project_id = $1;
+
+-- name: VolumeUpdate :exec
+update unweave.volume
+set size = $2
+where id = $1;
