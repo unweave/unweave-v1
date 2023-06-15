@@ -1,5 +1,6 @@
 package tools
 
+func Pointery[T any](t T) *T      { return &t }
 func Inty(i int) *int             { return &i }
 func Booly(b bool) *bool          { return &b }
 func Stringy(s string) *string    { return &s }

@@ -295,6 +295,10 @@ func (p *VolumeCreateRequest) Bind(r *http.Request) error {
 	return nil
 }
 
+type VolumesListResponse struct {
+	Volumes []Volume `json:"volumes"`
+}
+
 type VolumeResizeRequest struct {
 	IDOrName string `json:"idOrName"`
 	Size     int    `json:"size"`

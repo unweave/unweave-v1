@@ -10,8 +10,8 @@ import (
 )
 
 const VolumeCreate = `-- name: VolumeCreate :one
-insert into unweave.volume (id, project_id, provider)
-values($1, $2, $3)
+insert into unweave.volume (id, project_id, provider, name, size)
+values($1, $2, $3, $4, $5)
 returning id, size, name, project_id, provider, created_at, updated_at, deleted_at
 `
 
@@ -19,10 +19,18 @@ type VolumeCreateParams struct {
 	ID        string `json:"id"`
 	ProjectID string `json:"projectID"`
 	Provider  string `json:"provider"`
+	Name      string `json:"name"`
+	Size      int32  `json:"size"`
 }
 
 func (q *Queries) VolumeCreate(ctx context.Context, arg VolumeCreateParams) (UnweaveVolume, error) {
-	row := q.db.QueryRowContext(ctx, VolumeCreate, arg.ID, arg.ProjectID, arg.Provider)
+	row := q.db.QueryRowContext(ctx, VolumeCreate,
+		arg.ID,
+		arg.ProjectID,
+		arg.Provider,
+		arg.Name,
+		arg.Size,
+	)
 	var i UnweaveVolume
 	err := row.Scan(
 		&i.ID,

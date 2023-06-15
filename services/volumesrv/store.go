@@ -16,12 +16,14 @@ func NewPostgresStore() Store {
 	return postgresStore{}
 }
 
-func (p postgresStore) VolumeAdd(projectID string, id string, provider types.Provider) error {
+func (p postgresStore) VolumeAdd(projectID string, provider types.Provider, id string, name string, size int) error {
 	ctx := context.Background()
 	params := db.VolumeCreateParams{
 		ID:        id,
 		ProjectID: projectID,
 		Provider:  provider.String(),
+		Name:      name,
+		Size:      int32(size),
 	}
 	_, err := db.Q.VolumeCreate(ctx, params)
 	if err != nil {
@@ -40,9 +42,9 @@ func (p postgresStore) VolumeList(projectID string) ([]types.Volume, error) {
 		return nil, fmt.Errorf("failed to get volumes from db: %w", err)
 	}
 
-	out := make([]types.Volume, 0, len(vols))
-	for _, v := range vols {
-		out = append(out, volumeFromDB(v))
+	out := make([]types.Volume, len(vols))
+	for idx, v := range vols {
+		out[idx] = volumeFromDB(v)
 	}
 
 	return out, nil
