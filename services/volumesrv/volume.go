@@ -21,3 +21,11 @@ type Driver interface {
 	VolumeDriver(ctx context.Context) string
 	VolumeResize(ctx context.Context, id string, size int) error
 }
+
+type Service interface {
+	Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error)
+	Delete(ctx context.Context, projectID, idOrName string) error
+	Get(ctx context.Context, projectID, idOrName string) (types.Volume, error)
+	List(ctx context.Context, projectID string) ([]types.Volume, error)
+	Resize(ctx context.Context, projectID, idOrName string, size int) error
+}

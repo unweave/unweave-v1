@@ -18,7 +18,7 @@ type ExecRouter struct {
 	service execsrv.Service
 }
 
-func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ProviderService) *ExecRouter {
+func NewExecRouter(store execsrv.Store, lambdaLabsService, unweaveService *execsrv.ExecService) *ExecRouter {
 	router := execsrv.NewServiceRouter(store, lambdaLabsService, unweaveService)
 	return &ExecRouter{
 		store:   store,
