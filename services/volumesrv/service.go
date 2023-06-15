@@ -23,7 +23,7 @@ func NewService(store Store, driver Driver) *VolumeService {
 }
 
 func (s *VolumeService) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
-	id, err := s.driver.VolumeCreate(ctx, "", size)
+	id, err := s.driver.VolumeCreate(ctx, accountID, size)
 	if err != nil {
 		return types.Volume{}, err
 	}
