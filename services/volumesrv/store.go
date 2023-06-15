@@ -16,19 +16,16 @@ func NewPostgresStore() Store {
 	return postgresStore{}
 }
 
-func (p postgresStore) VolumeAdd(projectID string, volume types.Volume) error {
+func (p postgresStore) VolumeAdd(projectID string, id string, provider types.Provider) error {
 	ctx := context.Background()
-	_, err := db.Q.VolumeCreate(ctx, db.VolumeCreateParams{
-		ID:        volume.ID,
+	params := db.VolumeCreateParams{
+		ID:        id,
 		ProjectID: projectID,
-		Provider:  volume.Provider.String(),
-	})
+		Provider:  provider.String(),
+	}
+	_, err := db.Q.VolumeCreate(ctx, params)
 	if err != nil {
-		return &types.Error{
-			Code:    http.StatusBadRequest,
-			Message: "Volume could not be created",
-			Err:     err,
-		}
+		return fmt.Errorf("failed to create volume in db: %w", err)
 	}
 
 	return nil
@@ -59,7 +56,7 @@ func (p postgresStore) VolumeGet(projectID, idOrName string) (types.Volume, erro
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return types.Volume{}, &types.Error{
-				Code:    http.StatusBadRequest,
+				Code:    http.StatusNotFound,
 				Message: "Volume not found",
 				Err:     err,
 			}
@@ -73,11 +70,14 @@ func (p postgresStore) VolumeGet(projectID, idOrName string) (types.Volume, erro
 func (p postgresStore) VolumeDelete(id string) error {
 	ctx := context.Background()
 	if err := db.Q.VolumeDelete(ctx, id); err != nil {
-		return &types.Error{
-			Code:    http.StatusBadRequest,
-			Message: "Volume could not be deleted",
-			Err:     err,
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Volume not found",
+				Err:     err,
+			}
 		}
+		return fmt.Errorf("failed to delete volume from db: %w", err)
 	}
 
 	return nil
@@ -85,16 +85,21 @@ func (p postgresStore) VolumeDelete(id string) error {
 
 func (p postgresStore) VolumeUpdate(id string, volume types.Volume) error {
 	ctx := context.Background()
-	err := db.Q.VolumeUpdate(ctx, db.VolumeUpdateParams{
+	params := db.VolumeUpdateParams{
 		ID:   id,
 		Size: int32(volume.Size),
-	})
+	}
+
+	err := db.Q.VolumeUpdate(ctx, params)
 	if err != nil {
-		return &types.Error{
-			Code:    http.StatusBadRequest,
-			Message: "Volume could not be updated",
-			Err:     err,
+		if err == sql.ErrNoRows {
+			return &types.Error{
+				Code:    http.StatusNotFound,
+				Message: "Volume not found",
+				Err:     err,
+			}
 		}
+		return fmt.Errorf("failed to update volume in db: %w", err)
 	}
 
 	return nil

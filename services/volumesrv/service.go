@@ -39,7 +39,7 @@ func (s *Service) Create(ctx context.Context, projectID, name string, size int) 
 		Provider: s.provider,
 	}
 
-	err = s.store.VolumeAdd(projectID, v)
+	err = s.store.VolumeAdd(projectID, v.ID, v.Provider)
 	if err != nil {
 		err = fmt.Errorf("failed to add volume to store: %w", err)
 
