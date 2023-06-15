@@ -234,25 +234,63 @@ type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
 }
 
-type VolumeCreateParams struct {
-	Name     string   `json:"name"`
+type VolumeCreateRequest struct {
 	Size     int      `json:"size"`
+	Name     string   `json:"name"`
 	Provider Provider `json:"provider"`
 }
 
-func (v *VolumeCreateParams) Bind(r *http.Request) error {
-	if v.Provider == "" {
+func (p *VolumeCreateRequest) Bind(r *http.Request) error {
+	if p.Name == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: field 'provider' is required",
+			Message: "Name is required",
 		}
 	}
 
-	if v.Size < 1 {
+	if p.Size <= 0 {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: volume size must be at least 10GB",
+			Message: "Size is required",
 		}
 	}
+
+	if p.Provider == LambdaLabsProvider {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Lambda Labs not implemented",
+		}
+	}
+
+	if p.Provider != UnweaveProvider {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Invalid provider",
+			Suggestion: "Valid providers are: " + UnweaveProvider.String(),
+		}
+	}
+	return nil
+}
+
+type VolumeResizeRequest struct {
+	IDOrName string `json:"idOrName"`
+	Size     int    `json:"size"`
+}
+
+func (p *VolumeResizeRequest) Bind(r *http.Request) error {
+	if p.IDOrName == "" {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Name is required",
+		}
+	}
+
+	if p.Size <= 0 {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "A new size is required",
+		}
+	}
+
 	return nil
 }
