@@ -98,15 +98,37 @@ func NewService(
 	return s, nil
 }
 
-func (s *ExecService) Create(ctx context.Context, project string, creator string, params types.ExecCreateParams) (types.Exec, error) {
+func (s *ExecService) parseVolumes(ctx context.Context, projectID string, volumes []types.VolumeAttachParams) ([]types.ExecVolume, error) {
+	vols := make([]types.ExecVolume, len(volumes))
+
+	for idx, v := range volumes {
+		vol, err := s.volume.Get(ctx, projectID, v.VolumeRef)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get volume %q: %w", v.VolumeRef, err)
+		}
+
+		vols[idx] = types.ExecVolume{
+			VolumeID:  vol.ID,
+			MountPath: v.MountPath,
+		}
+	}
+	return vols, nil
+}
+
+func (s *ExecService) Create(ctx context.Context, projectID string, creator string, params types.ExecCreateParams) (types.Exec, error) {
 	image := DefaultImageURI
 	if params.Image != nil && *params.Image != "" {
 		image = *params.Image
 	}
 
+	volumes, err := s.parseVolumes(ctx, projectID, params.Volumes)
+	if err != nil {
+		return types.Exec{}, fmt.Errorf("volume verification failed: %w", err)
+	}
+
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	execID, err := s.driver.ExecCreate(ctx, project, image, spec, []string{params.SSHPublicKey}, nil)
+	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, volumes, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -131,7 +153,7 @@ func (s *ExecService) Create(ctx context.Context, project string, creator string
 				PublicKey: &params.SSHPublicKey,
 			},
 		},
-		Volumes:  nil,
+		Volumes:  volumes,
 		Spec:     spec,
 		CommitID: params.CommitID,
 		GitURL:   params.GitURL,
@@ -141,7 +163,7 @@ func (s *ExecService) Create(ctx context.Context, project string, creator string
 		Region:  "",
 	}
 
-	if err = s.store.Create(project, exec); err != nil {
+	if err = s.store.Create(projectID, exec); err != nil {
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 

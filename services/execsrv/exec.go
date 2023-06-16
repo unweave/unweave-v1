@@ -23,13 +23,14 @@ type Store interface {
 }
 
 type Driver interface {
-	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, pubKeys []string, region *string) (string, error)
+	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, volumes []types.ExecVolume, pubKeys []string, region *string) (string, error)
 	ExecDriverName() string
 	ExecGetStatus(ctx context.Context, execID string) (types.Status, error)
 	ExecProvider() types.Provider
 	ExecTerminate(ctx context.Context, id string) error
 	ExecSpec(ctx context.Context, id string) (types.HardwareSpec, error)
 	ExecStats(ctx context.Context, id string) (Stats, error)
-	// Ping the driver availability on behalf of a user
+	// ExecPing pings the driver availability on behalf of a user. This can be used to
+	// check if the driver is configured correctly and healthy.
 	ExecPing(ctx context.Context, accountID *string) error
 }

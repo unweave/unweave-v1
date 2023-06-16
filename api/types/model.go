@@ -121,7 +121,7 @@ type ExecNetwork struct {
 }
 
 type ExecVolume struct {
-	Volume    Volume `json:"volume"`
+	VolumeID  string `json:"volumeID"`
 	MountPath string `json:"mountPath"`
 }
 
