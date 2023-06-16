@@ -120,6 +120,11 @@ type ExecNetwork struct {
 	User  string `json:"user"`
 }
 
+type ExecVolume struct {
+	VolumeID  string `json:"volumeID"`
+	MountPath string `json:"mountPath"`
+}
+
 type Exec struct {
 	ID        string       `json:"id"`
 	Name      string       `json:"name"`
@@ -130,36 +135,13 @@ type Exec struct {
 	Status    Status       `json:"status"`
 	Command   []string     `json:"command"`
 	Keys      []SSHKey     `json:"keys"`
-	Volumes   []Volume     `json:"volumes"`
+	Volumes   []ExecVolume `json:"volumes"`
 	Network   ExecNetwork  `json:"network"`
 	Spec      HardwareSpec `json:"spec"`
 	CommitID  *string      `json:"commitID,omitempty"`
 	GitURL    *string      `json:"gitURL,omitempty"`
 	Region    string       `json:"region"`
 	Provider  Provider     `json:"provider"`
-}
-
-func NewExec(
-	ID string,
-	name string,
-	image string,
-	status Status,
-	createdAt time.Time,
-	region string,
-	provider Provider,
-	nodeMetadata *NodeMetadataV1,
-) *Exec {
-	return &Exec{
-		ID:        ID,
-		Name:      name,
-		Spec:      nodeMetadata.GetHardwareSpec(),
-		Image:     image,
-		Status:    status,
-		Network:   nodeMetadata.GetExecNetwork(),
-		CreatedAt: createdAt,
-		Region:    region,
-		Provider:  provider,
-	}
 }
 
 type ExecConfig struct {
@@ -197,4 +179,18 @@ func NewUserAccessToken(userID, tokenID, tokenName, displayText string, expiresA
 		DisplayText: displayText,
 		ExpiresAt:   expiresAt,
 	}
+}
+
+type Volume struct {
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	Size      int         `json:"size"`
+	State     VolumeState `json:"state"`
+	Provider  Provider    `json:"provider"`
+	ProjectID string      `json:"projectID"`
+}
+
+type VolumeState struct {
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

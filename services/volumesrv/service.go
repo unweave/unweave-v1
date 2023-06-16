@@ -3,6 +3,7 @@ package volumesrv
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/unweave/unweave/api/types"
@@ -23,6 +24,14 @@ func NewService(store Store, driver Driver) *VolumeService {
 }
 
 func (s *VolumeService) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
+	if _, err := s.store.VolumeGet(projectID, name); err == nil {
+		return types.Volume{}, &types.Error{
+			Code:       http.StatusConflict,
+			Message:    fmt.Sprintf("Volume with name %s already exists", name),
+			Suggestion: "Please choose a different name",
+		}
+	}
+
 	id, err := s.driver.VolumeCreate(ctx, accountID, size)
 	if err != nil {
 		return types.Volume{}, err
@@ -39,7 +48,7 @@ func (s *VolumeService) Create(ctx context.Context, accountID string, projectID 
 		Provider: s.provider,
 	}
 
-	err = s.store.VolumeAdd(projectID, v.ID, v.Provider)
+	err = s.store.VolumeAdd(projectID, v.Provider, v.ID, name, size)
 	if err != nil {
 		err = fmt.Errorf("failed to add volume to store: %w", err)
 
@@ -47,7 +56,7 @@ func (s *VolumeService) Create(ctx context.Context, accountID string, projectID 
 		e := s.driver.VolumeDelete(ctx, v.ID)
 		if e != nil {
 			e = fmt.Errorf("failed to cleanup volume, %w", e)
-			err = fmt.Errorf("%s, %w", err, e)
+			e = fmt.Errorf("%s, %w", err, e)
 			return types.Volume{}, e
 
 		}

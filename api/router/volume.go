@@ -57,6 +57,7 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		err = fmt.Errorf("failed to create volume, %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
+		return
 	}
 
 	render.JSON(w, r, vol)
@@ -98,14 +99,14 @@ func (v *VolumeRouter) VolumeListHandler(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	vol, err := v.service.List(ctx, projectID)
+	vols, err := v.service.List(ctx, projectID)
 	if err != nil {
 		err = fmt.Errorf("failed to list volumes, %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list volumes"))
 		return
 	}
 
-	render.JSON(w, r, vol)
+	render.JSON(w, r, types.VolumesListResponse{Volumes: vols})
 }
 
 func (v *VolumeRouter) VolumeResizeHandler(w http.ResponseWriter, r *http.Request) {

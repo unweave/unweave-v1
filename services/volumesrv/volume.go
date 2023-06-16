@@ -7,7 +7,7 @@ import (
 )
 
 type Store interface {
-	VolumeAdd(projectID string, id string, provider types.Provider) error
+	VolumeAdd(projectID string, provider types.Provider, id, name string, size int) error
 	VolumeList(projectID string) ([]types.Volume, error)
 	VolumeGet(projectID, idOrName string) (types.Volume, error)
 	VolumeDelete(id string) error

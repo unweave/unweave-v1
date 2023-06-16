@@ -46,8 +46,8 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log.Ctx(ctx).Info().Msgf("Executing ExecCreate request")
 
-	scr := &types.ExecCreateParams{}
-	if err := scr.Bind(r); err != nil {
+	params := &types.ExecCreateParams{}
+	if err := params.Bind(r); err != nil {
 		err = fmt.Errorf("failed to read body: %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request body"))
 		return
@@ -56,7 +56,7 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(ctx)
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	exec, err := e.service.Create(ctx, projectID, userID, *scr)
+	exec, err := e.service.Create(ctx, projectID, userID, *params)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create session"))
 		return

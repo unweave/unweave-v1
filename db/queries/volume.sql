@@ -1,6 +1,6 @@
 -- name: VolumeCreate :one
-insert into unweave.volume (id, project_id, provider)
-values($1, $2, $3)
+insert into unweave.volume (id, project_id, provider, name, size)
+values($1, $2, $3, $4, $5)
 returning *;
 
 -- name: VolumeDelete :exec

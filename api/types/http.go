@@ -96,18 +96,24 @@ type NodeTypesListResponse struct {
 	NodeTypes []NodeType `json:"nodeTypes"`
 }
 
+type VolumeAttachParams struct {
+	VolumeRef string `json:"volumeRef"`
+	MountPath string `json:"mountPath"`
+}
+
 type ExecCreateParams struct {
-	Name         string         `json:"name,omitempty"`
-	Provider     Provider       `json:"provider"`
-	Spec         HardwareSpec   `json:"hardwareSpec,omitempty"`
-	SSHKeyName   string         `json:"sshKeyName"`
-	SSHPublicKey string         `json:"sshPublicKey"`
-	Region       *string        `json:"region,omitempty"`
-	Image        *string        `json:"image"`
-	Command      []string       `json:"command"`
-	CommitID     *string        `json:"commitID,omitempty"`
-	GitURL       *string        `json:"gitURL,omitempty"`
-	Source       *SourceContext `json:"source,omitempty"`
+	Name         string               `json:"name,omitempty"`
+	Provider     Provider             `json:"provider"`
+	Spec         HardwareSpec         `json:"hardwareSpec,omitempty"`
+	SSHKeyName   string               `json:"sshKeyName"`
+	SSHPublicKey string               `json:"sshPublicKey"`
+	Region       *string              `json:"region,omitempty"`
+	Image        *string              `json:"image"`
+	Command      []string             `json:"command"`
+	CommitID     *string              `json:"commitID,omitempty"`
+	GitURL       *string              `json:"gitURL,omitempty"`
+	Source       *SourceContext       `json:"source,omitempty"`
+	Volumes      []VolumeAttachParams `json:"volumes,omitempty"`
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {
@@ -155,6 +161,23 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 			return &Error{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid request body: field 'image' cannot be an empty string",
+			}
+		}
+	}
+
+	if len(s.Volumes) > 0 {
+		for _, v := range s.Volumes {
+			if v.VolumeRef == "" {
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: "Invalid request body: field 'volumeRef' cannot be an empty string",
+				}
+			}
+			if v.MountPath == "" || v.MountPath == "/" {
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: "Invalid request body: field 'mountPath' cannot be an empty string or '/'",
+				}
 			}
 		}
 	}
@@ -234,25 +257,67 @@ type SSHKeyListResponse struct {
 	Keys []SSHKey `json:"keys"`
 }
 
-type VolumeCreateParams struct {
-	Name     string   `json:"name"`
+type VolumeCreateRequest struct {
 	Size     int      `json:"size"`
+	Name     string   `json:"name"`
 	Provider Provider `json:"provider"`
 }
 
-func (v *VolumeCreateParams) Bind(r *http.Request) error {
-	if v.Provider == "" {
+func (p *VolumeCreateRequest) Bind(r *http.Request) error {
+	if p.Name == "" {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: field 'provider' is required",
+			Message: "Name is required",
 		}
 	}
 
-	if v.Size < 1 {
+	if p.Size <= 0 {
 		return &Error{
 			Code:    http.StatusBadRequest,
-			Message: "Invalid request body: volume size must be at least 10GB",
+			Message: "Size is required",
 		}
 	}
+
+	if p.Provider == LambdaLabsProvider {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Lambda Labs not implemented",
+		}
+	}
+
+	if p.Provider != UnweaveProvider {
+		return &Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Invalid provider",
+			Suggestion: "Valid providers are: " + UnweaveProvider.String(),
+		}
+	}
+	return nil
+}
+
+type VolumesListResponse struct {
+	Volumes []Volume `json:"volumes"`
+}
+
+type VolumeResizeRequest struct {
+	IDOrName string `json:"idOrName"`
+	Size     int    `json:"size"`
+}
+
+func (p *VolumeResizeRequest) Bind(r *http.Request) error {
+	if p.IDOrName == "" {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Name is required",
+		}
+	}
+
+	if p.Size <= 0 {
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "A new size is required",
+		}
+	}
+
 	return nil
 }
