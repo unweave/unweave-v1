@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/unweave/infra/platform/posthog"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/services/volumesrv"
 	"github.com/unweave/unweave/tools/random"
@@ -153,6 +154,7 @@ func (s *ExecService) Create(ctx context.Context, project string, creator string
 		informer.Register(o)
 	}
 
+	posthog.Client.SendSessionCreated(exec.CreatedBy, exec.ProjectID, exec.CreatedAt)
 	return exec, nil
 }
 
@@ -200,6 +202,7 @@ func (s *ExecService) Terminate(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to update exec status in store: %w", err)
 	}
 
+	posthog.Client.SendSessionTerminated(exec.CreatedBy, exec.ProjectID, exec.CreatedBy, exec.CreatedAt, time.Now())
 	// TODO Clean up SSH keys associated with the terminated exec
 	return nil
 }

@@ -8,7 +8,9 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/unweave/infra/platform/posthog"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/tools/random"
 	"golang.org/x/crypto/ssh"
@@ -56,6 +58,7 @@ func (s *Service) Add(ctx context.Context, userID string, params types.SSHKeyAdd
 		return "", fmt.Errorf("failed to save SSH key: %w", err)
 	}
 
+	posthog.Client.SendSSHKeyCreated(userID, time.Now())
 	return name, nil
 }
 

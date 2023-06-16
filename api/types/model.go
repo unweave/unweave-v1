@@ -137,6 +137,7 @@ type Exec struct {
 	GitURL    *string      `json:"gitURL,omitempty"`
 	Region    string       `json:"region"`
 	Provider  Provider     `json:"provider"`
+	ProjectID string       `json:"projectID,omitempty"`
 }
 
 func NewExec(
