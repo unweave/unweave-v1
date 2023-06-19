@@ -48,7 +48,7 @@ func (s *Service) Add(ctx context.Context, userID string, params types.SSHKeyAdd
 	}
 
 	if name == "" {
-		name = "uw:" + random.GenerateRandomPhrase(4, "-") + ".pub"
+		name = "uw:" + random.GenerateRandomPhrase(4, "-")
 	}
 
 	err := s.store.SSHKeyAdd(ctx, userID, name, params.PublicKey)
