@@ -167,6 +167,10 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
+	err = s.store.AddSharedVolumes(exec)
+	if err != nil {
+		return types.Exec{}, fmt.Errorf("failed to add shared volumes in store: %w", err)
+	}
 	informer := s.stateInformerFunc(exec)
 	informer.Watch()
 
@@ -217,9 +221,12 @@ func (s *ExecService) Terminate(ctx context.Context, id string) error {
 	if err = s.driver.ExecTerminate(ctx, exec.ID); err != nil {
 		return fmt.Errorf("failed to terminate exec: %w", err)
 	}
-
 	if err = s.store.UpdateStatus(exec.ID, types.StatusTerminated); err != nil {
 		return fmt.Errorf("failed to update exec status in store: %w", err)
+	}
+	err = s.store.RemoveSharedVolumes(exec)
+	if err != nil {
+		return fmt.Errorf("failed to delete shared volumes in store: %w", err)
 	}
 
 	// TODO Clean up SSH keys associated with the terminated exec
