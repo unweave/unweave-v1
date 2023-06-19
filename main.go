@@ -50,11 +50,12 @@ func main() {
 	volumeStore := volumesrv.NewPostgresStore()
 	llVolumeSrv := volumesrv.NewService(volumeStore, llDriver)
 
-	lls, err := execsrv.NewService(execStore, llDriver, llVolumeSrv, llStateInf, llStatsInf, llHeartbeatInf)
-	if err != nil {
+	lls := execsrv.NewService(execStore, llDriver, llVolumeSrv, llStateInf, llStatsInf, llHeartbeatInf)
+	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
+
+	if err = lls.Init(); err != nil {
 		panic(err)
 	}
-	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
 
 	execRouter := router.NewExecRouter(execStore, lls, nil)
 	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
