@@ -59,38 +59,43 @@ func (b *heartbeatInformer) Unregister(o HeartbeatObserver) {
 }
 
 func (b *heartbeatInformer) Watch() {
-	for {
-		select {
-		case <-time.After(1 * time.Minute):
-			status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
-			if err != nil {
-				b.failCount++
+	go func() {
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+				status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
+				if err != nil {
+					b.failCount++
 
-				if b.failCount > b.maxFail {
-					for _, o := range b.observers {
-						b.Inform(o.ID(), Heartbeat{
-							ExecID: b.execID,
-							Time:   time.Now(),
-							Status: types.StatusFailed,
-						})
+					if b.failCount > b.maxFail {
+						// No need to notify. Heartbeat just stops.
+						log.Info().
+							Str(types.ExecIDCtxKey, b.execID).
+							Msgf("Heartbeat not detected for exec %q. Exiting watch.", b.execID)
+
+						return
 					}
-					return
+
+					continue
 				}
 
-				continue
-			}
+				b.failCount = 0
 
-			b.failCount = 0
+				for _, o := range b.observers {
+					b.Inform(o.ID(), Heartbeat{
+						ExecID: b.execID,
+						Time:   time.Now(),
+						Status: status,
+					})
+				}
 
-			for _, o := range b.observers {
-				b.Inform(o.ID(), Heartbeat{
-					ExecID: b.execID,
-					Time:   time.Now(),
-					Status: status,
-				})
+			case <-time.After(2 * time.Minute):
+				log.Info().
+					Str(types.ExecIDCtxKey, b.execID).
+					Msgf("Heartbeat informer still running for exec %s", b.execID)
 			}
 		}
-	}
+	}()
 }
 
 type pollingStateInformer struct {

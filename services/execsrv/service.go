@@ -51,7 +51,7 @@ func NewService(
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
 	heartbeatInformerFunc HeartbeatInformerFunc,
-) (*ExecService, error) {
+) *ExecService {
 	s := &ExecService{
 		store:                   store,
 		driver:                  driver,
@@ -65,21 +65,25 @@ func NewService(
 		heartbeatObserversFuncs: nil,
 	}
 
-	execs, err := store.List(nil, &s.provider, true)
+	return s
+}
+
+func (s *ExecService) Init() error {
+	execs, err := s.store.List(nil, &s.provider, true)
 	if err != nil {
-		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
+		return fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
 	}
 
 	log.Info().
 		Str(types.ProviderCtxKey, s.provider.String()).
 		Msgf("Found %d existing execs", len(execs))
 
-	for _, e := range execs {
-		e := e
+	for _, exec := range execs {
+		e := exec
 
 		ed, err := s.store.GetDriver(e.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
+			return fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
 		}
 
 		if ed != s.driver.ExecDriverName() {
@@ -93,9 +97,17 @@ func NewService(
 			o := f(e, informer)
 			informer.Register(o)
 		}
-	}
 
-	return s, nil
+		if e.Status == types.StatusRunning {
+			if err = s.Monitor(context.Background(), exec.ID); err != nil {
+				log.Error().
+					Err(err).
+					Str(types.ExecIDCtxKey, exec.ID).
+					Msg("Failed to monitor exec")
+			}
+		}
+	}
+	return nil
 }
 
 func (s *ExecService) parseVolumes(ctx context.Context, projectID string, volumes []types.VolumeAttachParams) ([]types.ExecVolume, error) {
