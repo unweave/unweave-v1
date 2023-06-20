@@ -51,7 +51,7 @@ func NewService(
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
 	heartbeatInformerFunc HeartbeatInformerFunc,
-) (*ExecService, error) {
+) *ExecService {
 	s := &ExecService{
 		store:                   store,
 		driver:                  driver,
@@ -65,54 +65,7 @@ func NewService(
 		heartbeatObserversFuncs: nil,
 	}
 
-	execs, err := store.List(nil, &s.provider, true)
-	if err != nil {
-		return nil, fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
-	}
-
-	log.Info().
-		Str(types.ProviderCtxKey, s.provider.String()).
-		Msgf("Found %d existing execs", len(execs))
-
-	for _, e := range execs {
-		e := e
-
-		ed, err := s.store.GetDriver(e.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
-		}
-
-		if ed != s.driver.ExecDriverName() {
-			continue
-		}
-
-		informer := s.stateInformerFunc(e)
-		informer.Watch()
-
-		for _, f := range s.stateObserversFuncs {
-			o := f(e, informer)
-			informer.Register(o)
-		}
-	}
-
-	return s, nil
-}
-
-func (s *ExecService) parseVolumes(ctx context.Context, projectID string, volumes []types.VolumeAttachParams) ([]types.ExecVolume, error) {
-	vols := make([]types.ExecVolume, len(volumes))
-
-	for idx, v := range volumes {
-		vol, err := s.volume.Get(ctx, projectID, v.VolumeRef)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get volume %q: %w", v.VolumeRef, err)
-		}
-
-		vols[idx] = types.ExecVolume{
-			VolumeID:  vol.ID,
-			MountPath: v.MountPath,
-		}
-	}
-	return vols, nil
+	return s
 }
 
 func (s *ExecService) Create(ctx context.Context, projectID string, creator string, params types.ExecCreateParams) (types.Exec, error) {
@@ -186,12 +139,69 @@ func (s *ExecService) Get(ctx context.Context, id string) (types.Exec, error) {
 	return exec, err
 }
 
+func (s *ExecService) Init() error {
+	execs, err := s.store.List(nil, &s.provider, true)
+	if err != nil {
+		return fmt.Errorf("failed to init StateInformer, failed list all execs: %w", err)
+	}
+
+	log.Info().
+		Str(types.ProviderCtxKey, s.provider.String()).
+		Msgf("Found %d existing execs", len(execs))
+
+	for _, exec := range execs {
+		driver, err := s.store.GetDriver(exec.ID)
+		if err != nil {
+			return fmt.Errorf("failed to init StateInformer, failed get exec driver: %w", err)
+		}
+
+		if driver != s.driver.ExecDriverName() {
+			continue
+		}
+
+		informer := s.stateInformerFunc(exec)
+		informer.Watch()
+
+		for _, f := range s.stateObserversFuncs {
+			o := f(exec, informer)
+			informer.Register(o)
+		}
+
+		if exec.Status == types.StatusRunning {
+			if err = s.Monitor(context.Background(), exec.ID); err != nil {
+				log.Error().
+					Err(err).
+					Str(types.ExecIDCtxKey, exec.ID).
+					Msg("Failed to monitor exec")
+			}
+		}
+	}
+	return nil
+}
+
 func (s *ExecService) List(ctx context.Context, project string) ([]types.Exec, error) {
 	execs, err := s.store.List(&project, &s.provider, false)
 	if err != nil {
 		return nil, err
 	}
 	return execs, nil
+}
+
+func (s *ExecService) parseVolumes(ctx context.Context, projectID string, volumes []types.VolumeAttachParams) ([]types.ExecVolume, error) {
+	vols := make([]types.ExecVolume, len(volumes))
+
+	for idx, v := range volumes {
+		vol, err := s.volume.Get(ctx, projectID, v.VolumeRef)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get volume %q: %w", v.VolumeRef, err)
+		}
+
+		vols[idx] = types.ExecVolume{
+			VolumeID:  vol.ID,
+			MountPath: v.MountPath,
+		}
+	}
+	return vols, nil
 }
 
 func (s *ExecService) Terminate(ctx context.Context, id string) error {

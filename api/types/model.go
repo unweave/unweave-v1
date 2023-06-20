@@ -18,6 +18,7 @@ const (
 	StatusError        Status = "error"
 	StatusFailed       Status = "failed"
 	StatusSuccess      Status = "success"
+	StatusUnknown      Status = "unknown"
 )
 
 type NoOpLogHook struct{}

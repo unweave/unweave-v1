@@ -38,7 +38,11 @@ func (b *heartbeatInformer) Inform(id string, heartbeat Heartbeat) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	o := b.observers[id]
+	o, ok := b.observers[id]
+	if !ok {
+		return
+	}
+
 	go o.Update(heartbeat)
 }
 
@@ -59,38 +63,55 @@ func (b *heartbeatInformer) Unregister(o HeartbeatObserver) {
 }
 
 func (b *heartbeatInformer) Watch() {
-	for {
-		select {
-		case <-time.After(1 * time.Minute):
-			status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
-			if err != nil {
-				b.failCount++
 
-				if b.failCount > b.maxFail {
-					for _, o := range b.observers {
-						b.Inform(o.ID(), Heartbeat{
-							ExecID: b.execID,
-							Time:   time.Now(),
-							Status: types.StatusFailed,
-						})
+	log.Info().
+		Str(types.ExecIDCtxKey, b.execID).
+		Msgf("Starting heartbeat informer for exec %s", b.execID)
+
+	go func() {
+		defer func() {
+			log.Info().
+				Str(types.ExecIDCtxKey, b.execID).
+				Msgf("Heartbeat informer stopped for exec %s", b.execID)
+		}()
+
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+
+				status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
+				if err != nil {
+					b.failCount++
+
+					if b.failCount > b.maxFail {
+						// No need to notify. Heartbeat just stops.
+						log.Info().
+							Str(types.ExecIDCtxKey, b.execID).
+							Msgf("Heartbeat not detected for exec %q", b.execID)
+
+						return
 					}
-					return
+
+					continue
 				}
 
-				continue
-			}
+				b.failCount = 0
 
-			b.failCount = 0
+				for _, o := range b.observers {
+					b.Inform(o.ID(), Heartbeat{
+						ExecID: b.execID,
+						Time:   time.Now(),
+						Status: status,
+					})
+				}
 
-			for _, o := range b.observers {
-				b.Inform(o.ID(), Heartbeat{
-					ExecID: b.execID,
-					Time:   time.Now(),
-					Status: status,
-				})
+			case <-time.After(2 * time.Minute):
+				log.Info().
+					Str(types.ExecIDCtxKey, b.execID).
+					Msgf("Heartbeat informer still running for exec %s", b.execID)
 			}
 		}
-	}
+	}()
 }
 
 type pollingStateInformer struct {
@@ -119,7 +140,16 @@ func (i *pollingStateInformer) Inform(id string, state State) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
-	o := i.observers[id]
+	o, ok := i.observers[id]
+	if !ok {
+		return
+	}
+
+	log.Info().
+		Str(types.ObserverCtxKey, o.Name()).
+		Str(types.ExecIDCtxKey, i.execID).
+		Msgf("Informing polling state observer of state %q", state.Status)
+
 	go o.Update(state)
 }
 
