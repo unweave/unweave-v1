@@ -180,7 +180,7 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 	return res, nil
 }
 
-func (p postgresStore) Delete(_, id string) error {
+func (p postgresStore) Delete(id string) error {
 	// Execs should be soft deleted
 	err := db.Q.ExecVolumeDelete(context.Background(), id)
 	if err != nil {

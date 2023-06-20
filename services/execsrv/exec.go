@@ -17,7 +17,7 @@ type Store interface {
 	Get(id string) (types.Exec, error)
 	GetDriver(id string) (string, error)
 	List(filterProject *string, filterProvider *types.Provider, filterActive bool) ([]types.Exec, error)
-	Delete(project, id string) error
+	Delete(id string) error
 	Update(id string, exec types.Exec) error
 	UpdateStatus(id string, status types.Status) error
 }

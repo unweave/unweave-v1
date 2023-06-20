@@ -218,7 +218,7 @@ func (s *ExecService) Terminate(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to terminate exec: %w", err)
 	}
 
-	err = s.store.Delete("", exec.ID)
+	err = s.store.Delete(exec.ID)
 	if err != nil {
 		return fmt.Errorf("failed to delete shared volumes in store: %w", err)
 	}
