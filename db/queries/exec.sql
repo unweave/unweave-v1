@@ -42,6 +42,11 @@ update unweave.exec
 set metadata = jsonb_set(metadata, '{connection_info}', @connection_info::jsonb)
 where id = $1;
 
+-- name: ExecUpdateNetwork :exec
+update unweave.exec
+set metadata = jsonb_set(metadata, '{http_service}', @http_service::jsonb)
+where id = $1;
+
 -- name: ExecSetError :exec
 update unweave.exec
 set status = 'error'::unweave.exec_status,

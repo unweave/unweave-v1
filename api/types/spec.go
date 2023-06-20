@@ -87,6 +87,7 @@ type NodeMetadataV1 struct {
 	GPUCount       int              `json:"gpuCount"`
 	GPUMemory      int              `json:"gpuMemory"`
 	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
+	HTTPService    *HTTPService     `json:"http_service,omitempty"`
 }
 
 func (m *NodeMetadataV1) GetHardwareSpec() HardwareSpec {
@@ -134,9 +135,10 @@ func (m *NodeMetadataV1) GetExecNetwork() ExecNetwork {
 		return ExecNetwork{}
 	}
 	return ExecNetwork{
-		Host:  m.ConnectionInfo.Host,
-		Ports: []int{m.ConnectionInfo.Port},
-		User:  m.ConnectionInfo.User,
+		Host:        m.ConnectionInfo.Host,
+		Port:        m.ConnectionInfo.Port,
+		User:        m.ConnectionInfo.User,
+		HTTPService: m.HTTPService,
 	}
 }
 
