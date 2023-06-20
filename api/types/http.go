@@ -114,6 +114,7 @@ type ExecCreateParams struct {
 	GitURL       *string              `json:"gitURL,omitempty"`
 	Source       *SourceContext       `json:"source,omitempty"`
 	Volumes      []VolumeAttachParams `json:"volumes,omitempty"`
+	InternalPort int32                `json:"internal_port"`
 }
 
 func (s *ExecCreateParams) Bind(r *http.Request) error {

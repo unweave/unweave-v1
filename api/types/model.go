@@ -124,10 +124,16 @@ type ConnectionInfo struct {
 	User string `json:"user"`
 }
 
+type HTTPService struct {
+	Hostname     string `json:"hostname"`
+	InternalPort int32  `json:"internal_port"`
+}
+
 type ExecNetwork struct {
-	Host  string `json:"host"`
-	Ports []int  `json:"ports"`
-	User  string `json:"user"`
+	Host        string       `json:"host"`
+	Port        int          `json:"port"`
+	User        string       `json:"user"`
+	HTTPService *HTTPService `json:"http_service,omitempty"`
 }
 
 type ExecVolume struct {

@@ -15,6 +15,8 @@
 # vendor/
 
 .idea
+**/*.swp
+**/*.swo
 .env
 tmp
 dist/

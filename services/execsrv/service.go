@@ -81,7 +81,15 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, volumes, []string{params.SSHPublicKey}, nil)
+	network := types.ExecNetwork{}
+
+	if params.InternalPort != 0 {
+		network.HTTPService = &types.HTTPService{
+			InternalPort: params.InternalPort,
+		}
+	}
+
+	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, network, volumes, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -111,8 +119,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 		CommitID: params.CommitID,
 		GitURL:   params.GitURL,
 		Provider: params.Provider,
-		// Set when a connection is established to the exec
-		Network: types.ExecNetwork{},
+		// Full network details are filled in when
+		// the Exec transitions to the Running state.
+		Network: network,
 		Region:  "",
 	}
 
