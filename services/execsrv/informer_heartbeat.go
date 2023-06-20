@@ -16,30 +16,28 @@ type heartbeatInformer struct {
 	driver    Driver
 	maxFail   int
 	failCount int
-	manager   *HeartbeatInformerManager // for removing itself from the manager
+	manager   *HeartbeatPollingInformerManager // for removing itself from the manager
 }
 
-type HeartbeatInformerManager struct {
+type HeartbeatPollingInformerManager struct {
 	driver    Driver
 	maxFail   int
-	informers map[string]*heartbeatInformer
+	informers map[string]HeartbeatInformer
 }
 
-// NewPollingHeartbeatInformerManager returns a new HeartbeatInformerManager that allows for
+// NewPollingHeartbeatInformerManager returns a new HeartbeatPollingInformerManager that allows for
 // adding and removing HeartbeatInformers for execs. The informer polls the driver
 // for the exec status and if still active, sends a heartbeat to all subscribed observers.
 // If the driver fails to return the status for maxFail times, the informer will exit.
-//
-// The manager ensures that only one informer is registered per exec.
-func NewPollingHeartbeatInformerManager(driver Driver, maxFail int) *HeartbeatInformerManager {
-	return &HeartbeatInformerManager{
+func NewPollingHeartbeatInformerManager(driver Driver, maxFail int) *HeartbeatPollingInformerManager {
+	return &HeartbeatPollingInformerManager{
 		driver:    driver,
 		maxFail:   maxFail,
-		informers: make(map[string]*heartbeatInformer),
+		informers: make(map[string]HeartbeatInformer),
 	}
 }
 
-func (h *HeartbeatInformerManager) Add(exec types.Exec) HeartbeatInformer {
+func (h *HeartbeatPollingInformerManager) Add(exec types.Exec) HeartbeatInformer {
 	if _, ok := h.informers[exec.ID]; ok {
 
 		log.Warn().
@@ -68,7 +66,7 @@ func (h *HeartbeatInformerManager) Add(exec types.Exec) HeartbeatInformer {
 	return inf
 }
 
-func (h *HeartbeatInformerManager) Remove(execID string) {
+func (h *HeartbeatPollingInformerManager) Remove(execID string) {
 	if _, ok := h.informers[execID]; !ok {
 
 		log.Warn().
@@ -113,7 +111,7 @@ func (b *heartbeatInformer) Watch() {
 
 	log.Info().
 		Str(types.ExecIDCtxKey, b.execID).
-		Msgf("Starting heartbeat informer for exec %s", b.execID)
+		Msgf("Starting watch for heartbeat informer for exec %s", b.execID)
 
 	go func() {
 		defer func() {

@@ -20,9 +20,9 @@ type ExecService struct {
 	driver                   Driver
 	volume                   *volumesrv.VolumeService
 	provider                 types.Provider
-	stateInformerFunc        StateInformerFunc
+	stateInformerManager     StateInformerManger
 	statsInformerFunc        StatsInformerFunc
-	heartbeatInformerManager *HeartbeatInformerManager
+	heartbeatInformerManager HeartbeatInformerManger
 
 	stateObserversFuncs     []StateObserverFunc
 	statsObserversFuncs     []StatsObserverFunc
@@ -48,17 +48,17 @@ func NewService(
 	store Store,
 	driver Driver,
 	volumeService *volumesrv.VolumeService,
-	stateInformerFunc StateInformerFunc,
-	statsInformerFunc StatsInformerFunc,
-	heartbeatInformerManager *HeartbeatInformerManager,
+	stateInformerManager StateInformerManger,
+	statsInformerManager StatsInformerFunc,
+	heartbeatInformerManager *HeartbeatPollingInformerManager,
 ) *ExecService {
 	s := &ExecService{
 		store:                    store,
 		driver:                   driver,
 		volume:                   volumeService,
 		provider:                 driver.ExecProvider(),
-		stateInformerFunc:        stateInformerFunc,
-		statsInformerFunc:        statsInformerFunc,
+		stateInformerManager:     stateInformerManager,
+		statsInformerFunc:        statsInformerManager,
 		heartbeatInformerManager: heartbeatInformerManager,
 		stateObserversFuncs:      nil,
 		statsObserversFuncs:      nil,
@@ -120,7 +120,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	informer := s.stateInformerFunc(exec)
+	informer := s.stateInformerManager.Add(exec)
 	informer.Watch()
 
 	for _, so := range s.stateObserversFuncs {
@@ -159,7 +159,7 @@ func (s *ExecService) Init() error {
 			continue
 		}
 
-		informer := s.stateInformerFunc(exec)
+		informer := s.stateInformerManager.Add(exec)
 		informer.Watch()
 
 		for _, f := range s.stateObserversFuncs {

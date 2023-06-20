@@ -21,6 +21,15 @@ const (
 	StatusUnknown      Status = "unknown"
 )
 
+func (s Status) IsTerminal() bool {
+	switch s {
+	case StatusTerminated, StatusError, StatusFailed, StatusSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
 type NoOpLogHook struct{}
 
 func (d NoOpLogHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {}
