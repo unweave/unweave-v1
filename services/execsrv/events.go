@@ -63,7 +63,12 @@ type StatsInformer interface {
 	Watch()
 }
 
-type StatsInformerFunc func(exec types.Exec) StatsInformer
+// StatsInformerManger manages stats informers and ensures that only one informer is
+// registered per exec.
+type StatsInformerManger interface {
+	Add(exec types.Exec) StatsInformer
+	Remove(execID string)
+}
 
 // StatsObserver listens for exec stats and updates the exec based on the implementing
 // policy

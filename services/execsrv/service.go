@@ -21,7 +21,7 @@ type ExecService struct {
 	volume                   *volumesrv.VolumeService
 	provider                 types.Provider
 	stateInformerManager     StateInformerManger
-	statsInformerFunc        StatsInformerFunc
+	statsInformerManager     StatsInformerManger
 	heartbeatInformerManager HeartbeatInformerManger
 
 	stateObserversFuncs     []StateObserverFunc
@@ -49,8 +49,8 @@ func NewService(
 	driver Driver,
 	volumeService *volumesrv.VolumeService,
 	stateInformerManager StateInformerManger,
-	statsInformerManager StatsInformerFunc,
-	heartbeatInformerManager *HeartbeatPollingInformerManager,
+	statsInformerManager StatsInformerManger,
+	heartbeatInformerManager HeartbeatInformerManger,
 ) *ExecService {
 	s := &ExecService{
 		store:                    store,
@@ -58,7 +58,7 @@ func NewService(
 		volume:                   volumeService,
 		provider:                 driver.ExecProvider(),
 		stateInformerManager:     stateInformerManager,
-		statsInformerFunc:        statsInformerManager,
+		statsInformerManager:     statsInformerManager,
 		heartbeatInformerManager: heartbeatInformerManager,
 		stateObserversFuncs:      nil,
 		statsObserversFuncs:      nil,
@@ -245,7 +245,7 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 		return fmt.Errorf("failed to get exec from store: %w", err)
 	}
 
-	stInformer := s.statsInformerFunc(exec)
+	stInformer := s.statsInformerManager.Add(exec)
 	stInformer.Watch()
 
 	for _, so := range s.statsObserversFuncs {
