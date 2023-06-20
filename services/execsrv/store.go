@@ -79,6 +79,17 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 		return fmt.Errorf("failed to add SSH key to exec: %w", err)
 	}
 
+	for _, volume := range exec.Volumes {
+		err := db.Q.ExecVolumeCreate(context.Background(), db.ExecVolumeCreateParams{
+			ExecID:    exec.ID,
+			VolumeID:  volume.VolumeID,
+			MountPath: volume.MountPath,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to assign volumes to exec with error: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -104,8 +115,9 @@ func (p postgresStore) Get(id string) (types.Exec, error) {
 	if err != nil {
 		return types.Exec{}, err
 	}
+	volumes, err := db.Q.ExecVolumeGet(ctx, id)
 
-	return dbExecToExec(exec, dbSSHKeyToSSHKey(keys)), nil
+	return dbExecToExec(exec, dbExecVolumesToVolumes(volumes), dbSSHKeyToSSHKey(keys)), nil
 }
 
 func (p postgresStore) GetDriver(id string) (string, error) {
@@ -157,15 +169,29 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 			return []types.Exec{}, err
 		}
 
-		res[idx] = dbExecToExec(exec, dbSSHKeyToSSHKey(keys))
+		volumes, err := db.Q.ExecVolumeGet(ctx, exec.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		res[idx] = dbExecToExec(exec, dbExecVolumesToVolumes(volumes), dbSSHKeyToSSHKey(keys))
 	}
 
 	return res, nil
 }
 
-func (p postgresStore) Delete(project, id string) error {
-	//TODO implement me
-	panic("implement me")
+func (p postgresStore) Delete(id string) error {
+	// Execs should be soft deleted
+	err := db.Q.ExecVolumeDelete(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("failed to unassign volumes for exec with error: %w", err)
+	}
+
+	if err = p.UpdateStatus(id, types.StatusTerminated); err != nil {
+		return fmt.Errorf("failed to update exec status in store: %w", err)
+	}
+
+	return nil
 }
 
 func (p postgresStore) Update(id string, exec types.Exec) error {
@@ -240,7 +266,7 @@ func dbSSHKeyToSSHKey(keys []db.UnweaveSshKey) []types.SSHKey {
 	return res
 }
 
-func dbExecToExec(dbe db.UnweaveExec, keys []types.SSHKey) types.Exec {
+func dbExecToExec(dbe db.UnweaveExec, volumes []types.ExecVolume, keys []types.SSHKey) types.Exec {
 	var bid *string
 	if dbe.BuildID.Valid {
 		bid = &dbe.BuildID.String
@@ -277,13 +303,30 @@ func dbExecToExec(dbe db.UnweaveExec, keys []types.SSHKey) types.Exec {
 		Status:    types.Status(dbe.Status),
 		Command:   dbe.Command,
 		Keys:      keys,
-		Volumes:   nil,
+		Volumes:   volumes,
 		Network:   metadataFromJSON.GetExecNetwork(),
 		Spec:      *spec,
 		CommitID:  commitID,
 		GitURL:    githubRemoteURL,
 		Region:    dbe.Region,
 		Provider:  types.Provider(dbe.Provider),
+	}
+}
+
+func dbExecVolumesToVolumes(volumes []db.UnweaveExecVolume) []types.ExecVolume {
+	out := make([]types.ExecVolume, len(volumes))
+
+	for i, volume := range volumes {
+		out[i] = dbExecVolumeToExecVolume(volume)
+	}
+
+	return out
+}
+
+func dbExecVolumeToExecVolume(volume db.UnweaveExecVolume) types.ExecVolume {
+	return types.ExecVolume{
+		VolumeID:  volume.VolumeID,
+		MountPath: volume.MountPath,
 	}
 }
 

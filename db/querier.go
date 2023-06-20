@@ -27,6 +27,9 @@ type Querier interface {
 	ExecSetFailed(ctx context.Context, arg ExecSetFailedParams) error
 	ExecStatusUpdate(ctx context.Context, arg ExecStatusUpdateParams) error
 	ExecUpdateConnectionInfo(ctx context.Context, arg ExecUpdateConnectionInfoParams) error
+	ExecVolumeCreate(ctx context.Context, arg ExecVolumeCreateParams) error
+	ExecVolumeDelete(ctx context.Context, execID string) error
+	ExecVolumeGet(ctx context.Context, execID string) ([]UnweaveExecVolume, error)
 	//-----------------------------------------------------------------
 	// The queries below return data in the format expected by the API.
 	//-----------------------------------------------------------------
