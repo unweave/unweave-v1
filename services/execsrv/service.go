@@ -81,7 +81,9 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 
 	spec := types.SetSpecDefaultValues(params.Spec)
 
-	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, volumes, []string{params.SSHPublicKey}, nil)
+	network := types.NetworkSpec{Ports: params.Ports}
+
+	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, network, volumes, []string{params.SSHPublicKey}, nil)
 	if err != nil {
 		return types.Exec{}, err
 	}

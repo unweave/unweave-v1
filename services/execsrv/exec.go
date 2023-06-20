@@ -23,7 +23,7 @@ type Store interface {
 }
 
 type Driver interface {
-	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, volumes []types.ExecVolume, pubKeys []string, region *string) (string, error)
+	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, network types.NetworkSpec, volumes []types.ExecVolume, pubKeys []string, region *string) (string, error)
 	ExecDriverName() string
 	ExecGetStatus(ctx context.Context, execID string) (types.Status, error)
 	ExecProvider() types.Provider

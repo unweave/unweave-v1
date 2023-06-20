@@ -23,6 +23,10 @@ type HardwareSpec struct {
 	HDD HardwareRequestRange `json:"hdd"`
 }
 
+type NetworkSpec struct {
+	Ports []int32 `json:"ports"`
+}
+
 const (
 	defaultMinCPU = 4
 	defaultMinHDD = 50
