@@ -22,8 +22,16 @@ type heartbeatInformer struct {
 // for the exec status. If the driver fails to return the status for maxFail times, the
 // informer will inform all observers that the exec has failed and exit.
 func NewPollingHeartbeatInformerFunc(driver Driver, maxFail int) HeartbeatInformerFunc {
+	// Maintain a map of execs and only create a new informer once per exec
+	execs := map[string]*heartbeatInformer{}
+
 	return func(exec types.Exec) HeartbeatInformer {
-		return &heartbeatInformer{
+
+		if _, ok := execs[exec.ID]; ok {
+			return execs[exec.ID]
+		}
+
+		inf := &heartbeatInformer{
 			execID:    exec.ID,
 			observers: make(map[string]HeartbeatObserver),
 			mu:        sync.Mutex{},
@@ -31,6 +39,10 @@ func NewPollingHeartbeatInformerFunc(driver Driver, maxFail int) HeartbeatInform
 			maxFail:   maxFail,
 			failCount: 0,
 		}
+
+		execs[exec.ID] = inf
+
+		return inf
 	}
 }
 
