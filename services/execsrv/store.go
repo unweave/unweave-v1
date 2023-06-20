@@ -79,10 +79,6 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 		return fmt.Errorf("failed to add SSH key to exec: %w", err)
 	}
 
-	return nil
-}
-
-func (p postgresStore) AddSharedVolumes(exec types.Exec) error {
 	for _, volume := range exec.Volumes {
 		err := db.Q.ExecVolumeCreate(context.Background(), db.ExecVolumeCreateParams{
 			ExecID:    exec.ID,
@@ -92,15 +88,6 @@ func (p postgresStore) AddSharedVolumes(exec types.Exec) error {
 		if err != nil {
 			return fmt.Errorf("failed to assign volumes to exec with error: %w", err)
 		}
-	}
-
-	return nil
-}
-
-func (p postgresStore) RemoveSharedVolumes(exec types.Exec) error {
-	err := db.Q.ExecVolumeDelete(context.Background(), exec.ID)
-	if err != nil {
-		return fmt.Errorf("failed to unassign volumes for exec with error: %w", err)
 	}
 
 	return nil
@@ -193,9 +180,18 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 	return res, nil
 }
 
-func (p postgresStore) Delete(project, id string) error {
-	//TODO implement me
-	panic("implement me")
+func (p postgresStore) Delete(_, id string) error {
+	// Execs should be soft deleted
+	err := db.Q.ExecVolumeDelete(context.Background(), id)
+	if err != nil {
+		return fmt.Errorf("failed to unassign volumes for exec with error: %w", err)
+	}
+
+	if err = p.UpdateStatus(id, types.StatusTerminated); err != nil {
+		return fmt.Errorf("failed to update exec status in store: %w", err)
+	}
+
+	return nil
 }
 
 func (p postgresStore) Update(id string, exec types.Exec) error {
