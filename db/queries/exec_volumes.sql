@@ -3,7 +3,7 @@ select exec_id, volume_id, mount_path from unweave.exec_volume as ev where ev.ex
 
 -- name: ExecVolumeCreate :exec
 insert into unweave.exec_volume (exec_id, volume_id, mount_path)
-values ($1, $2, $3) on conflict do nothing;
+values ($1, $2, $3);
 
 -- name: ExecVolumeDelete :exec
 delete from unweave.exec_volume

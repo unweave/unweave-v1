@@ -11,7 +11,7 @@ import (
 
 const ExecVolumeCreate = `-- name: ExecVolumeCreate :exec
 insert into unweave.exec_volume (exec_id, volume_id, mount_path)
-values ($1, $2, $3) on conflict do nothing
+values ($1, $2, $3)
 `
 
 type ExecVolumeCreateParams struct {
