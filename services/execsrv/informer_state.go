@@ -58,7 +58,7 @@ func (m *PollingStateInformerManager) Add(exec types.Exec) StateInformer {
 
 	log.Info().
 		Str(types.ExecIDCtxKey, exec.ID).
-		Msgf("Added state informer for exec %s", exec.ID)
+		Msgf("Added state informer for exec %q", exec.ID)
 
 	return inf
 }
