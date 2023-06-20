@@ -16,13 +16,13 @@ var (
 )
 
 type ExecService struct {
-	store                 Store
-	driver                Driver
-	volume                *volumesrv.VolumeService
-	provider              types.Provider
-	stateInformerFunc     StateInformerFunc
-	statsInformerFunc     StatsInformerFunc
-	heartbeatInformerFunc HeartbeatInformerFunc
+	store                    Store
+	driver                   Driver
+	volume                   *volumesrv.VolumeService
+	provider                 types.Provider
+	stateInformerManager     StateInformerManger
+	statsInformerManager     StatsInformerManger
+	heartbeatInformerManager HeartbeatInformerManger
 
 	stateObserversFuncs     []StateObserverFunc
 	statsObserversFuncs     []StatsObserverFunc
@@ -48,21 +48,21 @@ func NewService(
 	store Store,
 	driver Driver,
 	volumeService *volumesrv.VolumeService,
-	stateInformerFunc StateInformerFunc,
-	statsInformerFunc StatsInformerFunc,
-	heartbeatInformerFunc HeartbeatInformerFunc,
+	stateInformerManager StateInformerManger,
+	statsInformerManager StatsInformerManger,
+	heartbeatInformerManager HeartbeatInformerManger,
 ) *ExecService {
 	s := &ExecService{
-		store:                   store,
-		driver:                  driver,
-		volume:                  volumeService,
-		provider:                driver.ExecProvider(),
-		stateInformerFunc:       stateInformerFunc,
-		statsInformerFunc:       statsInformerFunc,
-		heartbeatInformerFunc:   heartbeatInformerFunc,
-		stateObserversFuncs:     nil,
-		statsObserversFuncs:     nil,
-		heartbeatObserversFuncs: nil,
+		store:                    store,
+		driver:                   driver,
+		volume:                   volumeService,
+		provider:                 driver.ExecProvider(),
+		stateInformerManager:     stateInformerManager,
+		statsInformerManager:     statsInformerManager,
+		heartbeatInformerManager: heartbeatInformerManager,
+		stateObserversFuncs:      nil,
+		statsObserversFuncs:      nil,
+		heartbeatObserversFuncs:  nil,
 	}
 
 	return s
@@ -120,7 +120,7 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 		return types.Exec{}, fmt.Errorf("failed to add exec to store: %w", err)
 	}
 
-	informer := s.stateInformerFunc(exec)
+	informer := s.stateInformerManager.Add(exec)
 	informer.Watch()
 
 	for _, so := range s.stateObserversFuncs {
@@ -159,7 +159,7 @@ func (s *ExecService) Init() error {
 			continue
 		}
 
-		informer := s.stateInformerFunc(exec)
+		informer := s.stateInformerManager.Add(exec)
 		informer.Watch()
 
 		for _, f := range s.stateObserversFuncs {
@@ -245,7 +245,7 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 		return fmt.Errorf("failed to get exec from store: %w", err)
 	}
 
-	stInformer := s.statsInformerFunc(exec)
+	stInformer := s.statsInformerManager.Add(exec)
 	stInformer.Watch()
 
 	for _, so := range s.statsObserversFuncs {
@@ -253,7 +253,7 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 		stInformer.Register(o)
 	}
 
-	hbInformer := s.heartbeatInformerFunc(exec)
+	hbInformer := s.heartbeatInformerManager.Add(exec)
 	hbInformer.Watch()
 
 	for _, ho := range s.heartbeatObserversFuncs {

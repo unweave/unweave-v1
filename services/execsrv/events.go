@@ -21,7 +21,12 @@ type StateInformer interface {
 	Watch()
 }
 
-type StateInformerFunc func(exec types.Exec) StateInformer
+// StateInformerManger manages state informers and ensures that only one informer is
+// registered per exec.
+type StateInformerManger interface {
+	Add(exec types.Exec) StateInformer
+	Remove(execID string)
+}
 
 // StateObserver listens for exec state changes and handles them based on the implementation
 // of the Update method
@@ -58,7 +63,12 @@ type StatsInformer interface {
 	Watch()
 }
 
-type StatsInformerFunc func(exec types.Exec) StatsInformer
+// StatsInformerManger manages stats informers and ensures that only one informer is
+// registered per exec.
+type StatsInformerManger interface {
+	Add(exec types.Exec) StatsInformer
+	Remove(execID string)
+}
 
 // StatsObserver listens for exec stats and updates the exec based on the implementing
 // policy
@@ -84,7 +94,12 @@ type HeartbeatInformer interface {
 	Watch()
 }
 
-type HeartbeatInformerFunc func(exec types.Exec) HeartbeatInformer
+// HeartbeatInformerManger manages heartbeat informers and ensures that only one informer
+// is registered per exec.
+type HeartbeatInformerManger interface {
+	Add(exec types.Exec) HeartbeatInformer
+	Remove(execID string)
+}
 
 // HeartbeatObserver listens for heartbeats and handles them based on the implementation
 // of the Update method.

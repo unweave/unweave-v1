@@ -43,9 +43,9 @@ func main() {
 		panic(err)
 	}
 
-	llStateInf := execsrv.NewPollingStateInformerFunc(execStore, llDriver)
-	llStatsInf := execsrv.NewPollingStatsInformerFunc(execStore, llDriver)
-	llHeartbeatInf := execsrv.NewPollingHeartbeatInformerFunc(llDriver, 10)
+	llStateInf := execsrv.NewPollingStateInformerManager(execStore, llDriver)
+	llStatsInf := execsrv.NewPollingStatsInformerManager(execStore, llDriver)
+	llHeartbeatInf := execsrv.NewPollingHeartbeatInformerManager(llDriver, 10)
 
 	volumeStore := volumesrv.NewPostgresStore()
 	llVolumeSrv := volumesrv.NewService(volumeStore, llDriver)
