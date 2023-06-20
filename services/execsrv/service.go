@@ -16,13 +16,13 @@ var (
 )
 
 type ExecService struct {
-	store                 Store
-	driver                Driver
-	volume                *volumesrv.VolumeService
-	provider              types.Provider
-	stateInformerFunc     StateInformerFunc
-	statsInformerFunc     StatsInformerFunc
-	heartbeatInformerFunc HeartbeatInformerFunc
+	store                    Store
+	driver                   Driver
+	volume                   *volumesrv.VolumeService
+	provider                 types.Provider
+	stateInformerFunc        StateInformerFunc
+	statsInformerFunc        StatsInformerFunc
+	heartbeatInformerManager *HeartbeatInformerManager
 
 	stateObserversFuncs     []StateObserverFunc
 	statsObserversFuncs     []StatsObserverFunc
@@ -50,19 +50,19 @@ func NewService(
 	volumeService *volumesrv.VolumeService,
 	stateInformerFunc StateInformerFunc,
 	statsInformerFunc StatsInformerFunc,
-	heartbeatInformerFunc HeartbeatInformerFunc,
+	heartbeatInformerManager *HeartbeatInformerManager,
 ) *ExecService {
 	s := &ExecService{
-		store:                   store,
-		driver:                  driver,
-		volume:                  volumeService,
-		provider:                driver.ExecProvider(),
-		stateInformerFunc:       stateInformerFunc,
-		statsInformerFunc:       statsInformerFunc,
-		heartbeatInformerFunc:   heartbeatInformerFunc,
-		stateObserversFuncs:     nil,
-		statsObserversFuncs:     nil,
-		heartbeatObserversFuncs: nil,
+		store:                    store,
+		driver:                   driver,
+		volume:                   volumeService,
+		provider:                 driver.ExecProvider(),
+		stateInformerFunc:        stateInformerFunc,
+		statsInformerFunc:        statsInformerFunc,
+		heartbeatInformerManager: heartbeatInformerManager,
+		stateObserversFuncs:      nil,
+		statsObserversFuncs:      nil,
+		heartbeatObserversFuncs:  nil,
 	}
 
 	return s
@@ -253,7 +253,7 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 		stInformer.Register(o)
 	}
 
-	hbInformer := s.heartbeatInformerFunc(exec)
+	hbInformer := s.heartbeatInformerManager.Add(exec)
 	hbInformer.Watch()
 
 	for _, ho := range s.heartbeatObserversFuncs {
