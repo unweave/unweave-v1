@@ -530,9 +530,11 @@ func getHardwareSpecFromInstance(instance client.Instance, gpuMem, gpuCount int)
 				Max: gpuMem,
 			},
 		},
-		CPU: types.HardwareRequestRange{
-			Min: instance.InstanceType.Specs.Vcpus,
-			Max: instance.InstanceType.Specs.Vcpus,
+		CPU: types.CPU{
+			HardwareRequestRange: types.HardwareRequestRange{
+				Min: instance.InstanceType.Specs.Vcpus,
+				Max: instance.InstanceType.Specs.Vcpus,
+			},
 		},
 		RAM: types.HardwareRequestRange{
 			Min: instance.InstanceType.Specs.MemoryGib,
@@ -559,9 +561,11 @@ func getHardwareSpecFromInstanceTypes(instance client.InstanceType, gpuMem, gpuC
 				Max: gpuMem,
 			},
 		},
-		CPU: types.HardwareRequestRange{
-			Min: instance.Specs.Vcpus,
-			Max: instance.Specs.Vcpus,
+		CPU: types.CPU{
+			HardwareRequestRange: types.HardwareRequestRange{
+				Min: instance.Specs.Vcpus,
+				Max: instance.Specs.Vcpus,
+			},
 		},
 		RAM: types.HardwareRequestRange{
 			Min: instance.Specs.MemoryGib,
