@@ -200,7 +200,7 @@ func (p postgresStore) Update(id string, exec types.Exec) error {
 	panic("implement me")
 }
 
-// UpdateStatus updates exec status and relevant timestamps
+// UpdateStatus updates exec status and relevant timestamps.
 func (p postgresStore) UpdateStatus(id string, status types.Status, setReadyAt, setExitedAt time.Time) error {
 	params := db.ExecStatusUpdateParams{
 		ID:       id,

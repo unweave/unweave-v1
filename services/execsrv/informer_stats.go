@@ -60,10 +60,6 @@ func (m *StatsPollingInformerManager) Remove(execID string) {
 	delete(m.informers, execID)
 }
 
-func (i *statsInformer) Inform(id string, stats Stats) {
-	log.Ctx(context.Background()).Info().Msg("no-op stats inform method called")
-}
-
 func (i *statsInformer) Register(o StatsObserver) {
 	log.Ctx(context.Background()).Info().Msg("no-op stats register method called")
 }

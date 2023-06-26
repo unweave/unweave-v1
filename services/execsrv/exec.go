@@ -13,6 +13,8 @@ var (
 	ErrAlreadyExists = errors.New("already exists")
 )
 
+//counterfeiter:generate -o internal/execsrvfakes . Store
+
 type Store interface {
 	Create(project string, exec types.Exec) error
 	Get(id string) (types.Exec, error)
@@ -22,6 +24,8 @@ type Store interface {
 	Update(id string, exec types.Exec) error
 	UpdateStatus(id string, status types.Status, setReadyAt, setExitedAt time.Time) error
 }
+
+//counterfeiter:generate -o internal/execsrvfakes . Driver
 
 type Driver interface {
 	ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, network types.ExecNetwork, volumes []types.ExecVolume, pubKeys []string, region *string) (string, error)

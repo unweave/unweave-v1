@@ -22,3 +22,4 @@ tmp
 dist/
 .unweave
 .vercel
+bin/
