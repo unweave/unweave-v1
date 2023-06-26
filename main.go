@@ -51,7 +51,7 @@ func main() {
 	llVolumeSrv := volumesrv.NewService(volumeStore, llDriver)
 
 	lls := execsrv.NewService(execStore, llDriver, llVolumeSrv, llStateInf, llStatsInf, llHeartbeatInf)
-	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFunc(lls))
+	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFactory(lls))
 
 	if err = lls.Init(); err != nil {
 		panic(err)

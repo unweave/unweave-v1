@@ -10,19 +10,22 @@ import (
 )
 
 type pollingStateInformer struct {
-	execID     string
-	store      Store
-	driver     Driver
-	prevStatus types.Status
-	observers  map[string]StateObserver
-	mu         sync.Mutex
-	manager    *PollingStateInformerManager // for removing itself from the manager
+	execID       string
+	store        Store
+	driver       Driver
+	prevStatus   types.Status
+	observers    map[string]StateObserver
+	mu           sync.Mutex
+	manager      *PollingStateInformerManager // for removing itself from the manager
+	pollInterval time.Duration
 }
 
 type PollingStateInformerManager struct {
 	store     Store
 	driver    Driver
 	informers map[string]*pollingStateInformer
+
+	PollInterval time.Duration
 }
 
 // NewPollingStateInformerManager returns a new PollingStateInformerManager that allows for
@@ -75,21 +78,25 @@ func (m *PollingStateInformerManager) Remove(execID string) {
 	delete(m.informers, execID)
 }
 
-func (i *pollingStateInformer) Inform(id string, state State) {
+func (i *pollingStateInformer) inform(state State) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
-	o, ok := i.observers[id]
-	if !ok {
-		return
+	for _, observer := range i.observers {
+		log.Info().
+			Str(types.ObserverCtxKey, observer.Name()).
+			Str(types.ExecIDCtxKey, i.execID).
+			Msgf("Informing polling state observer of state %q", state.Status)
+
+		go func(o StateObserver) {
+			newState := o.Update(state)
+			if newState == state {
+				return
+			}
+
+			i.inform(newState)
+		}(observer)
 	}
-
-	log.Info().
-		Str(types.ObserverCtxKey, o.Name()).
-		Str(types.ExecIDCtxKey, i.execID).
-		Msgf("Informing polling state observer of state %q", state.Status)
-
-	go o.Update(state)
 }
 
 func (i *pollingStateInformer) Register(o StateObserver) {
@@ -120,7 +127,6 @@ func (i *pollingStateInformer) Unregister(o StateObserver) {
 // the exec's running state i.e. whether it transitioned from initializing to
 // running, failed, stopped etc.
 func (i *pollingStateInformer) Watch() {
-
 	log.Info().
 		Str(types.ExecIDCtxKey, i.execID).
 		Msgf("Starting watch for state informer for exec %s", i.execID)
@@ -136,7 +142,7 @@ func (i *pollingStateInformer) Watch() {
 
 		for {
 			select {
-			case <-time.After(5 * time.Second):
+			case <-time.After(i.pollInterval):
 				// Check the store for changes in the exec's state.
 				dbExec, err := i.store.Get(i.execID)
 				if err != nil {
@@ -144,15 +150,18 @@ func (i *pollingStateInformer) Watch() {
 				}
 
 				if dbExec.Status != i.prevStatus {
+					log.Info().Msgf("store informing %s != %s", dbExec.Status, i.prevStatus)
 					i.prevStatus = dbExec.Status
-					i.Inform(i.execID, State{Status: dbExec.Status})
+
+					state := State{Status: dbExec.Status}
+					i.inform(state)
 				}
 
 				if dbExec.Status.IsTerminal() {
 					return
 				}
 
-			case <-time.After(10 * time.Second):
+			case <-time.After(i.pollInterval * 2):
 				// Check the driver for changes in the exec's state.
 				status, err := i.driver.ExecGetStatus(context.Background(), i.execID)
 				if err != nil {
@@ -160,8 +169,11 @@ func (i *pollingStateInformer) Watch() {
 				}
 
 				if status != i.prevStatus {
+					log.Info().Msgf("driver informing %s != %s", status, i.prevStatus)
 					i.prevStatus = status
-					i.Inform(i.execID, State{Status: status})
+
+					state := State{Status: status}
+					i.inform(state)
 				}
 			}
 		}

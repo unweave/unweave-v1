@@ -10,10 +10,12 @@ type stateObserver struct {
 	srv  *ExecService
 }
 
-func NewStateObserverFunc(s *ExecService) StateObserverFunc {
-	return func(exec types.Exec, informer StateInformer) StateObserver {
+func NewStateObserverFactory(s *ExecService) StateObserverFactory {
+	fn := func(exec types.Exec) StateObserver {
 		return &stateObserver{exec: exec, srv: s}
 	}
+
+	return StateObserverFactoryFunc(fn)
 }
 
 func (o *stateObserver) ExecID() string {
@@ -28,6 +30,8 @@ func (o *stateObserver) Name() string {
 	return "state-observer"
 }
 
-func (o *stateObserver) Update(state State) {
+func (o *stateObserver) Update(state State) State {
 	log.Info().Str("exec", o.exec.ID).Msgf("No-op state observer received state update: %s", state.Status)
+
+	return state
 }

@@ -15,7 +15,6 @@ type State struct {
 // ever be one StateInformer per driver guaranteeing that exec state change is only ever
 // transmitted once.
 type StateInformer interface {
-	Inform(id string, state State)
 	Register(o StateObserver)
 	Unregister(o StateObserver)
 	Watch()
@@ -28,6 +27,8 @@ type StateInformerManger interface {
 	Remove(execID string)
 }
 
+//counterfeiter:generate -o internal/execsrvfakes . StateObserver
+
 // StateObserver listens for exec state changes and handles them based on the implementation
 // of the Update method
 type StateObserver interface {
@@ -38,13 +39,24 @@ type StateObserver interface {
 	// Name returns the name of the observer and should identify the function of the observer.
 	Name() string
 	// Update handles the state change of the exec.
-	Update(state State)
+	// The update could have changed the state, the
+	// new state should be returned to the informer
+	// which will dispatch the new state.
+	Update(state State) State
 }
 
 // StateObserverFunc returns a StateObserver for the given exec and StateInformer.
 // It takes a reference to the StateInformer to enable passing back state changes to the
 // informer.
-type StateObserverFunc func(exec types.Exec, inf StateInformer) StateObserver
+type StateObserverFactoryFunc func(exec types.Exec) StateObserver
+
+func (fn StateObserverFactoryFunc) New(exec types.Exec) StateObserver {
+	return fn(exec)
+}
+
+type StateObserverFactory interface {
+	New(exec types.Exec) StateObserver
+}
 
 // Stats represents the resource usage of an exec.
 type Stats struct {
@@ -57,7 +69,6 @@ type Stats struct {
 // StatsInformer regularly Inform observers of the resource utilization of registered
 // execs.
 type StatsInformer interface {
-	Inform(id string, stats Stats)
 	Register(o StatsObserver)
 	Unregister(o StatsObserver)
 	Watch()
@@ -77,7 +88,15 @@ type StatsObserver interface {
 	Update(stats Stats)
 }
 
-type StatsObserverFunc func(exec types.Exec) StatsObserver
+type StatsObserverFactoryFunc func(exec types.Exec) StatsObserver
+
+func (fn StatsObserverFactoryFunc) New(exec types.Exec) StatsObserver {
+	return fn(exec)
+}
+
+type StatsObserverFactory interface {
+	New(exec types.Exec) StatsObserver
+}
 
 // A Heartbeat represents a signal from an exec indicating its status.
 type Heartbeat struct {
@@ -88,7 +107,6 @@ type Heartbeat struct {
 
 // HeartbeatInformer informs observers of heartbeats in registered execs.
 type HeartbeatInformer interface {
-	Inform(id string, heartbeat Heartbeat)
 	Register(o HeartbeatObserver)
 	Unregister(o HeartbeatObserver)
 	Watch()
@@ -101,6 +119,8 @@ type HeartbeatInformerManger interface {
 	Remove(execID string)
 }
 
+//counterfeiter:generate -o internal/execsrvfakes . HeartbeatObserver
+
 // HeartbeatObserver listens for heartbeats and handles them based on the implementation
 // of the Update method.
 type HeartbeatObserver interface {
@@ -108,4 +128,12 @@ type HeartbeatObserver interface {
 	Update(heartbeat Heartbeat)
 }
 
-type HeartbeatObserverFunc func(exec types.Exec) HeartbeatObserver
+type HeartbeatObserverFactoryFunc func(exec types.Exec) HeartbeatObserver
+
+func (fn HeartbeatObserverFactoryFunc) New(exec types.Exec) HeartbeatObserver {
+	return fn(exec)
+}
+
+type HeartbeatObserverFactory interface {
+	New(exec types.Exec) HeartbeatObserver
+}

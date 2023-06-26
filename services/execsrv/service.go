@@ -24,23 +24,23 @@ type ExecService struct {
 	statsInformerManager     StatsInformerManger
 	heartbeatInformerManager HeartbeatInformerManger
 
-	stateObserversFuncs     []StateObserverFunc
-	statsObserversFuncs     []StatsObserverFunc
-	heartbeatObserversFuncs []HeartbeatObserverFunc
+	stateObserverFactories     []StateObserverFactory
+	statsObserverFactories     []StatsObserverFactory
+	heartbeatObserverFactories []HeartbeatObserverFactory
 }
 
-func WithStateObserver(s *ExecService, f StateObserverFunc) *ExecService {
-	s.stateObserversFuncs = append(s.stateObserversFuncs, f)
+func WithStateObserver(s *ExecService, f StateObserverFactory) *ExecService {
+	s.stateObserverFactories = append(s.stateObserverFactories, f)
 	return s
 }
 
-func WithStatsObserver(s *ExecService, f StatsObserverFunc) *ExecService {
-	s.statsObserversFuncs = append(s.statsObserversFuncs, f)
+func WithStatsObserver(s *ExecService, f StatsObserverFactory) *ExecService {
+	s.statsObserverFactories = append(s.statsObserverFactories, f)
 	return s
 }
 
-func WithHeartbeatObserver(s *ExecService, f HeartbeatObserverFunc) *ExecService {
-	s.heartbeatObserversFuncs = append(s.heartbeatObserversFuncs, f)
+func WithHeartbeatObserver(s *ExecService, f HeartbeatObserverFactory) *ExecService {
+	s.heartbeatObserverFactories = append(s.heartbeatObserverFactories, f)
 	return s
 }
 
@@ -53,16 +53,16 @@ func NewService(
 	heartbeatInformerManager HeartbeatInformerManger,
 ) *ExecService {
 	s := &ExecService{
-		store:                    store,
-		driver:                   driver,
-		volume:                   volumeService,
-		provider:                 driver.ExecProvider(),
-		stateInformerManager:     stateInformerManager,
-		statsInformerManager:     statsInformerManager,
-		heartbeatInformerManager: heartbeatInformerManager,
-		stateObserversFuncs:      nil,
-		statsObserversFuncs:      nil,
-		heartbeatObserversFuncs:  nil,
+		store:                      store,
+		driver:                     driver,
+		volume:                     volumeService,
+		provider:                   driver.ExecProvider(),
+		stateInformerManager:       stateInformerManager,
+		statsInformerManager:       statsInformerManager,
+		heartbeatInformerManager:   heartbeatInformerManager,
+		stateObserverFactories:     nil,
+		statsObserverFactories:     nil,
+		heartbeatObserverFactories: nil,
 	}
 
 	return s
@@ -132,8 +132,8 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 	informer := s.stateInformerManager.Add(exec)
 	informer.Watch()
 
-	for _, so := range s.stateObserversFuncs {
-		o := so(exec, informer)
+	for _, factory := range s.stateObserverFactories {
+		o := factory.New(exec)
 		informer.Register(o)
 	}
 
@@ -171,8 +171,8 @@ func (s *ExecService) Init() error {
 		informer := s.stateInformerManager.Add(exec)
 		informer.Watch()
 
-		for _, f := range s.stateObserversFuncs {
-			o := f(exec, informer)
+		for _, factory := range s.stateObserverFactories {
+			o := factory.New(exec)
 			informer.Register(o)
 		}
 
@@ -257,16 +257,16 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 	stInformer := s.statsInformerManager.Add(exec)
 	stInformer.Watch()
 
-	for _, so := range s.statsObserversFuncs {
-		o := so(exec)
+	for _, factory := range s.statsObserverFactories {
+		o := factory.New(exec)
 		stInformer.Register(o)
 	}
 
 	hbInformer := s.heartbeatInformerManager.Add(exec)
 	hbInformer.Watch()
 
-	for _, ho := range s.heartbeatObserversFuncs {
-		o := ho(exec)
+	for _, factory := range s.heartbeatObserverFactories {
+		o := factory.New(exec)
 		hbInformer.Register(o)
 	}
 	return nil

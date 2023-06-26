@@ -17,12 +17,17 @@ type heartbeatInformer struct {
 	maxFail   int
 	failCount int
 	manager   *HeartbeatPollingInformerManager // for removing itself from the manager
+
+	// Default 10 seconds
+	pollInterval time.Duration
 }
 
 type HeartbeatPollingInformerManager struct {
 	driver    Driver
 	maxFail   int
 	informers map[string]HeartbeatInformer
+
+	PollInterval time.Duration
 }
 
 // NewPollingHeartbeatInformerManager returns a new HeartbeatPollingInformerManager that allows for
@@ -47,14 +52,20 @@ func (h *HeartbeatPollingInformerManager) Add(exec types.Exec) HeartbeatInformer
 		return h.informers[exec.ID]
 	}
 
+	interval := h.PollInterval
+	if interval == 0 {
+		interval = 10 * time.Second
+	}
+
 	inf := &heartbeatInformer{
-		execID:    exec.ID,
-		observers: make(map[string]HeartbeatObserver),
-		mu:        sync.Mutex{},
-		driver:    h.driver,
-		maxFail:   h.maxFail,
-		failCount: 0,
-		manager:   h,
+		execID:       exec.ID,
+		observers:    make(map[string]HeartbeatObserver),
+		mu:           sync.Mutex{},
+		driver:       h.driver,
+		maxFail:      h.maxFail,
+		failCount:    0,
+		manager:      h,
+		pollInterval: interval,
 	}
 
 	h.informers[exec.ID] = inf
@@ -79,16 +90,14 @@ func (h *HeartbeatPollingInformerManager) Remove(execID string) {
 	delete(h.informers, execID)
 }
 
-func (b *heartbeatInformer) Inform(id string, heartbeat Heartbeat) {
+func (b *heartbeatInformer) inform(heartbeat Heartbeat) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	o, ok := b.observers[id]
-	if !ok {
-		return
+	for _, o := range b.observers {
+		o := o
+		go o.Update(heartbeat)
 	}
-
-	go o.Update(heartbeat)
 }
 
 func (b *heartbeatInformer) Register(o HeartbeatObserver) {
@@ -108,7 +117,6 @@ func (b *heartbeatInformer) Unregister(o HeartbeatObserver) {
 }
 
 func (b *heartbeatInformer) Watch() {
-
 	log.Info().
 		Str(types.ExecIDCtxKey, b.execID).
 		Msgf("Starting watch for heartbeat informer for exec %s", b.execID)
@@ -124,8 +132,7 @@ func (b *heartbeatInformer) Watch() {
 
 		for {
 			select {
-			case <-time.After(10 * time.Second):
-
+			case <-time.After(b.pollInterval):
 				status, err := b.driver.ExecGetStatus(context.Background(), b.execID)
 				if err != nil {
 					b.failCount++
@@ -144,13 +151,11 @@ func (b *heartbeatInformer) Watch() {
 
 				b.failCount = 0
 
-				for _, o := range b.observers {
-					b.Inform(o.ID(), Heartbeat{
-						ExecID: b.execID,
-						Time:   time.Now(),
-						Status: status,
-					})
-				}
+				b.inform(Heartbeat{
+					ExecID: b.execID,
+					Time:   time.Now(),
+					Status: status,
+				})
 
 			case <-time.After(2 * time.Minute):
 				log.Info().
