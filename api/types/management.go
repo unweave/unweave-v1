@@ -34,15 +34,16 @@ type AccessTokensDeleteResponse struct {
 }
 
 type Account struct {
-	UserID         string    `json:"userID"`
-	Email          string    `json:"email"`
-	GithubID       int32     `json:"githubID"`
-	GithubUsername string    `json:"githubUsername"`
-	DateJoined     time.Time `json:"dateJoined"`
-	Credit         string    `json:"credit"`
-	FirstName      string    `json:"firstName"`
-	LastName       string    `json:"lastName"`
-	Providers      []string  `json:"providers"`
+	UserID              string    `json:"userID"`
+	Email               string    `json:"email"`
+	GithubID            int32     `json:"githubID"`
+	GithubUsername      string    `json:"githubUsername"`
+	DateJoined          time.Time `json:"dateJoined"`
+	Credit              string    `json:"credit"`
+	FirstName           string    `json:"firstName"`
+	LastName            string    `json:"lastName"`
+	Providers           []string  `json:"providers"`
+	GithubCredentialsID *string   `json:"-,omitempty"`
 }
 
 type AccountGetResponse struct {
@@ -62,6 +63,8 @@ type ProjectCreateRequestParams struct {
 	Name       string   `json:"name"`
 	Tags       []string `json:"tags"`
 	Visibility *string  `json:"visibility"`
+	// SourceRepoCloneURL must be a HTTPS endpoint to a Git module i.e. https://github.com/unweave/unweave.git
+	SourceRepoCloneURL *string `json:"repo"`
 }
 
 type ProjectCreateResponse struct {
