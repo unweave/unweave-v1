@@ -183,7 +183,7 @@ func (s *ExecCreateParams) Bind(r *http.Request) error {
 		}
 	}
 
-	if s.Command != nil {
+	if s.Source != nil {
 		part, err := parseContextFile(r)
 		if err != nil {
 			return err

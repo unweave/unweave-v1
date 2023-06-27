@@ -16,9 +16,14 @@ type GPU struct {
 	RAM   HardwareRequestRange `json:"ram,omitempty"`
 }
 
+type CPU struct {
+	Type string `json:"type,omitempty"`
+	HardwareRequestRange
+}
+
 type HardwareSpec struct {
 	GPU GPU                  `json:"gpu"`
-	CPU HardwareRequestRange `json:"cpu"`
+	CPU CPU                  `json:"cpu"`
 	RAM HardwareRequestRange `json:"ram"`
 	HDD HardwareRequestRange `json:"hdd"`
 }
@@ -84,6 +89,7 @@ type NodeMetadataV1 struct {
 	Memory         int              `json:"memory"`
 	HDD            int              `json:"hdd"`
 	GpuType        string           `json:"gpuType"`
+	CpuType        string           `json:"cpuType"`
 	GPUCount       int              `json:"gpuCount"`
 	GPUMemory      int              `json:"gpuMemory"`
 	ConnectionInfo ConnectionInfoV1 `json:"connection_info"`
@@ -106,9 +112,12 @@ func (m *NodeMetadataV1) GetHardwareSpec() HardwareSpec {
 				Max: m.GPUMemory,
 			},
 		},
-		CPU: HardwareRequestRange{
-			Min: m.VCPUs,
-			Max: m.VCPUs,
+		CPU: CPU{
+			Type: m.CpuType,
+			HardwareRequestRange: HardwareRequestRange{
+				Min: m.VCPUs,
+				Max: m.VCPUs,
+			},
 		},
 		RAM: HardwareRequestRange{
 			Min: m.Memory,
@@ -148,6 +157,7 @@ func DBNodeMetadataFromNode(node Node) NodeMetadataV1 {
 		Memory:    node.Specs.RAM.Min,
 		HDD:       node.Specs.HDD.Min,
 		GpuType:   node.Specs.GPU.Type,
+		CpuType:   node.Specs.CPU.Type,
 		GPUCount:  node.Specs.GPU.Count.Min,
 		GPUMemory: node.Specs.GPU.RAM.Min,
 

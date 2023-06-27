@@ -82,6 +82,7 @@ func (l LogEntry) String() string {
 }
 
 type NodeType struct {
+	Type     string       `json:"type"`
 	ID       string       `json:"id"`
 	Name     *string      `json:"name"`
 	Price    *int         `json:"price"`

@@ -22,9 +22,11 @@ func TestSetDefaultValues(t *testing.T) {
 
 						Type: "",
 					},
-					CPU: HardwareRequestRange{
-						Min: defaultMinCPU,
-						Max: defaultMinCPU,
+					CPU: CPU{
+						HardwareRequestRange: HardwareRequestRange{
+							Min: defaultMinCPU,
+							Max: defaultMinCPU,
+						},
 					},
 
 					HDD: HardwareRequestRange{
@@ -45,8 +47,10 @@ func TestSetDefaultValues(t *testing.T) {
 						},
 						Type: "test",
 					},
-					CPU: HardwareRequestRange{
-						Max: 8,
+					CPU: CPU{
+						HardwareRequestRange: HardwareRequestRange{
+							Max: 8,
+						},
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -61,9 +65,11 @@ func TestSetDefaultValues(t *testing.T) {
 						},
 						Type: "test",
 					},
-					CPU: HardwareRequestRange{
-						Min: defaultMinCPU,
-						Max: 8,
+					CPU: CPU{
+						HardwareRequestRange: HardwareRequestRange{
+							Min: defaultMinCPU,
+							Max: 8,
+						},
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -85,9 +91,11 @@ func TestSetDefaultValues(t *testing.T) {
 							Max: 4,
 						},
 					},
-					CPU: HardwareRequestRange{
-						Min: 4,
-						Max: 8,
+					CPU: CPU{
+						HardwareRequestRange: HardwareRequestRange{
+							Min: 4,
+							Max: 8,
+						},
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
@@ -102,9 +110,11 @@ func TestSetDefaultValues(t *testing.T) {
 						},
 						Type: "",
 					},
-					CPU: HardwareRequestRange{
-						Min: 4,
-						Max: 8,
+					CPU: CPU{
+						HardwareRequestRange: HardwareRequestRange{
+							Min: 4,
+							Max: 8,
+						},
 					},
 					HDD: HardwareRequestRange{
 						Min: 32,
