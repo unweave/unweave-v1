@@ -34,16 +34,15 @@ type AccessTokensDeleteResponse struct {
 }
 
 type Account struct {
-	UserID              string    `json:"userID"`
-	Email               string    `json:"email"`
-	GithubID            int32     `json:"githubID"`
-	GithubUsername      string    `json:"githubUsername"`
-	DateJoined          time.Time `json:"dateJoined"`
-	Credit              string    `json:"credit"`
-	FirstName           string    `json:"firstName"`
-	LastName            string    `json:"lastName"`
-	Providers           []string  `json:"providers"`
-	GithubCredentialsID *string   `json:"-,omitempty"`
+	UserID         string    `json:"userID"`
+	Email          string    `json:"email"`
+	GithubID       int32     `json:"githubID"`
+	GithubUsername string    `json:"githubUsername"`
+	DateJoined     time.Time `json:"dateJoined"`
+	Credit         string    `json:"credit"`
+	FirstName      string    `json:"firstName"`
+	LastName       string    `json:"lastName"`
+	Providers      []string  `json:"providers"`
 }
 
 type AccountGetResponse struct {
