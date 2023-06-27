@@ -63,8 +63,8 @@ type ProjectCreateRequestParams struct {
 	Name       string   `json:"name"`
 	Tags       []string `json:"tags"`
 	Visibility *string  `json:"visibility"`
-	// SourceRepoCloneURL must be a HTTPS endpoint to a Git module i.e. https://github.com/unweave/unweave.git
-	SourceRepoCloneURL *string `json:"repo"`
+	// SourceRepoURL must be a HTTPS endpoint to a Git module i.e. https://github.com/unweave/unweave.git
+	SourceRepoURL *string `json:"repo"`
 }
 
 type ProjectCreateResponse struct {

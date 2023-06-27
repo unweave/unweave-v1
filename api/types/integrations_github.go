@@ -1,11 +1,9 @@
 package types
 
-// CloneURL represents the URL Git repositories should be used to clone to
-type CloneURL = string
-
 type Repository struct {
-	Name     string   `json:"name,omitempty"`
-	CloneURL CloneURL `json:"cloneURL,omitempty"`
+	Name string `json:"name,omitempty"`
+	// URL must be cloneable by Git
+	URL URL `json:"url,omitempty"`
 }
 
 // GithubListRepositoriesResponse lists all repositories authenticated to Unweave,
