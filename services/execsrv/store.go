@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -187,7 +188,7 @@ func (p postgresStore) Delete(id string) error {
 		return fmt.Errorf("failed to unassign volumes for exec with error: %w", err)
 	}
 
-	if err = p.UpdateStatus(id, types.StatusTerminated); err != nil {
+	if err = p.UpdateStatus(id, types.StatusTerminated, time.Time{}, time.Now()); err != nil {
 		return fmt.Errorf("failed to update exec status in store: %w", err)
 	}
 
@@ -199,10 +200,13 @@ func (p postgresStore) Update(id string, exec types.Exec) error {
 	panic("implement me")
 }
 
-func (p postgresStore) UpdateStatus(id string, status types.Status) error {
+// UpdateStatus updates exec status and relevant timestamps
+func (p postgresStore) UpdateStatus(id string, status types.Status, setReadyAt, setExitedAt time.Time) error {
 	params := db.ExecStatusUpdateParams{
-		ID:     id,
-		Status: db.UnweaveExecStatus(status),
+		ID:       id,
+		Status:   db.UnweaveExecStatus(status),
+		ReadyAt:  db.NullTimeFrom(setReadyAt),
+		ExitedAt: db.NullTimeFrom(setExitedAt),
 	}
 	if e := db.Q.ExecStatusUpdate(context.Background(), params); e != nil {
 		return fmt.Errorf("failed to update exec status: %w", e)

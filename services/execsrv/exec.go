@@ -3,6 +3,7 @@ package execsrv
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/unweave/unweave/api/types"
 )
@@ -19,7 +20,7 @@ type Store interface {
 	List(filterProject *string, filterProvider *types.Provider, filterActive bool) ([]types.Exec, error)
 	Delete(id string) error
 	Update(id string, exec types.Exec) error
-	UpdateStatus(id string, status types.Status) error
+	UpdateStatus(id string, status types.Status, setReadyAt, setExitedAt time.Time) error
 }
 
 type Driver interface {
