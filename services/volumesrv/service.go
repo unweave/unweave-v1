@@ -23,6 +23,10 @@ func NewService(store Store, driver Driver) *VolumeService {
 	}
 }
 
+func (s *VolumeService) Provider() types.Provider {
+	return s.provider
+}
+
 func (s *VolumeService) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
 	if _, err := s.store.VolumeGet(projectID, name); err == nil {
 		return types.Volume{}, &types.Error{
@@ -32,13 +36,13 @@ func (s *VolumeService) Create(ctx context.Context, accountID string, projectID 
 		}
 	}
 
-	id, err := s.driver.VolumeCreate(ctx, accountID, size)
+	volID, err := s.driver.VolumeCreate(ctx, projectID, name, size)
 	if err != nil {
 		return types.Volume{}, err
 	}
 
 	v := types.Volume{
-		ID:   id,
+		ID:   volID,
 		Name: name,
 		Size: size,
 		State: types.VolumeState{

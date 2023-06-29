@@ -143,7 +143,7 @@ select id, name, region, created_by, created_at, ready_at, exited_at, status, pr
 from unweave.exec as e
 where (e.provider = coalesce($1, e.provider))
   and project_id = coalesce($2, project_id)
-  and (($3 = true and (status = 'initializing' or status = 'running'))
+  and (($3 = true and (status = 'pending' or status = 'initializing' or status = 'running'))
     or $3 = false)
 `
 

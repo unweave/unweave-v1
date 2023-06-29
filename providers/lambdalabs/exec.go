@@ -352,12 +352,14 @@ func (d *Driver) ExecSpec(ctx context.Context, execID string) (types.HardwareSpe
 	return spec, nil
 }
 
-func (d *Driver) ExecStats(ctx context.Context, id string) (execsrv.Stats, error) {
-	//TODO implement me
+func (d *Driver) ExecStats(_ context.Context, _ string) (execsrv.Stats, error) {
 	panic("implement me")
 }
 
-func (d *Driver) ExecTerminate(ctx context.Context, id string) error {
-	//TODO implement me
+func (d *Driver) ExecTerminate(_ context.Context, _ string) error {
 	panic("implement me")
+}
+
+func (d *Driver) ExecConnectionInfo(_ context.Context, _ string) (types.ConnectionInfo, error) {
+	panic("not implemented")
 }

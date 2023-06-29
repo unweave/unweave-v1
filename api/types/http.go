@@ -286,13 +286,21 @@ func (p *VolumeCreateRequest) Bind(r *http.Request) error {
 		}
 	}
 
-	if p.Provider != UnweaveProvider {
+	switch p.Provider {
+	case LambdaLabsProvider:
+		return &Error{
+			Code:    http.StatusBadRequest,
+			Message: "Lambda Labs not implemented",
+		}
+	case UnweaveProvider, AWSProvider:
+	default:
 		return &Error{
 			Code:       http.StatusBadRequest,
 			Message:    "Invalid provider",
 			Suggestion: "Valid providers are: " + UnweaveProvider.String(),
 		}
 	}
+
 	return nil
 }
 

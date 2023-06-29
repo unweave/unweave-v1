@@ -23,6 +23,7 @@ type Store interface {
 	Delete(id string) error
 	Update(id string, exec types.Exec) error
 	UpdateStatus(id string, status types.Status, setReadyAt, setExitedAt time.Time) error
+	UpdateConnectionInfo(execID string, info types.ConnectionInfo) error
 }
 
 //counterfeiter:generate -o internal/execsrvfakes . Driver
@@ -38,4 +39,5 @@ type Driver interface {
 	// ExecPing pings the driver availability on behalf of a user. This can be used to
 	// check if the driver is configured correctly and healthy.
 	ExecPing(ctx context.Context, accountID *string) error
+	ExecConnectionInfo(ctx context.Context, execID string) (types.ConnectionInfo, error)
 }

@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -14,14 +15,19 @@ import (
 
 type ProviderRouter struct {
 	r         chi.Router
-	llService *providersrv.ProviderService
-	uwService *providersrv.ProviderService
+	delegates map[types.Provider]*providersrv.ProviderService
+	supported []string
 }
 
-func NewProviderRouter(lambdaLabsService, unweaveService *providersrv.ProviderService) *ProviderRouter {
+func NewProviderRouter(delegates map[types.Provider]*providersrv.ProviderService) *ProviderRouter {
+	supported := make([]string, 0, len(delegates))
+	for k := range delegates {
+		supported = append(supported, k.String())
+	}
+
 	return &ProviderRouter{
-		llService: lambdaLabsService,
-		uwService: unweaveService,
+		delegates: delegates,
+		supported: supported,
 	}
 }
 
@@ -52,22 +58,19 @@ func (p *ProviderRouter) ProviderListNodeTypesHandler(w http.ResponseWriter, r *
 	//  moved to /accounts/{accountID}/providers/{provider}/node-types
 	userID := middleware.GetUserIDFromContext(ctx)
 
-	var err error
-	var nodeTypes []types.NodeType
-
-	switch provider {
-	case types.LambdaLabsProvider:
-		nodeTypes, err = p.llService.ListNodeTypes(ctx, userID, filterAvailable)
-	case types.UnweaveProvider:
-		nodeTypes, err = p.uwService.ListNodeTypes(ctx, userID, filterAvailable)
-	default:
-		err = &types.Error{
+	service, ok := p.delegates[provider]
+	if !ok {
+		err := &types.Error{
 			Code:       http.StatusBadRequest,
 			Message:    "Invalid provider",
-			Suggestion: fmt.Sprintf("Valid providers are: %s, %s ", types.LambdaLabsProvider, types.UnweaveProvider),
+			Suggestion: fmt.Sprintf("Valid providers are: %s ", strings.Join(p.supported, ", ")),
 		}
+		_ = render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list node types"))
+
+		return
 	}
 
+	nodeTypes, err := service.ListNodeTypes(ctx, userID, filterAvailable)
 	if err != nil {
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to list node types"))
 		return

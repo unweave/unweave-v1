@@ -12,7 +12,7 @@ import (
 const VolumeCreate = `-- name: VolumeCreate :one
 insert into unweave.volume (id, project_id, provider, name, size)
 values($1, $2, $3, $4, $5)
-returning id, name, project_id, provider, created_at, updated_at, size, deleted_at
+returning id, size, name, project_id, provider, created_at, updated_at, deleted_at
 `
 
 type VolumeCreateParams struct {
@@ -34,12 +34,12 @@ func (q *Queries) VolumeCreate(ctx context.Context, arg VolumeCreateParams) (Unw
 	var i UnweaveVolume
 	err := row.Scan(
 		&i.ID,
+		&i.Size,
 		&i.Name,
 		&i.ProjectID,
 		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Size,
 		&i.DeletedAt,
 	)
 	return i, err
@@ -56,7 +56,7 @@ func (q *Queries) VolumeDelete(ctx context.Context, id string) error {
 }
 
 const VolumeGet = `-- name: VolumeGet :one
-select id, name, project_id, provider, created_at, updated_at, size, deleted_at from unweave.volume
+select id, size, name, project_id, provider, created_at, updated_at, deleted_at from unweave.volume
 where project_id = $1 and (id = $2 or name = $2)
 `
 
@@ -70,19 +70,19 @@ func (q *Queries) VolumeGet(ctx context.Context, arg VolumeGetParams) (UnweaveVo
 	var i UnweaveVolume
 	err := row.Scan(
 		&i.ID,
+		&i.Size,
 		&i.Name,
 		&i.ProjectID,
 		&i.Provider,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Size,
 		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const VolumeList = `-- name: VolumeList :many
-select id, name, project_id, provider, created_at, updated_at, size, deleted_at from unweave.volume
+select id, size, name, project_id, provider, created_at, updated_at, deleted_at from unweave.volume
 where project_id = $1
 `
 
@@ -97,12 +97,12 @@ func (q *Queries) VolumeList(ctx context.Context, projectID string) ([]UnweaveVo
 		var i UnweaveVolume
 		if err := rows.Scan(
 			&i.ID,
+			&i.Size,
 			&i.Name,
 			&i.ProjectID,
 			&i.Provider,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Size,
 			&i.DeletedAt,
 		); err != nil {
 			return nil, err

@@ -15,7 +15,7 @@ type Store interface {
 }
 
 type Driver interface {
-	VolumeCreate(ctx context.Context, projectID string, size int) (string, error)
+	VolumeCreate(ctx context.Context, projectID, name string, size int) (string, error)
 	VolumeDelete(ctx context.Context, id string) error
 	VolumeProvider() types.Provider
 	VolumeDriver(ctx context.Context) string
@@ -23,6 +23,7 @@ type Driver interface {
 }
 
 type Service interface {
+	Provider() types.Provider
 	Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error)
 	Delete(ctx context.Context, projectID, idOrName string) error
 	Get(ctx context.Context, projectID, idOrName string) (types.Volume, error)

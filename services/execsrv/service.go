@@ -1,3 +1,4 @@
+//nolint:wrapcheck
 package execsrv
 
 import (
@@ -12,7 +13,7 @@ import (
 )
 
 var (
-	DefaultImageURI = "ubuntu:latest"
+	GlogalDefaultImageURI = "ubuntu:latest"
 )
 
 type ExecService struct {
@@ -27,7 +28,11 @@ type ExecService struct {
 	stateObserverFactories     []StateObserverFactory
 	statsObserverFactories     []StatsObserverFactory
 	heartbeatObserverFactories []HeartbeatObserverFactory
+
+	ServiceDefaultImage string
 }
+
+var _ Service = (*ExecService)(nil)
 
 func WithStateObserver(s *ExecService, f StateObserverFactory) *ExecService {
 	s.stateObserverFactories = append(s.stateObserverFactories, f)
@@ -68,8 +73,22 @@ func NewService(
 	return s
 }
 
-func (s *ExecService) Create(ctx context.Context, projectID string, creator string, params types.ExecCreateParams) (types.Exec, error) {
-	image := DefaultImageURI
+func (s *ExecService) Provider() types.Provider {
+	return s.provider
+}
+
+func (s *ExecService) Create(
+	ctx context.Context,
+	projectID string,
+	creator string,
+	params types.ExecCreateParams,
+) (types.Exec, error) {
+	image := s.ServiceDefaultImage
+
+	if image == "" {
+		image = GlogalDefaultImageURI
+	}
+
 	if params.Image != nil && *params.Image != "" {
 		image = *params.Image
 	}
@@ -89,7 +108,16 @@ func (s *ExecService) Create(ctx context.Context, projectID string, creator stri
 		}
 	}
 
-	execID, err := s.driver.ExecCreate(ctx, projectID, image, spec, network, volumes, []string{params.SSHPublicKey}, nil)
+	execID, err := s.driver.ExecCreate(
+		ctx,
+		projectID,
+		image,
+		spec,
+		network,
+		volumes,
+		[]string{params.SSHPublicKey},
+		params.Region,
+	)
 	if err != nil {
 		return types.Exec{}, err
 	}
@@ -165,6 +193,7 @@ func (s *ExecService) Init() error {
 		}
 
 		if driver != s.driver.ExecDriverName() {
+			log.Warn().Msgf("Exec service driver mismatch %s != %s", driver, s.driver.ExecDriverName())
 			continue
 		}
 
@@ -173,10 +202,19 @@ func (s *ExecService) Init() error {
 
 		for _, factory := range s.stateObserverFactories {
 			o := factory.New(exec)
+			log.Debug().Msgf("Registering observer %q for exec %q", o.Name(), exec.ID)
 			informer.Register(o)
 		}
 
-		if exec.Status == types.StatusRunning {
+		shouldMonitor := exec.Status == types.StatusRunning ||
+			exec.Status == types.StatusInitializing ||
+			exec.Status == types.StatusPending
+
+		if shouldMonitor {
+			log.Debug().
+				Str(types.ExecIDCtxKey, exec.ID).
+				Msg("Monitoring")
+
 			if err = s.Monitor(context.Background(), exec.ID); err != nil {
 				log.Error().
 					Err(err).
@@ -185,6 +223,7 @@ func (s *ExecService) Init() error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -262,12 +301,27 @@ func (s *ExecService) Monitor(ctx context.Context, execID string) error {
 		stInformer.Register(o)
 	}
 
-	hbInformer := s.heartbeatInformerManager.Add(exec)
-	hbInformer.Watch()
+	if s.heartbeatInformerManager != nil {
+		hbInformer := s.heartbeatInformerManager.Add(exec)
+		hbInformer.Watch()
 
-	for _, factory := range s.heartbeatObserverFactories {
-		o := factory.New(exec)
-		hbInformer.Register(o)
+		for _, factory := range s.heartbeatObserverFactories {
+			o := factory.New(exec)
+			hbInformer.Register(o)
+		}
 	}
 	return nil
+}
+
+func (s *ExecService) RefreshConnectionInfo(ctx context.Context, execID string) (types.Exec, error) {
+	info, err := s.driver.ExecConnectionInfo(ctx, execID)
+	if err != nil {
+		return types.Exec{}, fmt.Errorf("conn info: %w", err)
+	}
+
+	if err := s.store.UpdateConnectionInfo(execID, info); err != nil {
+		return types.Exec{}, fmt.Errorf("store update: %w", err)
+	}
+
+	return s.store.Get(execID)
 }

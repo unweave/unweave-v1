@@ -1,3 +1,4 @@
+//nolint:wrapcheck
 package volumesrv
 
 import (
@@ -13,27 +14,31 @@ import (
 // providers when needed.
 type ServiceRouter struct {
 	store     Store
-	llService *VolumeService
-	uwService *VolumeService
+	delegates map[types.Provider]Service
 }
 
-func NewServiceRouter(store Store, lambdalabsService, unweaveService *VolumeService) Service {
+func NewServiceRouter(store Store, delegates map[types.Provider]Service) Service {
 	return &ServiceRouter{
 		store:     store,
-		llService: lambdalabsService,
-		uwService: unweaveService,
+		delegates: delegates,
 	}
+}
+
+func (s *ServiceRouter) Provider() types.Provider {
+	panic("service router doesn't have a single provider")
+}
+
+func (s *ServiceRouter) service(provider types.Provider) Service {
+	return s.delegates[provider]
 }
 
 func (s *ServiceRouter) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
-	switch provider {
-	case types.LambdaLabsProvider:
-		return s.llService.Create(ctx, accountID, projectID, provider, name, size)
-	case types.UnweaveProvider:
-		return s.uwService.Create(ctx, accountID, projectID, provider, name, size)
-	default:
-		return types.Volume{}, fmt.Errorf("unknown provider: %s", provider)
+	svc := s.service(provider)
+	if svc == nil {
+		return types.Volume{}, fmt.Errorf("create: unknown provider: %s", provider)
 	}
+
+	return svc.Create(ctx, accountID, projectID, provider, name, size)
 }
 
 func (s *ServiceRouter) Delete(ctx context.Context, projectID, idOrName string) error {
@@ -42,14 +47,12 @@ func (s *ServiceRouter) Delete(ctx context.Context, projectID, idOrName string) 
 		return err
 	}
 
-	switch vol.Provider {
-	case types.LambdaLabsProvider:
-		return s.llService.Delete(ctx, projectID, idOrName)
-	case types.UnweaveProvider:
-		return s.uwService.Delete(ctx, projectID, idOrName)
-	default:
-		return fmt.Errorf("unknown provider: %s", vol.Provider)
+	svc := s.service(vol.Provider)
+	if svc == nil {
+		return fmt.Errorf("get: unknown provider: %s", vol.Provider)
 	}
+
+	return svc.Delete(ctx, projectID, idOrName)
 }
 
 func (s *ServiceRouter) Get(ctx context.Context, projectID, idOrName string) (types.Volume, error) {
@@ -57,6 +60,7 @@ func (s *ServiceRouter) Get(ctx context.Context, projectID, idOrName string) (ty
 	if err != nil {
 		return types.Volume{}, err
 	}
+
 	return vol, nil
 }
 
@@ -65,6 +69,7 @@ func (s *ServiceRouter) List(ctx context.Context, projectID string) ([]types.Vol
 	if err != nil {
 		return nil, err
 	}
+
 	return vols, nil
 }
 
@@ -74,12 +79,10 @@ func (s *ServiceRouter) Resize(ctx context.Context, projectID, idOrName string, 
 		return err
 	}
 
-	switch vol.Provider {
-	case types.LambdaLabsProvider:
-		return s.llService.Resize(ctx, projectID, idOrName, size)
-	case types.UnweaveProvider:
-		return s.uwService.Resize(ctx, projectID, idOrName, size)
-	default:
-		return fmt.Errorf("unknown provider: %s", vol.Provider)
+	svc := s.service(vol.Provider)
+	if svc == nil {
+		return fmt.Errorf("resize: unknown provider: %s", vol.Provider)
 	}
+
+	return svc.Resize(ctx, projectID, idOrName, size)
 }

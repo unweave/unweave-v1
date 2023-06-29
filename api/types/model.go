@@ -48,6 +48,7 @@ func (r Provider) String() string {
 const (
 	LambdaLabsProvider Provider = "lambdalabs"
 	UnweaveProvider    Provider = "unweave"
+	AWSProvider        Provider = "aws"
 )
 
 func (r Provider) DisplayName() string {
@@ -56,6 +57,8 @@ func (r Provider) DisplayName() string {
 		return "LambdaLabs"
 	case UnweaveProvider:
 		return "Unweave"
+	case AWSProvider:
+		return "AWS"
 	default:
 		return "Unknown"
 	}

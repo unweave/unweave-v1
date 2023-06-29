@@ -1,3 +1,4 @@
+//nolint:wrapcheck
 package providersrv
 
 import (
@@ -7,7 +8,7 @@ import (
 )
 
 type Driver interface {
-	ProviderListNodeTypes(ctx context.Context, accountID string, filterAvailable bool) ([]types.NodeType, error)
+	ProviderListNodeTypes(ctx context.Context, userID string, filterAvailable bool) ([]types.NodeType, error)
 }
 
 type ProviderService struct {
@@ -18,6 +19,10 @@ func NewProviderService(driver Driver) *ProviderService {
 	return &ProviderService{driver: driver}
 }
 
-func (s *ProviderService) ListNodeTypes(ctx context.Context, accountID string, filterAvailable bool) ([]types.NodeType, error) {
-	return s.driver.ProviderListNodeTypes(ctx, accountID, filterAvailable)
+func (s *ProviderService) ListNodeTypes(
+	ctx context.Context,
+	userID string,
+	filterAvailable bool,
+) ([]types.NodeType, error) {
+	return s.driver.ProviderListNodeTypes(ctx, userID, filterAvailable)
 }

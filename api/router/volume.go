@@ -13,15 +13,19 @@ import (
 
 type VolumeRouter struct {
 	r       chi.Router
-	store   volumesrv.Store
 	service volumesrv.Service
 }
 
-func NewVolumeRouter(store volumesrv.Store, llService, uwService *volumesrv.VolumeService) *VolumeRouter {
-	router := volumesrv.NewServiceRouter(store, llService, uwService)
+func NewVolumeRouter(store volumesrv.Store, services ...volumesrv.Service) *VolumeRouter {
+	delegates := make(map[types.Provider]volumesrv.Service)
+
+	for i := range services {
+		svc := services[i]
+		delegates[svc.Provider()] = svc
+	}
+
 	return &VolumeRouter{
-		store:   store,
-		service: router,
+		service: volumesrv.NewServiceRouter(store, delegates),
 	}
 }
 
@@ -55,7 +59,7 @@ func (v *VolumeRouter) VolumeCreateHandler(w http.ResponseWriter, r *http.Reques
 
 	vol, err := v.service.Create(ctx, accountID, projectID, vcr.Provider, vcr.Name, vcr.Size)
 	if err != nil {
-		err = fmt.Errorf("failed to create volume, %w", err)
+		err = fmt.Errorf("failed to create volume: %w", err)
 		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to create volume"))
 		return
 	}

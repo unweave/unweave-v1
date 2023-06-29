@@ -10,6 +10,20 @@ import (
 )
 
 type FakeDriver struct {
+	ExecConnectionInfoStub        func(context.Context, string) (types.ConnectionInfo, error)
+	execConnectionInfoMutex       sync.RWMutex
+	execConnectionInfoArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	execConnectionInfoReturns struct {
+		result1 types.ConnectionInfo
+		result2 error
+	}
+	execConnectionInfoReturnsOnCall map[int]struct {
+		result1 types.ConnectionInfo
+		result2 error
+	}
 	ExecCreateStub        func(context.Context, string, string, types.HardwareSpec, types.ExecNetwork, []types.ExecVolume, []string, *string) (string, error)
 	execCreateMutex       sync.RWMutex
 	execCreateArgsForCall []struct {
@@ -118,6 +132,71 @@ type FakeDriver struct {
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
+}
+
+func (fake *FakeDriver) ExecConnectionInfo(arg1 context.Context, arg2 string) (types.ConnectionInfo, error) {
+	fake.execConnectionInfoMutex.Lock()
+	ret, specificReturn := fake.execConnectionInfoReturnsOnCall[len(fake.execConnectionInfoArgsForCall)]
+	fake.execConnectionInfoArgsForCall = append(fake.execConnectionInfoArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.ExecConnectionInfoStub
+	fakeReturns := fake.execConnectionInfoReturns
+	fake.recordInvocation("ExecConnectionInfo", []interface{}{arg1, arg2})
+	fake.execConnectionInfoMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeDriver) ExecConnectionInfoCallCount() int {
+	fake.execConnectionInfoMutex.RLock()
+	defer fake.execConnectionInfoMutex.RUnlock()
+	return len(fake.execConnectionInfoArgsForCall)
+}
+
+func (fake *FakeDriver) ExecConnectionInfoCalls(stub func(context.Context, string) (types.ConnectionInfo, error)) {
+	fake.execConnectionInfoMutex.Lock()
+	defer fake.execConnectionInfoMutex.Unlock()
+	fake.ExecConnectionInfoStub = stub
+}
+
+func (fake *FakeDriver) ExecConnectionInfoArgsForCall(i int) (context.Context, string) {
+	fake.execConnectionInfoMutex.RLock()
+	defer fake.execConnectionInfoMutex.RUnlock()
+	argsForCall := fake.execConnectionInfoArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeDriver) ExecConnectionInfoReturns(result1 types.ConnectionInfo, result2 error) {
+	fake.execConnectionInfoMutex.Lock()
+	defer fake.execConnectionInfoMutex.Unlock()
+	fake.ExecConnectionInfoStub = nil
+	fake.execConnectionInfoReturns = struct {
+		result1 types.ConnectionInfo
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeDriver) ExecConnectionInfoReturnsOnCall(i int, result1 types.ConnectionInfo, result2 error) {
+	fake.execConnectionInfoMutex.Lock()
+	defer fake.execConnectionInfoMutex.Unlock()
+	fake.ExecConnectionInfoStub = nil
+	if fake.execConnectionInfoReturnsOnCall == nil {
+		fake.execConnectionInfoReturnsOnCall = make(map[int]struct {
+			result1 types.ConnectionInfo
+			result2 error
+		})
+	}
+	fake.execConnectionInfoReturnsOnCall[i] = struct {
+		result1 types.ConnectionInfo
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeDriver) ExecCreate(arg1 context.Context, arg2 string, arg3 string, arg4 types.HardwareSpec, arg5 types.ExecNetwork, arg6 []types.ExecVolume, arg7 []string, arg8 *string) (string, error) {
@@ -629,6 +708,8 @@ func (fake *FakeDriver) ExecTerminateReturnsOnCall(i int, result1 error) {
 func (fake *FakeDriver) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.execConnectionInfoMutex.RLock()
+	defer fake.execConnectionInfoMutex.RUnlock()
 	fake.execCreateMutex.RLock()
 	defer fake.execCreateMutex.RUnlock()
 	fake.execDriverNameMutex.RLock()
