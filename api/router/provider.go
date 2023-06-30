@@ -19,10 +19,13 @@ type ProviderRouter struct {
 	supported []string
 }
 
-func NewProviderRouter(delegates map[types.Provider]*providersrv.ProviderService) *ProviderRouter {
-	supported := make([]string, 0, len(delegates))
-	for k := range delegates {
-		supported = append(supported, k.String())
+func NewProviderRouter(services ...*providersrv.ProviderService) *ProviderRouter {
+	supported := make([]string, 0, len(services))
+	delegates := make(map[types.Provider]*providersrv.ProviderService)
+
+	for _, svc := range services {
+		supported = append(supported, svc.Provider().String())
+		delegates[svc.Provider()] = svc
 	}
 
 	return &ProviderRouter{

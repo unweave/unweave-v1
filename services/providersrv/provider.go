@@ -9,6 +9,7 @@ import (
 
 type Driver interface {
 	ProviderListNodeTypes(ctx context.Context, userID string, filterAvailable bool) ([]types.NodeType, error)
+	Provider() types.Provider
 }
 
 type ProviderService struct {
@@ -17,6 +18,10 @@ type ProviderService struct {
 
 func NewProviderService(driver Driver) *ProviderService {
 	return &ProviderService{driver: driver}
+}
+
+func (s *ProviderService) Provider() types.Provider {
+	return s.driver.Provider()
 }
 
 func (s *ProviderService) ListNodeTypes(

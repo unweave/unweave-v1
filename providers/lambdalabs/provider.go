@@ -60,3 +60,7 @@ func (d *Driver) ProviderListNodeTypes(ctx context.Context, accountID string, fi
 
 	return nodeTypes, nil
 }
+
+func (d *Driver) Provider() types.Provider {
+	return types.LambdaLabsProvider
+}

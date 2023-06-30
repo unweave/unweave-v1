@@ -23,6 +23,10 @@ func NewProviderDriver(supportedInstanceTypes []types.NodeType) *ProviderDriver 
 	return &ProviderDriver{supportedInstanceTypes: supportedInstanceTypes}
 }
 
+func (p *ProviderDriver) Provider() types.Provider {
+	return types.AWSProvider
+}
+
 func (p *ProviderDriver) ProviderListNodeTypes(ctx context.Context, userID string, filterAvailable bool) ([]types.NodeType, error) {
 	return p.supportedInstanceTypes, nil
 }
