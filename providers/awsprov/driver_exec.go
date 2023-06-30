@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/providers/awsprov/internal/nodes"
 	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/tools/random"
 )
@@ -40,7 +41,7 @@ func (d *ExecDriver) ExecCreate(
 	ctx context.Context,
 	project string,
 	image string,
-	_ types.HardwareSpec,
+	spec types.HardwareSpec,
 	network types.ExecNetwork,
 	volumes []types.ExecVolume,
 	pubKeys []string,
@@ -50,6 +51,11 @@ func (d *ExecDriver) ExecCreate(
 
 	if network.HTTPService != nil {
 		return "", errors.New("exposing an http service is not supported in this aws provider")
+	}
+
+	instanceType := nodes.NodeType(spec)
+	if instanceType == "" {
+		return "", fmt.Errorf("could not find node matching spec")
 	}
 
 	execID, err := newExecID()
@@ -70,7 +76,7 @@ func (d *ExecDriver) ExecCreate(
 	minMaxCount := int32(1)
 	input := &ec2.RunInstancesInput{
 		ImageId:           &image,
-		InstanceType:      ec2types.InstanceTypeT2Micro,
+		InstanceType:      instanceType,
 		MinCount:          &minMaxCount,
 		MaxCount:          &minMaxCount,
 		UserData:          &uData,

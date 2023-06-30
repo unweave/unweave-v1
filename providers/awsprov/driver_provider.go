@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/providers/awsprov/internal/nodes"
 )
 
 type ProviderDriver struct {
@@ -12,7 +13,10 @@ type ProviderDriver struct {
 }
 
 func NewProviderDriverDefault() *ProviderDriver {
-	return NewProviderDriver(nil)
+	gNodes := nodes.ToNodeTypesGPU(nodes.GPUNodes())
+	cNodes := nodes.CPUNodeTypes()
+
+	return NewProviderDriver(append(gNodes, cNodes))
 }
 
 func NewProviderDriver(supportedInstanceTypes []types.NodeType) *ProviderDriver {
