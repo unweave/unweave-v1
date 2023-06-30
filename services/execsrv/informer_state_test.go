@@ -12,6 +12,10 @@ import (
 )
 
 func TestPollingStateInformerManager(t *testing.T) {
+	// Loosely in order:
+	// - Store returns StatusInitializing
+	// - Observer sees StatusInitializing and returns StatusRunning
+	// - Driver called and returns StatusTerminated
 	t.Parallel()
 
 	storeDone := make(chan struct{})
@@ -28,10 +32,16 @@ func TestPollingStateInformerManager(t *testing.T) {
 	driver := new(execsrvfakes.FakeDriver)
 	driver.ExecGetStatusCalls(func(_ context.Context, s string) (types.Status, error) {
 		assert.Equal(t, s, "abc123")
-		safeClose(driverDone)
-		<-storeDone
+		select {
+		case <-storeDone:
+			// if the store was called first
+			safeClose(driverDone)
 
-		return types.StatusTerminated, nil
+			return types.StatusTerminated, nil
+		default:
+			// if the store was not yet called
+			return types.StatusInitializing, nil
+		}
 	})
 
 	observer := new(execsrvfakes.FakeStateObserver)

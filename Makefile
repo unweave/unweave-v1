@@ -18,7 +18,7 @@ bin:
 	mkdir bin
 
 test: ## test the repo
-	$(GOTEST) -race $(GOFILES)
+	$(GOTEST) -race -timeout 1m $(GOFILES)
 
 echo:
 	echo $(GOFILES)
