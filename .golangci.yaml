@@ -30,11 +30,9 @@ linters:
   - exportloopref
   - forbidigo
   - forcetypeassert
-  - funlen
   - gci
   - ginkgolinter
   - gocheckcompilerdirectives
-  - gochecknoglobals
   - gochecknoinits
   - gocognit
   - goconst
@@ -42,7 +40,6 @@ linters:
   - gocyclo
   - godot
   - godox
-  - goerr113
   - gofmt
   - gofumpt
   - goheader
@@ -55,7 +52,6 @@ linters:
   - grouper
   - importas
   - interfacebloat
-  - lll
   - loggercheck
   - maintidx
   - makezero

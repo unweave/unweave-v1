@@ -55,6 +55,7 @@ func (m *PollingStateInformerManager) Add(exec types.Exec) StateInformer {
 		driver:    m.driver,
 		observers: make(map[string]StateObserver),
 		mu:        sync.Mutex{},
+		manager:   m,
 	}
 
 	m.informers[exec.ID] = inf
@@ -150,7 +151,7 @@ func (i *pollingStateInformer) Watch() {
 				}
 
 				if dbExec.Status != i.prevStatus {
-					log.Info().Msgf("store informing %s != %s", dbExec.Status, i.prevStatus)
+					log.Info().Msgf("store informing transition %s => %s", i.prevStatus, dbExec.Status)
 					i.prevStatus = dbExec.Status
 
 					state := State{Status: dbExec.Status}
@@ -169,7 +170,7 @@ func (i *pollingStateInformer) Watch() {
 				}
 
 				if status != i.prevStatus {
-					log.Info().Msgf("driver informing %s != %s", status, i.prevStatus)
+					log.Info().Msgf("driver informing transition %s => %s", i.prevStatus, status)
 					i.prevStatus = status
 
 					state := State{Status: status}

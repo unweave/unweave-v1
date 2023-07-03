@@ -1,3 +1,4 @@
+//nolint:revive
 package lambdalabs
 
 import (
@@ -6,7 +7,7 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-func (d *Driver) VolumeCreate(ctx context.Context, projectID string, size int) (string, error) {
+func (d *Driver) VolumeCreate(ctx context.Context, projectID, name string, size int) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }

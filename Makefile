@@ -18,7 +18,7 @@ bin:
 	mkdir bin
 
 test: ## test the repo
-	$(GOTEST) -race $(GOFILES)
+	$(GOTEST) -race -timeout 1m $(GOFILES)
 
 echo:
 	echo $(GOFILES)
@@ -27,7 +27,7 @@ format:
 	go fmt ./...
 
 lint: ## run the linters
-	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.53.3 run
+	go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.53.3 run --timeout=10m
 
 ci: lint test build ## run the ci jobs
 

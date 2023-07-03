@@ -86,6 +86,18 @@ type FakeStore struct {
 	updateReturnsOnCall map[int]struct {
 		result1 error
 	}
+	UpdateConnectionInfoStub        func(string, types.ConnectionInfo) error
+	updateConnectionInfoMutex       sync.RWMutex
+	updateConnectionInfoArgsForCall []struct {
+		arg1 string
+		arg2 types.ConnectionInfo
+	}
+	updateConnectionInfoReturns struct {
+		result1 error
+	}
+	updateConnectionInfoReturnsOnCall map[int]struct {
+		result1 error
+	}
 	UpdateStatusStub        func(string, types.Status, time.Time, time.Time) error
 	updateStatusMutex       sync.RWMutex
 	updateStatusArgsForCall []struct {
@@ -483,6 +495,68 @@ func (fake *FakeStore) UpdateReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeStore) UpdateConnectionInfo(arg1 string, arg2 types.ConnectionInfo) error {
+	fake.updateConnectionInfoMutex.Lock()
+	ret, specificReturn := fake.updateConnectionInfoReturnsOnCall[len(fake.updateConnectionInfoArgsForCall)]
+	fake.updateConnectionInfoArgsForCall = append(fake.updateConnectionInfoArgsForCall, struct {
+		arg1 string
+		arg2 types.ConnectionInfo
+	}{arg1, arg2})
+	stub := fake.UpdateConnectionInfoStub
+	fakeReturns := fake.updateConnectionInfoReturns
+	fake.recordInvocation("UpdateConnectionInfo", []interface{}{arg1, arg2})
+	fake.updateConnectionInfoMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeStore) UpdateConnectionInfoCallCount() int {
+	fake.updateConnectionInfoMutex.RLock()
+	defer fake.updateConnectionInfoMutex.RUnlock()
+	return len(fake.updateConnectionInfoArgsForCall)
+}
+
+func (fake *FakeStore) UpdateConnectionInfoCalls(stub func(string, types.ConnectionInfo) error) {
+	fake.updateConnectionInfoMutex.Lock()
+	defer fake.updateConnectionInfoMutex.Unlock()
+	fake.UpdateConnectionInfoStub = stub
+}
+
+func (fake *FakeStore) UpdateConnectionInfoArgsForCall(i int) (string, types.ConnectionInfo) {
+	fake.updateConnectionInfoMutex.RLock()
+	defer fake.updateConnectionInfoMutex.RUnlock()
+	argsForCall := fake.updateConnectionInfoArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeStore) UpdateConnectionInfoReturns(result1 error) {
+	fake.updateConnectionInfoMutex.Lock()
+	defer fake.updateConnectionInfoMutex.Unlock()
+	fake.UpdateConnectionInfoStub = nil
+	fake.updateConnectionInfoReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeStore) UpdateConnectionInfoReturnsOnCall(i int, result1 error) {
+	fake.updateConnectionInfoMutex.Lock()
+	defer fake.updateConnectionInfoMutex.Unlock()
+	fake.UpdateConnectionInfoStub = nil
+	if fake.updateConnectionInfoReturnsOnCall == nil {
+		fake.updateConnectionInfoReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.updateConnectionInfoReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeStore) UpdateStatus(arg1 string, arg2 types.Status, arg3 time.Time, arg4 time.Time) error {
 	fake.updateStatusMutex.Lock()
 	ret, specificReturn := fake.updateStatusReturnsOnCall[len(fake.updateStatusArgsForCall)]
@@ -562,6 +636,8 @@ func (fake *FakeStore) Invocations() map[string][][]interface{} {
 	defer fake.listMutex.RUnlock()
 	fake.updateMutex.RLock()
 	defer fake.updateMutex.RUnlock()
+	fake.updateConnectionInfoMutex.RLock()
+	defer fake.updateConnectionInfoMutex.RUnlock()
 	fake.updateStatusMutex.RLock()
 	defer fake.updateStatusMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

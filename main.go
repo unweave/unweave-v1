@@ -10,6 +10,7 @@ import (
 	"github.com/unweave/unweave/api/router"
 	"github.com/unweave/unweave/api/server"
 	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave/providers/awsprov"
 	"github.com/unweave/unweave/providers/lambdalabs"
 	"github.com/unweave/unweave/services/execsrv"
 	"github.com/unweave/unweave/services/sshkeys"
@@ -36,8 +37,18 @@ func main() {
 	// Initialize unweave from environment variables
 	runtimeCfg := &EnvInitializer{}
 	execStore := execsrv.NewPostgresStore()
+	volStore := volumesrv.NewPostgresStore()
 
-	// TODO: init store
+	lls := lambdaLabsService(execStore, volStore)
+	awss := awsService(execStore, volStore)
+
+	execRouter := router.NewExecRouter(execStore, lls, nil, awss)
+	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
+
+	server.API(cfg, runtimeCfg, execRouter, sshKeysRouter)
+}
+
+func lambdaLabsService(execStore execsrv.Store, volStore volumesrv.Store) execsrv.Service {
 	llDriver, err := lambdalabs.NewAuthenticatedLambdaLabsDriver("")
 	if err != nil {
 		panic(err)
@@ -47,8 +58,7 @@ func main() {
 	llStatsInf := execsrv.NewPollingStatsInformerManager(execStore, llDriver)
 	llHeartbeatInf := execsrv.NewPollingHeartbeatInformerManager(llDriver, 10)
 
-	volumeStore := volumesrv.NewPostgresStore()
-	llVolumeSrv := volumesrv.NewService(volumeStore, llDriver)
+	llVolumeSrv := volumesrv.NewService(volStore, llDriver)
 
 	lls := execsrv.NewService(execStore, llDriver, llVolumeSrv, llStateInf, llStatsInf, llHeartbeatInf)
 	lls = execsrv.WithStateObserver(lls, execsrv.NewStateObserverFactory(lls))
@@ -57,8 +67,26 @@ func main() {
 		panic(err)
 	}
 
-	execRouter := router.NewExecRouter(execStore, lls, nil)
-	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
+	return lls
+}
 
-	server.API(cfg, runtimeCfg, execRouter, sshKeysRouter)
+func awsService(execStore execsrv.Store, volStore volumesrv.Store) execsrv.Service {
+	ec2, sts, iam, err := awsprov.NewAwsApis("", "", "")
+	if err != nil {
+		panic(err)
+	}
+
+	execDriver := awsprov.NewExecDriverAPI("", "", ec2, sts, iam)
+	volDriver := awsprov.NewVolumeDriverAPI("", "", ec2)
+
+	awsStateInf := execsrv.NewPollingStateInformerManager(execStore, execDriver)
+	awsStatsInf := execsrv.NewPollingStatsInformerManager(execStore, execDriver)
+	awsHeartbeatInf := execsrv.NewPollingHeartbeatInformerManager(execDriver, 10)
+
+	awsVolumeSrv := volumesrv.NewService(volStore, volDriver)
+
+	awss := execsrv.NewService(execStore, execDriver, awsVolumeSrv, awsStateInf, awsStatsInf, awsHeartbeatInf)
+	awss = execsrv.WithStateObserver(awss, execsrv.NewStateObserverFactory(awss))
+
+	return awss
 }

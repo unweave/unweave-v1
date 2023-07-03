@@ -13,10 +13,18 @@ import (
 	"github.com/unweave/unweave/tools"
 )
 
-type postgresStore struct{}
+//counterfeiter:generate -o internal/execsrvfakes github.com/unweave/unweave/db.Querier
+
+type postgresStore struct {
+	db db.Querier
+}
 
 func NewPostgresStore() Store {
-	return postgresStore{}
+	return NewPostgresStoreDB(db.Q)
+}
+
+func NewPostgresStoreDB(querier db.Querier) Store {
+	return postgresStore{db: querier}
 }
 
 func (p postgresStore) Create(projectID string, exec types.Exec) error {
@@ -45,7 +53,7 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
 	}
 
-	err = createSSHKeys(ctx, exec.CreatedBy, publicKeys)
+	err = p.createSSHKeys(ctx, exec.CreatedBy, publicKeys)
 	if err != nil {
 		return fmt.Errorf("failed to create SSH keys: %w", err)
 	}
@@ -66,22 +74,22 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 		Command:      []string{},
 	}
 
-	if err = db.Q.ExecCreate(ctx, params); err != nil {
+	if err = p.db.ExecCreate(ctx, params); err != nil {
 		return fmt.Errorf("failed to create exec: %w", err)
 	}
 
-	keys, err := getSSHKeysByPublicKey(ctx, exec.CreatedBy, extractPublicKeys(publicKeys))
+	keys, err := p.getSSHKeysByPublicKey(ctx, exec.CreatedBy, extractPublicKeys(publicKeys))
 	if err != nil {
 		return err
 	}
 
-	err = addSSHKeyToExec(ctx, exec, keys)
+	err = p.addSSHKeyToExec(ctx, exec, keys)
 	if err != nil {
 		return fmt.Errorf("failed to add SSH key to exec: %w", err)
 	}
 
 	for _, volume := range exec.Volumes {
-		err := db.Q.ExecVolumeCreate(context.Background(), db.ExecVolumeCreateParams{
+		err := p.db.ExecVolumeCreate(context.Background(), db.ExecVolumeCreateParams{
 			ExecID:    exec.ID,
 			VolumeID:  volume.VolumeID,
 			MountPath: volume.MountPath,
@@ -97,26 +105,32 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 func (p postgresStore) Get(id string) (types.Exec, error) {
 	ctx := context.Background()
 
-	exec, err := db.Q.ExecGet(ctx, id)
+	exec, err := p.db.ExecGet(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return types.Exec{}, ErrNotFound
 		}
 		return types.Exec{}, err
 	}
-	keyRefs, err := db.Q.ExecSSHKeysGetByExecID(ctx, id)
+
+	keyRefs, err := p.db.ExecSSHKeysGetByExecID(ctx, id)
 	if err != nil {
 		return types.Exec{}, err
 	}
+
 	keyIDs := tools.MapToStrings(keyRefs, func(key db.UnweaveExecSshKey) string {
 		return key.SshKeyID
 	})
 
-	keys, err := db.Q.SSHKeysGetByIDs(ctx, keyIDs)
+	keys, err := p.db.SSHKeysGetByIDs(ctx, keyIDs)
 	if err != nil {
 		return types.Exec{}, err
 	}
-	volumes, err := db.Q.ExecVolumeGet(ctx, id)
+
+	volumes, err := p.db.ExecVolumeGet(ctx, id)
+	if err != nil {
+		return types.Exec{}, fmt.Errorf("get volume: %w", err)
+	}
 
 	return dbExecToExec(exec, dbExecVolumesToVolumes(volumes), dbSSHKeyToSSHKey(keys)), nil
 }
@@ -148,7 +162,7 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 		FilterProjectID: project,
 		FilterActive:    filterActive,
 	}
-	execs, err := db.Q.ExecList(ctx, params)
+	execs, err := p.db.ExecList(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list execs: %w", err)
 	}
@@ -156,7 +170,7 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 	res := make([]types.Exec, len(execs))
 
 	for idx, exec := range execs {
-		keyRefs, err := db.Q.ExecSSHKeysGetByExecID(ctx, exec.ID)
+		keyRefs, err := p.db.ExecSSHKeysGetByExecID(ctx, exec.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -165,12 +179,12 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 			return key.SshKeyID
 		})
 
-		keys, err := db.Q.SSHKeysGetByIDs(ctx, keyIDs)
+		keys, err := p.db.SSHKeysGetByIDs(ctx, keyIDs)
 		if err != nil {
 			return []types.Exec{}, err
 		}
 
-		volumes, err := db.Q.ExecVolumeGet(ctx, exec.ID)
+		volumes, err := p.db.ExecVolumeGet(ctx, exec.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +197,7 @@ func (p postgresStore) List(projectID *string, filterProvider *types.Provider, f
 
 func (p postgresStore) Delete(id string) error {
 	// Execs should be soft deleted
-	err := db.Q.ExecVolumeDelete(context.Background(), id)
+	err := p.db.ExecVolumeDelete(context.Background(), id)
 	if err != nil {
 		return fmt.Errorf("failed to unassign volumes for exec with error: %w", err)
 	}
@@ -196,7 +210,6 @@ func (p postgresStore) Delete(id string) error {
 }
 
 func (p postgresStore) Update(id string, exec types.Exec) error {
-	//TODO implement me
 	panic("implement me")
 }
 
@@ -208,15 +221,32 @@ func (p postgresStore) UpdateStatus(id string, status types.Status, setReadyAt, 
 		ReadyAt:  db.NullTimeFrom(setReadyAt),
 		ExitedAt: db.NullTimeFrom(setExitedAt),
 	}
-	if e := db.Q.ExecStatusUpdate(context.Background(), params); e != nil {
+	if e := p.db.ExecStatusUpdate(context.Background(), params); e != nil {
 		return fmt.Errorf("failed to update exec status: %w", e)
 	}
 	return nil
 }
 
-func addSSHKeyToExec(ctx context.Context, exec types.Exec, keys []db.UnweaveSshKey) error {
+func (p postgresStore) UpdateConnectionInfo(execID string, connInfo types.ConnectionInfo) error {
+	connInfoJSON, err := json.Marshal(connInfo)
+	if err != nil {
+		return fmt.Errorf("failed to marshal connection info: %w", err)
+	}
+
+	params := db.ExecUpdateConnectionInfoParams{
+		ID:             execID,
+		ConnectionInfo: connInfoJSON,
+	}
+	if err = p.db.ExecUpdateConnectionInfo(context.Background(), params); err != nil {
+		return fmt.Errorf("failed to update connection info: %w", err)
+	}
+
+	return nil
+}
+
+func (p postgresStore) addSSHKeyToExec(ctx context.Context, exec types.Exec, keys []db.UnweaveSshKey) error {
 	for _, key := range keys {
-		err := db.Q.ExecSSHKeyInsert(ctx, db.ExecSSHKeyInsertParams{
+		err := p.db.ExecSSHKeyInsert(ctx, db.ExecSSHKeyInsertParams{
 			ExecID:   exec.ID,
 			SshKeyID: key.ID,
 		})
@@ -228,20 +258,23 @@ func addSSHKeyToExec(ctx context.Context, exec types.Exec, keys []db.UnweaveSshK
 	return nil
 }
 
-func createSSHKeys(ctx context.Context, createdByID string, keys []types.SSHKey) error {
+func (p postgresStore) createSSHKeys(ctx context.Context, createdByID string, keys []types.SSHKey) error {
 	for _, key := range keys {
 		key := key
-		exists, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
+
+		exists, err := p.db.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
 			PublicKey: *key.PublicKey,
 			OwnerID:   createdByID,
 		})
 		if err != nil && err != sql.ErrNoRows {
 			return err
 		}
+
 		if exists.PublicKey != "" {
 			continue
 		}
-		err = db.Q.SSHKeyAdd(ctx, db.SSHKeyAddParams{
+
+		err = p.db.SSHKeyAdd(ctx, db.SSHKeyAddParams{
 			OwnerID:   createdByID,
 			Name:      key.Name,
 			PublicKey: *key.PublicKey,
@@ -334,11 +367,11 @@ func dbExecVolumeToExecVolume(volume db.UnweaveExecVolume) types.ExecVolume {
 	}
 }
 
-func getSSHKeysByPublicKey(ctx context.Context, ownerID string, pubs []string) ([]db.UnweaveSshKey, error) {
+func (p postgresStore) getSSHKeysByPublicKey(ctx context.Context, ownerID string, pubs []string) ([]db.UnweaveSshKey, error) {
 	keys := make([]db.UnweaveSshKey, 0, len(pubs))
 
 	for _, pub := range pubs {
-		key, err := db.Q.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
+		key, err := p.db.SSHKeyGetByPublicKey(ctx, db.SSHKeyGetByPublicKeyParams{
 			PublicKey: pub,
 			OwnerID:   ownerID,
 		})

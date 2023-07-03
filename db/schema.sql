@@ -167,12 +167,12 @@ ALTER TABLE unweave.node_ssh_key OWNER TO postgres;
 
 CREATE TABLE unweave.volume (
     id text DEFAULT ('vol_'::text || public.nanoid()) NOT NULL,
+    size integer NOT NULL,
     name text NOT NULL,
     project_id text NOT NULL,
     provider text NOT NULL,
-    created_at timestamp without time zone DEFAULT now() NOT NULL,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    size integer DEFAULT 0 NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone
 );
 
