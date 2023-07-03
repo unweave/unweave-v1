@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -50,7 +51,12 @@ func (d *ExecDriver) ExecCreate(
 	log.Warn().Msgf("Ignoring hardware spec in aws driver")
 
 	if network.HTTPService != nil {
-		return "", errors.New("exposing an http service is not supported in this aws provider")
+		return "", &types.Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Exposing an HTTP Service is not supported in this aws provider",
+			Suggestion: "Remove the port",
+			Provider:   "AWS",
+		}
 	}
 
 	instanceType := nodes.NodeType(spec)
