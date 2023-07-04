@@ -40,7 +40,7 @@ func cpuSpec(cpuCount, ram int) types.HardwareSpec {
 	return types.HardwareSpec{
 		GPU: types.GPU{},
 		CPU: types.CPU{
-			Type: "intel",
+			Type: "x86_64",
 			HardwareRequestRange: types.HardwareRequestRange{
 				Min: cpuCount,
 				Max: cpuCount,
@@ -76,7 +76,7 @@ func gpuSpec(gpuType string, gpuCount, gpuRAM, cpuCount, ram int) types.Hardware
 			},
 		},
 		CPU: types.CPU{
-			Type: "intel",
+			Type: "x86_64",
 			HardwareRequestRange: types.HardwareRequestRange{
 				Min: cpuCount,
 				Max: cpuCount,
