@@ -202,7 +202,7 @@ func GPUNodes() map[string][]AwsNodeType {
 
 func NodeType(spec types.HardwareSpec) ec2types.InstanceType {
 	if spec.GPU.Type == "" {
-		if spec.CPU.Type != "intel" {
+		if spec.CPU.Type != "x86_64" {
 			return ec2types.InstanceType(spec.CPU.Type)
 		}
 
@@ -215,7 +215,7 @@ func NodeType(spec types.HardwareSpec) ec2types.InstanceType {
 }
 
 func CPUNodeTypes() types.NodeType {
-	return toNodeType("CPU", "intel", "intel", "", GeneralPurposeNodes())
+	return toNodeType("CPU", "x86_64", "x86_64", "", GeneralPurposeNodes())
 }
 
 func toNodeType(nodeType string, nodeID string, cpuType string, gpuType string, cpuNodes []AwsNodeType) types.NodeType {
