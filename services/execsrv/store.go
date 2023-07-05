@@ -316,6 +316,10 @@ func dbExecToExec(dbe db.UnweaveExec, volumes []types.ExecVolume, keys []types.S
 	if dbe.GitRemoteUrl.Valid {
 		githubRemoteURL = &dbe.GitRemoteUrl.String
 	}
+	var exitedAt *time.Time
+	if dbe.ExitedAt.Valid {
+		exitedAt = &dbe.ExitedAt.Time
+	}
 
 	metadataFromJSON, err := types.NodeMetadataFromJSON(dbe.Metadata)
 	if err != nil {
@@ -334,6 +338,7 @@ func dbExecToExec(dbe db.UnweaveExec, volumes []types.ExecVolume, keys []types.S
 		ID:        dbe.ID,
 		Name:      dbe.Name,
 		CreatedAt: dbe.CreatedAt,
+		ExitedAt:  exitedAt,
 		CreatedBy: dbe.CreatedBy,
 		Image:     dbe.Image,
 		BuildID:   bid,

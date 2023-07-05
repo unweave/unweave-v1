@@ -150,6 +150,7 @@ type Exec struct {
 	ID        string       `json:"id"`
 	Name      string       `json:"name"`
 	CreatedAt time.Time    `json:"createdAt,omitempty"`
+	ExitedAt  *time.Time   `json:"exitedAt,omitempty"`
 	CreatedBy string       `json:"createdBy,omitempty"`
 	Image     string       `json:"image,omitempty"`
 	BuildID   *string      `json:"buildID,omitempty"`
