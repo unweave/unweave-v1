@@ -111,9 +111,13 @@ type Node struct {
 }
 
 type Project struct {
-	ID    string `json:"id"`
-	Owner string `json:"owner"`
-	Name  string `json:"name"`
+	ID         string    `json:"id"`
+	Owner      string    `json:"owner"`
+	Name       string    `json:"name"`
+	Icon       string    `json:"icon"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Visibility string    `json:"visibility"`
+	GithubURL  *string   `json:"githubURL"`
 }
 
 type SSHKey struct {
