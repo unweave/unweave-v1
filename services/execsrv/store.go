@@ -318,6 +318,10 @@ func dbExecToExec(dbe db.UnweaveExec, volumes []types.ExecVolume, keys []types.S
 	if dbe.GitRemoteUrl.Valid {
 		githubRemoteURL = &dbe.GitRemoteUrl.String
 	}
+	var exitedAt *time.Time
+	if dbe.ExitedAt.Valid {
+		exitedAt = &dbe.ExitedAt.Time
+	}
 
 	var exitedAt *time.Time
 	if dbe.ExitedAt.Valid {
