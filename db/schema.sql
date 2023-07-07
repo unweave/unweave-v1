@@ -128,6 +128,32 @@ CREATE TABLE unweave.account (
 
 ALTER TABLE unweave.account OWNER TO postgres;
 
+CREATE TABLE unweave.endpoint (
+    id text NOT NULL,
+    exec_id text NOT NULL,
+    project_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+ALTER TABLE unweave.endpoint OWNER TO postgres;
+
+CREATE TABLE unweave.endpoint_eval (
+    endpoint_id text NOT NULL,
+    eval_id text NOT NULL
+);
+
+ALTER TABLE unweave.endpoint_eval OWNER TO postgres;
+
+CREATE TABLE unweave.eval (
+    id text NOT NULL,
+    exec_id text NOT NULL,
+    project_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE unweave.eval OWNER TO postgres;
+
 CREATE TABLE unweave.exec_ssh_key (
     exec_id text NOT NULL,
     ssh_key_id text NOT NULL
@@ -183,6 +209,15 @@ ALTER TABLE ONLY unweave.account
 
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.endpoint_eval
+    ADD CONSTRAINT endpoint_eval_pkey PRIMARY KEY (endpoint_id, eval_id);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT endpoint_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.eval
+    ADD CONSTRAINT eval_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY unweave.exec_ssh_key
     ADD CONSTRAINT exec_ssh_key_pkey PRIMARY KEY (exec_id, ssh_key_id);

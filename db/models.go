@@ -123,6 +123,26 @@ type UnweaveBuild struct {
 	MetaData    json.RawMessage    `json:"metaData"`
 }
 
+type UnweaveEndpoint struct {
+	ID        string       `json:"id"`
+	ExecID    string       `json:"execID"`
+	ProjectID string       `json:"projectID"`
+	CreatedAt time.Time    `json:"createdAt"`
+	DeletedAt sql.NullTime `json:"deletedAt"`
+}
+
+type UnweaveEndpointEval struct {
+	EndpointID string `json:"endpointID"`
+	EvalID     string `json:"evalID"`
+}
+
+type UnweaveEval struct {
+	ID        string    `json:"id"`
+	ExecID    string    `json:"execID"`
+	ProjectID string    `json:"projectID"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 type UnweaveExec struct {
 	ID           string            `json:"id"`
 	Name         string            `json:"name"`

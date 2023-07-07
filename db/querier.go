@@ -13,6 +13,16 @@ type Querier interface {
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
+	EndpointCreate(ctx context.Context, arg EndpointCreateParams) error
+	EndpointDelete(ctx context.Context, id string) error
+	EndpointEval(ctx context.Context, endpointID string) ([]UnweaveEndpointEval, error)
+	EndpointEvalAttach(ctx context.Context, arg EndpointEvalAttachParams) error
+	EndpointGet(ctx context.Context, id string) (UnweaveEndpoint, error)
+	EndpointsForProject(ctx context.Context, projectID string) ([]UnweaveEndpoint, error)
+	EvalCreate(ctx context.Context, arg EvalCreateParams) error
+	EvalDelete(ctx context.Context, id string) error
+	EvalGet(ctx context.Context, id string) (EvalGetRow, error)
+	EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRow, error)
 	ExecCreate(ctx context.Context, arg ExecCreateParams) error
 	ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error)
 	ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error)

@@ -16,16 +16,9 @@ type VolumeRouter struct {
 	service volumesrv.Service
 }
 
-func NewVolumeRouter(store volumesrv.Store, services ...volumesrv.Service) *VolumeRouter {
-	delegates := make(map[types.Provider]volumesrv.Service)
-
-	for i := range services {
-		svc := services[i]
-		delegates[svc.Provider()] = svc
-	}
-
+func NewVolumeRouter(service volumesrv.Service) *VolumeRouter {
 	return &VolumeRouter{
-		service: volumesrv.NewServiceRouter(store, delegates),
+		service: service,
 	}
 }
 
