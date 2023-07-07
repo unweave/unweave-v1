@@ -85,3 +85,36 @@ func (q *Queries) EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRo
 	}
 	return items, nil
 }
+
+const EvalListForProject = `-- name: EvalListForProject :many
+SELECT id, exec_id, project_id from unweave.eval WHERE project_id = $1
+`
+
+type EvalListForProjectRow struct {
+	ID        string `json:"id"`
+	ExecID    string `json:"execID"`
+	ProjectID string `json:"projectID"`
+}
+
+func (q *Queries) EvalListForProject(ctx context.Context, projectID string) ([]EvalListForProjectRow, error) {
+	rows, err := q.db.QueryContext(ctx, EvalListForProject, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EvalListForProjectRow
+	for rows.Next() {
+		var i EvalListForProjectRow
+		if err := rows.Scan(&i.ID, &i.ExecID, &i.ProjectID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

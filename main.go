@@ -42,7 +42,8 @@ func main() {
 	lls := lambdaLabsService(execStore, volStore)
 	awss := awsService(execStore, volStore)
 
-	execRouter := router.NewExecRouter(execStore, lls, nil, awss)
+	delegatingExecSrv := execsrv.NewDelegatingService(execStore, lls, awss)
+	execRouter := router.NewExecRouter(execStore, delegatingExecSrv)
 	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
 
 	server.API(cfg, runtimeCfg, execRouter, sshKeysRouter)

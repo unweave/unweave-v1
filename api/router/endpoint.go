@@ -1,3 +1,4 @@
+//nolint:varnamelen
 package router
 
 import (
@@ -6,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
 	"github.com/unweave/unweave/services/endpointsrv"
 )
@@ -26,28 +28,29 @@ func (e *EndpointRouter) EndpointRunCheckHandler(w http.ResponseWriter, r *http.
 
 	id, err := e.endpoints.RunEndpointEvals(ctx, endpointID)
 	if err != nil {
-		render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to run endpoint evals"))
+		_ = render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to run endpoint evals"))
+
 		return
 	}
 
-	render.JSON(w, r, struct {
-		CheckID string `json:"check_id"`
-	}{CheckID: id})
+	render.JSON(w, r, types.EndpointCheckRun{CheckID: id})
 }
 
 func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	projectID := chi.URLParam(r, "project")
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
 	var req types.EndpointCreate
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
+		_ = render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
+
 		return
 	}
 
 	endpoint, err := e.endpoints.EndpointExecCreate(ctx, projectID, req.ExecID)
 	if err != nil {
-		render.Render(w, r, types.ErrInternalServer(err, "create endpoint failed"))
+		_ = render.Render(w, r, types.ErrInternalServer(err, "create endpoint failed"))
+
 		return
 	}
 
@@ -56,11 +59,12 @@ func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) 
 
 func (e *EndpointRouter) EndpointList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	projectID := chi.URLParam(r, "project")
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
 	ends, err := e.endpoints.EndpointList(ctx, projectID)
 	if err != nil {
-		render.Render(w, r, types.ErrInternalServer(err, "list endpoints"))
+		_ = render.Render(w, r, types.ErrInternalServer(err, "list endpoints"))
+
 		return
 	}
 
@@ -73,11 +77,14 @@ func (e *EndpointRouter) EndpointEvalAttach(w http.ResponseWriter, r *http.Reque
 
 	var req types.EndpointEvalAttach
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
+		_ = render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
+
 		return
 	}
 
 	if err := e.endpoints.EndpointAttachEval(ctx, endpointID, req.EvalID); err != nil {
-		render.Render(w, r, types.ErrInternalServer(err, "attach eval"))
+		_ = render.Render(w, r, types.ErrInternalServer(err, "attach eval"))
+
+		return
 	}
 }

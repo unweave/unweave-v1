@@ -62,7 +62,7 @@ func (s *DelegatingService) Delete(ctx context.Context, projectID, idOrName stri
 	return svc.Delete(ctx, projectID, idOrName)
 }
 
-func (s *DelegatingService) Get(ctx context.Context, projectID, idOrName string) (types.Volume, error) {
+func (s *DelegatingService) Get(_ context.Context, projectID, idOrName string) (types.Volume, error) {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return types.Volume{}, err
@@ -71,7 +71,7 @@ func (s *DelegatingService) Get(ctx context.Context, projectID, idOrName string)
 	return vol, nil
 }
 
-func (s *DelegatingService) List(ctx context.Context, projectID string) ([]types.Volume, error) {
+func (s *DelegatingService) List(_ context.Context, projectID string) ([]types.Volume, error) {
 	vols, err := s.store.VolumeList(projectID)
 	if err != nil {
 		return nil, err

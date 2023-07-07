@@ -23,6 +23,7 @@ type Querier interface {
 	EvalDelete(ctx context.Context, id string) error
 	EvalGet(ctx context.Context, id string) (EvalGetRow, error)
 	EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRow, error)
+	EvalListForProject(ctx context.Context, projectID string) ([]EvalListForProjectRow, error)
 	ExecCreate(ctx context.Context, arg ExecCreateParams) error
 	ExecGet(ctx context.Context, idOrName string) (UnweaveExec, error)
 	ExecGetAllActive(ctx context.Context) ([]UnweaveExec, error)

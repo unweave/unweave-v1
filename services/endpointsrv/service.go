@@ -1,3 +1,4 @@
+//nolint:noctx,godox
 package endpointsrv
 
 import (
@@ -79,7 +80,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		return types.Endpoint{}, fmt.Errorf("save endpoint: %w", err)
 	}
 
-	return endpoint(endpointID, projectID, exec), nil
+	return endpoint(endpointID, projectID, exec, []string{}), nil
 }
 
 func (e *EndpointService) EndpointAttachEval(ctx context.Context, endpointID, evalID string) error {
@@ -105,6 +106,7 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 	}
 
 	execByID := make(map[string]types.Exec)
+
 	for _, pe := range projectExecs {
 		pe := pe
 		execByID[pe.ID] = pe
@@ -114,11 +116,23 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 
 	for _, end := range dbEnds {
 		exec, ok := execByID[end.ExecID]
+
 		if !ok {
 			continue
 		}
 
-		out = append(out, endpoint(end.ID, end.ProjectID, exec))
+		// TODO: fix query in loop
+		endEvals, err := e.store.EndpointEval(ctx, end.ID)
+		if err != nil {
+			return nil, fmt.Errorf("get endpoint evals: %w", err)
+		}
+
+		ids := make([]string, len(endEvals))
+		for i, eval := range endEvals {
+			ids[i] = eval.EvalID
+		}
+
+		out = append(out, endpoint(end.ID, end.ProjectID, exec, ids))
 	}
 
 	return out, nil
@@ -145,7 +159,7 @@ func (e *EndpointService) EndpointGet(ctx context.Context, id string) (types.End
 		ids[i] = eval.EvalID
 	}
 
-	return endpoint(end.ID, end.ProjectID, exec), nil
+	return endpoint(end.ID, end.ProjectID, exec, ids), nil
 }
 
 func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID string) (string, error) {
@@ -161,35 +175,13 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 		return "", fmt.Errorf("get evals: %w", err)
 	}
 
-	if endpoint.HTTPEndpoint == "" {
-		return "", errors.New("endpoint must be exposed and have hostname attached")
+	if err := verifyCanRunChecks(endpoint, evals); err != nil {
+		return "", fmt.Errorf("verify checks: %w", err)
 	}
 
-	if !allHaveHTTPServiceHostname(evals...) {
-		return "", errors.New("evals must have http service exposed")
-	}
-
-	if len(evals) == 0 {
-		return "", errors.New("no evals on endpoint")
-	}
-
-	var checks []checkEndpointStep
-
-	for _, eval := range evals {
-		datasetPath := "https://" + eval.Exec.Network.HTTPService.Hostname + "/dataset"
-		assertPath := "https://" + eval.Exec.Network.HTTPService.Hostname + "/assert"
-		d, err := fetchDataset(datasetPath)
-		if err != nil {
-			return "", fmt.Errorf("fetch dataset: %w", err)
-		}
-
-		for _, item := range d.Data {
-			checks = append(checks, checkEndpointStep{
-				input:      item.Input,
-				assertPath: assertPath,
-				endpoint:   "https://" + endpoint.HTTPEndpoint,
-			})
-		}
+	checks, err := buildEndpointCheckSteps(endpoint, evals)
+	if err != nil {
+		return "", fmt.Errorf("build endpoint checks: %w", err)
 	}
 
 	go func() {
@@ -201,18 +193,58 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 				log.Error().Err(check.err).Msg("check failed")
 			}
 
+			// TODO: store check progress / data somewhere
+			// make it pollable
 			log.Info().
 				Str("check_id", checkID).
 				Str("input", string(check.input)).
 				Str("response", string(check.endpointResponse)).
-				Str("assertion", string(check.assertion)).
+				Str("assertion", check.assertion).
 				Send()
-			// TODO: store check progress / data somewhere
-			// make it pollable
 		}
 	}()
 
 	return checkID, nil
+}
+
+func verifyCanRunChecks(endpoint types.Endpoint, evals []types.Eval) error {
+	if endpoint.HTTPEndpoint == "" {
+		return errors.New("endpoint must be exposed and have hostname attached")
+	}
+
+	if !allHaveHTTPServiceHostname(evals...) {
+		return errors.New("evals must have http service exposed")
+	}
+
+	if len(evals) == 0 {
+		return errors.New("no evals on endpoint")
+	}
+
+	return nil
+}
+
+func buildEndpointCheckSteps(endpoint types.Endpoint, evals []types.Eval) ([]checkEndpointStep, error) {
+	var checks []checkEndpointStep
+
+	for _, eval := range evals {
+		datasetPath := "https://" + eval.HTTPEndpoint + "/dataset"
+		assertPath := "https://" + eval.HTTPEndpoint + "/assert"
+
+		d, err := fetchDataset(datasetPath)
+		if err != nil {
+			return nil, fmt.Errorf("fetch dataset: %w", err)
+		}
+
+		for _, item := range d.Data {
+			checks = append(checks, checkEndpointStep{
+				input:      item.Input,
+				assertPath: assertPath,
+				endpoint:   "https://" + endpoint.HTTPEndpoint,
+			})
+		}
+	}
+
+	return checks, nil
 }
 
 type checkEndpointStep struct {
@@ -228,47 +260,51 @@ type checkEndpointStep struct {
 func (c *checkEndpointStep) callEndpoint() {
 	buf := bytes.NewBuffer(c.input)
 
-	r, err := http.NewRequest("POST", c.endpoint, buf)
+	req, err := http.NewRequest(http.MethodPost, c.endpoint, buf)
 	if err != nil {
 		c.err = fmt.Errorf("build endpoint request: %w", err)
+
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(r)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.err = fmt.Errorf("call endpoint: %w", err)
+
 		return
 	}
 
 	defer resp.Body.Close()
 
 	c.endpointResponse, c.err = io.ReadAll(resp.Body)
-	return
 }
 
 func (c *checkEndpointStep) assertResponse() {
 	buf := bytes.NewBuffer(c.endpointResponse)
 
-	r, err := http.NewRequest("POST", c.assertPath, buf)
+	req, err := http.NewRequest(http.MethodPost, c.assertPath, buf)
 	if err != nil {
 		c.err = fmt.Errorf("build assert request: %w", err)
+
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(r)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.err = fmt.Errorf("call assert: %w", err)
+
 		return
 	}
 
 	defer resp.Body.Close()
 
 	var response struct {
-		Result string
+		Result string `json:"result"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		c.err = fmt.Errorf("decode assert response: %w", err)
+
 		return
 	}
 
@@ -283,12 +319,12 @@ type datasetItem struct {
 	Input json.RawMessage `json:"input"`
 }
 
-func endpoint(endpointID, projectID string, exec types.Exec) types.Endpoint {
+func endpoint(endpointID, projectID string, exec types.Exec, ids []string) types.Endpoint {
 	endpoint := types.Endpoint{
 		ID:        endpointID,
 		ProjectID: projectID,
 		ExecID:    exec.ID,
-		EvalIDs:   []string{},
+		EvalIDs:   ids,
 	}
 
 	if exec.Network.HTTPService != nil && exec.Network.HTTPService.Hostname != "" {
@@ -299,6 +335,7 @@ func endpoint(endpointID, projectID string, exec types.Exec) types.Endpoint {
 }
 
 func fetchDataset(datasetPath string) (dataset, error) {
+	//nolint:gosec
 	resp, err := http.Get(datasetPath)
 	if err != nil {
 		return dataset{}, fmt.Errorf("get dataset: %w", err)
@@ -306,19 +343,18 @@ func fetchDataset(datasetPath string) (dataset, error) {
 
 	defer resp.Body.Close()
 
-	var d dataset
+	var data dataset
 
-	if err := json.NewDecoder(resp.Body).Decode(&d); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		return dataset{}, fmt.Errorf("decode dataset: %w", err)
 	}
 
-	return d, nil
+	return data, nil
 }
 
 func allHaveHTTPServiceHostname(evals ...types.Eval) bool {
 	for _, e := range evals {
-		if e.Exec.Network.HTTPService == nil &&
-			e.Exec.Network.HTTPService.Hostname != "" {
+		if e.HTTPEndpoint == "" {
 			return false
 		}
 	}

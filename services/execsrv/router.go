@@ -60,7 +60,7 @@ func (s *DelegatingService) Create(
 }
 
 // Get returns a single session irrespective of the provider.
-func (s *DelegatingService) Get(ctx context.Context, execID string) (types.Exec, error) {
+func (s *DelegatingService) Get(_ context.Context, execID string) (types.Exec, error) {
 	exec, err := s.store.Get(execID)
 	if err != nil {
 		return types.Exec{}, err
@@ -70,7 +70,7 @@ func (s *DelegatingService) Get(ctx context.Context, execID string) (types.Exec,
 }
 
 // List returns a list of sessions for a given project irrespective of the providers.
-func (s *DelegatingService) List(ctx context.Context, projectID string) ([]types.Exec, error) {
+func (s *DelegatingService) List(_ context.Context, projectID string) ([]types.Exec, error) {
 	execs, err := s.store.List(&projectID, nil, false)
 	if err != nil {
 		return nil, err

@@ -1,37 +1,39 @@
 package types
 
 type EndpointCreate struct {
-	ExecID string `json:"exec_id"`
+	ExecID string `json:"execId"`
 }
 
 type EndpointEvalAttach struct {
-	EvalID string `json:"eval_id"`
+	EvalID string `json:"evalId"`
 }
 
 type EndpointList struct {
 	Endpoints []Endpoint `json:"endpoints"`
 }
 
-//type Endpoint struct {
-//	ID        string   `json:"id"`
-//	ProjectID string   `json:"project_id"`
-//	Exec      Exec     `json:"exec"`
-//	EvalIDs   []string `json:"eval_ids"`
-//}
+type EvalList struct {
+	Evals []Eval `json:"evals"`
+}
 
 type Endpoint struct {
 	ID           string   `json:"id"`
-	ProjectID    string   `json:"project_id"`
-	ExecID       string   `json:"exec_id"`
-	HTTPEndpoint string   `json:"http_endpoint"`
-	EvalIDs      []string `json:"eval_ids"`
+	ProjectID    string   `json:"projectId"`
+	ExecID       string   `json:"execId"`
+	HTTPEndpoint string   `json:"httpEndpoint"`
+	EvalIDs      []string `json:"evalIDs"`
 }
 
 type Eval struct {
-	ID   string `json:"id"`
-	Exec Exec   `json:"exec"`
+	ID           string `json:"id"`
+	ExecID       string `json:"execId"`
+	HTTPEndpoint string `json:"httpEndpoint"`
 }
 
 type EvalCreate struct {
-	ExecID string `json:"exec_id"`
+	ExecID string `json:"execId"`
+}
+
+type EndpointCheckRun struct {
+	CheckID string `json:"checkId"`
 }
