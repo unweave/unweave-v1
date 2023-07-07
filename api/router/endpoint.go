@@ -49,7 +49,7 @@ func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) 
 
 	endpoint, err := e.endpoints.EndpointExecCreate(ctx, projectID, req.ExecID)
 	if err != nil {
-		_ = render.Render(w, r, types.ErrInternalServer(err, "create endpoint failed"))
+		_ = render.Render(w, r, types.ErrHTTPError(err, "create endpoint failed"))
 
 		return
 	}
@@ -63,7 +63,7 @@ func (e *EndpointRouter) EndpointList(w http.ResponseWriter, r *http.Request) {
 
 	ends, err := e.endpoints.EndpointList(ctx, projectID)
 	if err != nil {
-		_ = render.Render(w, r, types.ErrInternalServer(err, "list endpoints"))
+		_ = render.Render(w, r, types.ErrHTTPError(err, "list endpoints"))
 
 		return
 	}
@@ -83,7 +83,7 @@ func (e *EndpointRouter) EndpointEvalAttach(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := e.endpoints.EndpointAttachEval(ctx, endpointID, req.EvalID); err != nil {
-		_ = render.Render(w, r, types.ErrInternalServer(err, "attach eval"))
+		_ = render.Render(w, r, types.ErrHTTPError(err, "attach eval"))
 
 		return
 	}

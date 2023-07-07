@@ -35,7 +35,7 @@ func (e *EvalRouter) EvalCreate(w http.ResponseWriter, r *http.Request) {
 
 	eval, err := e.service.EvalCreate(ctx, projectID, req.ExecID)
 	if err != nil {
-		_ = render.Render(w, r, types.ErrInternalServer(err, "create eval"))
+		_ = render.Render(w, r, types.ErrHTTPError(err, "create eval"))
 
 		return
 	}
@@ -49,7 +49,7 @@ func (e *EvalRouter) EvalList(w http.ResponseWriter, r *http.Request) {
 
 	evals, err := e.service.EvalListForProject(ctx, projectID)
 	if err != nil {
-		_ = render.Render(w, r, types.ErrInternalServer(err, "create eval"))
+		_ = render.Render(w, r, types.ErrHTTPError(err, "create eval"))
 
 		return
 	}

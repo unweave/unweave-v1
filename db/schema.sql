@@ -255,6 +255,24 @@ ALTER TABLE ONLY unweave.build
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
 
+ALTER TABLE ONLY unweave.endpoint_eval
+    ADD CONSTRAINT endpoint_eval_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
+
+ALTER TABLE ONLY unweave.endpoint_eval
+    ADD CONSTRAINT endpoint_eval_eval_id_fkey FOREIGN KEY (eval_id) REFERENCES unweave.eval(id);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT endpoint_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT endpoint_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+
+ALTER TABLE ONLY unweave.eval
+    ADD CONSTRAINT eval_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
+
+ALTER TABLE ONLY unweave.eval
+    ADD CONSTRAINT eval_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+
 ALTER TABLE ONLY unweave.exec
     ADD CONSTRAINT exec_build_id_fkey FOREIGN KEY (build_id) REFERENCES unweave.build(id);
 
