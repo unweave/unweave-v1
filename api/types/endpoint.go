@@ -1,5 +1,7 @@
 package types
 
+import "encoding/json"
+
 type EndpointCreate struct {
 	ExecID string `json:"execId"`
 }
@@ -36,4 +38,17 @@ type EvalCreate struct {
 
 type EndpointCheckRun struct {
 	CheckID string `json:"checkId"`
+}
+
+type EndpointCheck struct {
+	CheckID string
+	Steps   []EndpointCheckStep
+}
+
+type EndpointCheckStep struct {
+	StepID    string
+	EvalID    string
+	Input     json.RawMessage
+	Output    json.RawMessage
+	Assertion string
 }

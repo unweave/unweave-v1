@@ -13,6 +13,11 @@ type Querier interface {
 	BuildGet(ctx context.Context, id string) (UnweaveBuild, error)
 	BuildGetUsedBy(ctx context.Context, id string) ([]BuildGetUsedByRow, error)
 	BuildUpdate(ctx context.Context, arg BuildUpdateParams) error
+	EndpointCheck(ctx context.Context, id string) (UnweaveEndpointCheck, error)
+	EndpointCheckCreate(ctx context.Context, arg EndpointCheckCreateParams) error
+	EndpointCheckStepCreate(ctx context.Context, arg EndpointCheckStepCreateParams) error
+	EndpointCheckStepUpdate(ctx context.Context, arg EndpointCheckStepUpdateParams) error
+	EndpointCheckSteps(ctx context.Context, checkID string) ([]UnweaveEndpointCheckStep, error)
 	EndpointCreate(ctx context.Context, arg EndpointCreateParams) error
 	EndpointDelete(ctx context.Context, id string) error
 	EndpointEval(ctx context.Context, endpointID string) ([]UnweaveEndpointEval, error)

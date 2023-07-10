@@ -138,6 +138,26 @@ CREATE TABLE unweave.endpoint (
 
 ALTER TABLE unweave.endpoint OWNER TO postgres;
 
+CREATE TABLE unweave.endpoint_check (
+    id text NOT NULL,
+    endpoint_id text NOT NULL,
+    project_id text NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE unweave.endpoint_check OWNER TO postgres;
+
+CREATE TABLE unweave.endpoint_check_step (
+    id text NOT NULL,
+    check_id text NOT NULL,
+    eval_id text NOT NULL,
+    input text,
+    output text,
+    assertion text
+);
+
+ALTER TABLE unweave.endpoint_check_step OWNER TO postgres;
+
 CREATE TABLE unweave.endpoint_eval (
     endpoint_id text NOT NULL,
     eval_id text NOT NULL
@@ -210,6 +230,12 @@ ALTER TABLE ONLY unweave.account
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY unweave.endpoint_check
+    ADD CONSTRAINT endpoint_check_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.endpoint_check_step
+    ADD CONSTRAINT endpoint_check_step_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY unweave.endpoint_eval
     ADD CONSTRAINT endpoint_eval_pkey PRIMARY KEY (endpoint_id, eval_id);
 
@@ -254,6 +280,18 @@ ALTER TABLE ONLY unweave.build
 
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+
+ALTER TABLE ONLY unweave.endpoint_check
+    ADD CONSTRAINT endpoint_check_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
+
+ALTER TABLE ONLY unweave.endpoint_check
+    ADD CONSTRAINT endpoint_check_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+
+ALTER TABLE ONLY unweave.endpoint_check_step
+    ADD CONSTRAINT endpoint_check_step_check_id_fkey FOREIGN KEY (check_id) REFERENCES unweave.endpoint_check(id);
+
+ALTER TABLE ONLY unweave.endpoint_check_step
+    ADD CONSTRAINT endpoint_check_step_eval_id_fkey FOREIGN KEY (eval_id) REFERENCES unweave.eval(id);
 
 ALTER TABLE ONLY unweave.endpoint_eval
     ADD CONSTRAINT endpoint_eval_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);

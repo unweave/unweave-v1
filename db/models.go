@@ -131,6 +131,22 @@ type UnweaveEndpoint struct {
 	DeletedAt sql.NullTime `json:"deletedAt"`
 }
 
+type UnweaveEndpointCheck struct {
+	ID         string    `json:"id"`
+	EndpointID string    `json:"endpointID"`
+	ProjectID  string    `json:"projectID"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+type UnweaveEndpointCheckStep struct {
+	ID        string         `json:"id"`
+	CheckID   string         `json:"checkID"`
+	EvalID    string         `json:"evalID"`
+	Input     sql.NullString `json:"input"`
+	Output    sql.NullString `json:"output"`
+	Assertion sql.NullString `json:"assertion"`
+}
+
 type UnweaveEndpointEval struct {
 	EndpointID string `json:"endpointID"`
 	EvalID     string `json:"evalID"`

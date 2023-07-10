@@ -3,6 +3,7 @@ package router
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -87,4 +88,24 @@ func (e *EndpointRouter) EndpointEvalAttach(w http.ResponseWriter, r *http.Reque
 
 		return
 	}
+}
+
+func (e *EndpointRouter) EndpointEvalCheckStatus(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	checkID := chi.URLParam(r, "checkId")
+
+	if checkID == "" {
+		_ = render.Render(w, r, types.ErrHTTPBadRequest(errors.New("check id missing"), "Missing check-id from url path"))
+
+		return
+	}
+
+	status, err := e.endpoints.EndpointCheckStatus(ctx, checkID)
+	if err != nil {
+		_ = render.Render(w, r, types.ErrHTTPError(err, "check status"))
+
+		return
+	}
+
+	render.JSON(w, r, status)
 }

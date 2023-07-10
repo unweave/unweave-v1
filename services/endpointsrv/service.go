@@ -4,6 +4,7 @@ package endpointsrv
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,6 +25,7 @@ type Service interface {
 	EndpointList(ctx context.Context, projectID string) ([]types.Endpoint, error)
 	EndpointGet(ctx context.Context, id string) (types.Endpoint, error)
 	RunEndpointEvals(ctx context.Context, endpointID string) (string, error)
+	EndpointCheckStatus(ctx context.Context, checkID string) (types.EndpointCheck, error)
 }
 
 type EndpointService struct {
@@ -38,6 +40,11 @@ type Store interface {
 	EndpointsForProject(ctx context.Context, id string) ([]db.UnweaveEndpoint, error)
 	EndpointEval(ctx context.Context, endpointID string) ([]db.UnweaveEndpointEval, error)
 	EndpointEvalAttach(ctx context.Context, arg db.EndpointEvalAttachParams) error
+	EndpointCheckCreate(ctx context.Context, arg db.EndpointCheckCreateParams) error
+	EndpointCheckStepCreate(ctx context.Context, arg db.EndpointCheckStepCreateParams) error
+	EndpointCheckStepUpdate(ctx context.Context, arg db.EndpointCheckStepUpdateParams) error
+	EndpointCheckSteps(ctx context.Context, checkID string) ([]db.UnweaveEndpointCheckStep, error)
+	EndpointCheck(ctx context.Context, checkID string) (db.UnweaveEndpointCheck, error)
 }
 
 func NewEndpointService(
@@ -179,15 +186,27 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 		return "", fmt.Errorf("verify checks: %w", err)
 	}
 
-	checks, err := buildEndpointCheckSteps(endpoint, evals)
+	// TODO: does it make more sense to be an EndpointCheck or an EndpointCheck
+	// probably and EndpointCheck
+	if err := e.store.EndpointCheckCreate(ctx, db.EndpointCheckCreateParams{
+		ID:         checkID,
+		EndpointID: endpoint.ID,
+		ProjectID:  endpoint.ProjectID,
+	}); err != nil {
+		return "", fmt.Errorf("create eval check: %w", err)
+	}
+
+	checks, err := buildEndpointCheckSteps(ctx, checkID, e.store, endpoint, evals)
 	if err != nil {
 		return "", fmt.Errorf("build endpoint checks: %w", err)
 	}
 
 	go func() {
+		ctx := context.Background()
+
 		for _, check := range checks {
-			check.callEndpoint()
-			check.assertResponse()
+			check.callEndpoint(ctx)
+			check.assertResponse(ctx)
 
 			if check.err != nil {
 				log.Error().Err(check.err).Msg("check failed")
@@ -195,8 +214,9 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 
 			// TODO: store check progress / data somewhere
 			// make it pollable
-			log.Info().
-				Str("check_id", checkID).
+			log.Debug().
+				Str("check_id", check.checkID).
+				Str("step_id", check.stepID).
 				Str("input", string(check.input)).
 				Str("response", string(check.endpointResponse)).
 				Str("assertion", check.assertion).
@@ -223,7 +243,7 @@ func verifyCanRunChecks(endpoint types.Endpoint, evals []types.Eval) error {
 	return nil
 }
 
-func buildEndpointCheckSteps(endpoint types.Endpoint, evals []types.Eval) ([]checkEndpointStep, error) {
+func buildEndpointCheckSteps(ctx context.Context, checkID string, store Store, endpoint types.Endpoint, evals []types.Eval) ([]checkEndpointStep, error) {
 	var checks []checkEndpointStep
 
 	for _, eval := range evals {
@@ -236,11 +256,25 @@ func buildEndpointCheckSteps(endpoint types.Endpoint, evals []types.Eval) ([]che
 		}
 
 		for _, item := range d.Data {
+			stepID := typeid.Must(typeid.New("step")).String()
+
 			checks = append(checks, checkEndpointStep{
+				checkID:    checkID,
+				stepID:     stepID,
 				input:      item.Input,
 				assertPath: assertPath,
 				endpoint:   "https://" + endpoint.HTTPEndpoint,
+				store:      store,
 			})
+
+			if err := store.EndpointCheckStepCreate(ctx, db.EndpointCheckStepCreateParams{
+				ID:      stepID,
+				CheckID: checkID,
+				EvalID:  eval.ID,
+				Input:   sql.NullString{String: string(item.Input), Valid: true},
+			}); err != nil {
+				return nil, fmt.Errorf("create check step: %w", err)
+			}
 		}
 	}
 
@@ -250,14 +284,17 @@ func buildEndpointCheckSteps(endpoint types.Endpoint, evals []types.Eval) ([]che
 type checkEndpointStep struct {
 	err error
 
+	checkID          string
+	stepID           string
 	assertPath       string
 	endpoint         string
 	input            json.RawMessage
 	endpointResponse json.RawMessage
 	assertion        string
+	store            Store
 }
 
-func (c *checkEndpointStep) callEndpoint() {
+func (c *checkEndpointStep) callEndpoint(ctx context.Context) {
 	buf := bytes.NewBuffer(c.input)
 
 	req, err := http.NewRequest(http.MethodPost, c.endpoint, buf)
@@ -277,10 +314,27 @@ func (c *checkEndpointStep) callEndpoint() {
 	defer resp.Body.Close()
 
 	c.endpointResponse, c.err = io.ReadAll(resp.Body)
+
+	if err := c.store.EndpointCheckStepUpdate(ctx, db.EndpointCheckStepUpdateParams{
+		ID:     sql.NullString{String: c.stepID, Valid: true},
+		Output: sql.NullString{String: string(c.endpointResponse), Valid: true},
+	}); err != nil {
+		c.err = err
+	}
 }
 
-func (c *checkEndpointStep) assertResponse() {
-	buf := bytes.NewBuffer(c.endpointResponse)
+func (c *checkEndpointStep) assertResponse(ctx context.Context) {
+	buf := &bytes.Buffer{}
+
+	if err := json.
+		NewEncoder(buf).
+		Encode(datasetItemEndpointResponse{
+			EndpointResponse: c.endpointResponse,
+		}); err != nil {
+		c.err = fmt.Errorf("build assert body: %w", err)
+
+		return
+	}
 
 	req, err := http.NewRequest(http.MethodPost, c.assertPath, buf)
 	if err != nil {
@@ -309,6 +363,12 @@ func (c *checkEndpointStep) assertResponse() {
 	}
 
 	c.assertion = response.Result
+	if err := c.store.EndpointCheckStepUpdate(ctx, db.EndpointCheckStepUpdateParams{
+		ID:        sql.NullString{String: c.stepID, Valid: true},
+		Assertion: sql.NullString{String: c.assertion, Valid: true},
+	}); err != nil {
+		c.err = err
+	}
 }
 
 type dataset struct {
@@ -317,6 +377,10 @@ type dataset struct {
 
 type datasetItem struct {
 	Input json.RawMessage `json:"input"`
+}
+
+type datasetItemEndpointResponse struct {
+	EndpointResponse json.RawMessage `json:"endpointResponse"`
 }
 
 func endpoint(endpointID, projectID string, exec types.Exec, ids []string) types.Endpoint {
@@ -360,4 +424,27 @@ func allHaveHTTPServiceHostname(evals ...types.Eval) bool {
 	}
 
 	return true
+}
+
+func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID string) (types.EndpointCheck, error) {
+	steps, err := e.store.EndpointCheckSteps(ctx, checkID)
+	if err != nil {
+		return types.EndpointCheck{}, fmt.Errorf("get steps: %w", err)
+	}
+
+	out := make([]types.EndpointCheckStep, len(steps))
+	for idx, step := range steps {
+		out[idx] = types.EndpointCheckStep{
+			StepID:    step.ID,
+			EvalID:    step.EvalID,
+			Input:     []byte(step.Input.String),
+			Output:    []byte(step.Output.String),
+			Assertion: step.Assertion.String,
+		}
+	}
+
+	return types.EndpointCheck{
+		CheckID: checkID,
+		Steps:   out,
+	}, nil
 }

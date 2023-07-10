@@ -7,7 +7,121 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
+
+const EndpointCheck = `-- name: EndpointCheck :one
+SELECT id, endpoint_id, project_id, created_at FROM unweave.endpoint_check WHERE id = $1
+`
+
+func (q *Queries) EndpointCheck(ctx context.Context, id string) (UnweaveEndpointCheck, error) {
+	row := q.db.QueryRowContext(ctx, EndpointCheck, id)
+	var i UnweaveEndpointCheck
+	err := row.Scan(
+		&i.ID,
+		&i.EndpointID,
+		&i.ProjectID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const EndpointCheckCreate = `-- name: EndpointCheckCreate :exec
+INSERT INTO unweave.endpoint_check (id, endpoint_id, project_id) VALUES ($1, $2, $3)
+`
+
+type EndpointCheckCreateParams struct {
+	ID         string `json:"id"`
+	EndpointID string `json:"endpointID"`
+	ProjectID  string `json:"projectID"`
+}
+
+func (q *Queries) EndpointCheckCreate(ctx context.Context, arg EndpointCheckCreateParams) error {
+	_, err := q.db.ExecContext(ctx, EndpointCheckCreate, arg.ID, arg.EndpointID, arg.ProjectID)
+	return err
+}
+
+const EndpointCheckStepCreate = `-- name: EndpointCheckStepCreate :exec
+INSERT INTO unweave.endpoint_check_step (id, check_id, eval_id, input) VALUES ($1, $2, $3, $4)
+`
+
+type EndpointCheckStepCreateParams struct {
+	ID      string         `json:"id"`
+	CheckID string         `json:"checkID"`
+	EvalID  string         `json:"evalID"`
+	Input   sql.NullString `json:"input"`
+}
+
+func (q *Queries) EndpointCheckStepCreate(ctx context.Context, arg EndpointCheckStepCreateParams) error {
+	_, err := q.db.ExecContext(ctx, EndpointCheckStepCreate,
+		arg.ID,
+		arg.CheckID,
+		arg.EvalID,
+		arg.Input,
+	)
+	return err
+}
+
+const EndpointCheckStepUpdate = `-- name: EndpointCheckStepUpdate :exec
+UPDATE unweave.endpoint_check_step
+SET input = coalesce($1, input),
+    output = coalesce($2, output),
+    assertion = coalesce($3, assertion)
+WHERE id = $4
+`
+
+type EndpointCheckStepUpdateParams struct {
+	Input     sql.NullString `json:"input"`
+	Output    sql.NullString `json:"output"`
+	Assertion sql.NullString `json:"assertion"`
+	ID        sql.NullString `json:"id"`
+}
+
+func (q *Queries) EndpointCheckStepUpdate(ctx context.Context, arg EndpointCheckStepUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, EndpointCheckStepUpdate,
+		arg.Input,
+		arg.Output,
+		arg.Assertion,
+		arg.ID,
+	)
+	return err
+}
+
+const EndpointCheckSteps = `-- name: EndpointCheckSteps :many
+SELECT id, check_id, eval_id, input, output, assertion
+FROM unweave.endpoint_check_step
+WHERE check_id = $1
+`
+
+func (q *Queries) EndpointCheckSteps(ctx context.Context, checkID string) ([]UnweaveEndpointCheckStep, error) {
+	rows, err := q.db.QueryContext(ctx, EndpointCheckSteps, checkID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UnweaveEndpointCheckStep
+	for rows.Next() {
+		var i UnweaveEndpointCheckStep
+		if err := rows.Scan(
+			&i.ID,
+			&i.CheckID,
+			&i.EvalID,
+			&i.Input,
+			&i.Output,
+			&i.Assertion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const EndpointCreate = `-- name: EndpointCreate :exec
 INSERT INTO unweave.endpoint (id, exec_id, project_id) VALUES ($1, $2, $3)
