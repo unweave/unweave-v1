@@ -49,6 +49,8 @@ echo "Mounted {{.DeviceName}} to {{.MountPath}}">&2;
 sudo adduser unweave --home-dir /home/unweave --create-home --shell /bin/bash
 echo "unweave ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 sudo su - unweave
+sudo mkdir /logs || true
+sudo chown -R unweave:unweave /logs
 mkdir /home/unweave/.ssh || true
 chmod 700 /home/unweave/.ssh
 touch /home/unweave/.ssh/authorized_keys
@@ -61,6 +63,7 @@ sudo chown -R unweave:unweave /home/unweave
 echo "{{.}}" >> /home/ec2-user/.ssh/authorized_keys
 echo "{{.}}" >> /home/unweave/.ssh/authorized_keys
 {{end}}
+
 `
 
 var (
