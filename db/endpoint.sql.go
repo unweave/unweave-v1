@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const EndpointCheck = `-- name: EndpointCheck :one
@@ -124,17 +125,23 @@ func (q *Queries) EndpointCheckSteps(ctx context.Context, checkID string) ([]Unw
 }
 
 const EndpointCreate = `-- name: EndpointCreate :exec
-INSERT INTO unweave.endpoint (id, exec_id, project_id) VALUES ($1, $2, $3)
+INSERT INTO unweave.endpoint (id, exec_id, project_id, created_at) VALUES ($1, $2, $3, $4)
 `
 
 type EndpointCreateParams struct {
-	ID        string `json:"id"`
-	ExecID    string `json:"execID"`
-	ProjectID string `json:"projectID"`
+	ID        string    `json:"id"`
+	ExecID    string    `json:"execID"`
+	ProjectID string    `json:"projectID"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (q *Queries) EndpointCreate(ctx context.Context, arg EndpointCreateParams) error {
-	_, err := q.db.ExecContext(ctx, EndpointCreate, arg.ID, arg.ExecID, arg.ProjectID)
+	_, err := q.db.ExecContext(ctx, EndpointCreate,
+		arg.ID,
+		arg.ExecID,
+		arg.ProjectID,
+		arg.CreatedAt,
+	)
 	return err
 }
 

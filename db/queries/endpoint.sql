@@ -1,5 +1,5 @@
 -- name: EndpointCreate :exec
-INSERT INTO unweave.endpoint (id, exec_id, project_id) VALUES ($1, $2, $3);
+INSERT INTO unweave.endpoint (id, exec_id, project_id, created_at) VALUES ($1, $2, $3, $4);
 
 -- name: EndpointGet :one
 SELECT id, exec_id, project_id, created_at, deleted_at FROM unweave.endpoint WHERE id = $1;

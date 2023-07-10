@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
@@ -81,13 +82,14 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		ID:        endpointID,
 		ExecID:    execID,
 		ProjectID: projectID,
+		CreatedAt: time.Now(),
 	}
 
 	if err := e.store.EndpointCreate(ctx, dbe); err != nil {
 		return types.Endpoint{}, fmt.Errorf("save endpoint: %w", err)
 	}
 
-	return endpoint(endpointID, projectID, exec, []string{}), nil
+	return endpoint(endpointID, projectID, dbe.CreatedAt, exec, []string{}), nil
 }
 
 func (e *EndpointService) EndpointAttachEval(ctx context.Context, endpointID, evalID string) error {
@@ -139,7 +141,7 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 			ids[i] = eval.EvalID
 		}
 
-		out = append(out, endpoint(end.ID, end.ProjectID, exec, ids))
+		out = append(out, endpoint(end.ID, end.ProjectID, end.CreatedAt, exec, ids))
 	}
 
 	return out, nil
@@ -166,7 +168,7 @@ func (e *EndpointService) EndpointGet(ctx context.Context, id string) (types.End
 		ids[i] = eval.EvalID
 	}
 
-	return endpoint(end.ID, end.ProjectID, exec, ids), nil
+	return endpoint(end.ID, end.ProjectID, end.CreatedAt, exec, ids), nil
 }
 
 func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID string) (string, error) {
@@ -383,12 +385,14 @@ type datasetItemEndpointResponse struct {
 	EndpointResponse json.RawMessage `json:"endpointResponse"`
 }
 
-func endpoint(endpointID, projectID string, exec types.Exec, ids []string) types.Endpoint {
+func endpoint(endpointID, projectID string, createdAt time.Time, exec types.Exec, ids []string) types.Endpoint {
 	endpoint := types.Endpoint{
 		ID:        endpointID,
 		ProjectID: projectID,
 		ExecID:    exec.ID,
 		EvalIDs:   ids,
+		CreatedAt: createdAt,
+		Status:    types.EndpointStatusDeployed,
 	}
 
 	if exec.Network.HTTPService != nil && exec.Network.HTTPService.Hostname != "" {
