@@ -8,31 +8,38 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
-// ServiceRouter is a service that routes requests to the correct provider. In most cases
+// DelegatingService is a service that routes requests to the correct provider. In most cases
 // use should be using this service instead of provider specific services. This takes care
 // of routing requests based on the provider and aggregating responses from multiple
 // providers when needed.
-type ServiceRouter struct {
+type DelegatingService struct {
 	store     Store
 	delegates map[types.Provider]Service
 }
 
-func NewServiceRouter(store Store, delegates map[types.Provider]Service) Service {
-	return &ServiceRouter{
+func NewDelegatingService(store Store, services ...Service) Service {
+	delegates := make(map[types.Provider]Service)
+
+	for i := range services {
+		svc := services[i]
+		delegates[svc.Provider()] = svc
+	}
+
+	return &DelegatingService{
 		store:     store,
 		delegates: delegates,
 	}
 }
 
-func (s *ServiceRouter) Provider() types.Provider {
+func (s *DelegatingService) Provider() types.Provider {
 	panic("service router doesn't have a single provider")
 }
 
-func (s *ServiceRouter) service(provider types.Provider) Service {
+func (s *DelegatingService) service(provider types.Provider) Service {
 	return s.delegates[provider]
 }
 
-func (s *ServiceRouter) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
+func (s *DelegatingService) Create(ctx context.Context, accountID string, projectID string, provider types.Provider, name string, size int) (types.Volume, error) {
 	svc := s.service(provider)
 	if svc == nil {
 		return types.Volume{}, fmt.Errorf("create: unknown provider: %s", provider)
@@ -41,7 +48,7 @@ func (s *ServiceRouter) Create(ctx context.Context, accountID string, projectID 
 	return svc.Create(ctx, accountID, projectID, provider, name, size)
 }
 
-func (s *ServiceRouter) Delete(ctx context.Context, projectID, idOrName string) error {
+func (s *DelegatingService) Delete(ctx context.Context, projectID, idOrName string) error {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return err
@@ -55,7 +62,7 @@ func (s *ServiceRouter) Delete(ctx context.Context, projectID, idOrName string) 
 	return svc.Delete(ctx, projectID, idOrName)
 }
 
-func (s *ServiceRouter) Get(ctx context.Context, projectID, idOrName string) (types.Volume, error) {
+func (s *DelegatingService) Get(_ context.Context, projectID, idOrName string) (types.Volume, error) {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return types.Volume{}, err
@@ -64,7 +71,7 @@ func (s *ServiceRouter) Get(ctx context.Context, projectID, idOrName string) (ty
 	return vol, nil
 }
 
-func (s *ServiceRouter) List(ctx context.Context, projectID string) ([]types.Volume, error) {
+func (s *DelegatingService) List(_ context.Context, projectID string) ([]types.Volume, error) {
 	vols, err := s.store.VolumeList(projectID)
 	if err != nil {
 		return nil, err
@@ -73,7 +80,7 @@ func (s *ServiceRouter) List(ctx context.Context, projectID string) ([]types.Vol
 	return vols, nil
 }
 
-func (s *ServiceRouter) Resize(ctx context.Context, projectID, idOrName string, size int) error {
+func (s *DelegatingService) Resize(ctx context.Context, projectID, idOrName string, size int) error {
 	vol, err := s.store.VolumeGet(projectID, idOrName)
 	if err != nil {
 		return err

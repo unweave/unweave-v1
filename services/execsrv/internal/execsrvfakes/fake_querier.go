@@ -63,6 +63,214 @@ type FakeQuerier struct {
 	buildUpdateReturnsOnCall map[int]struct {
 		result1 error
 	}
+	EndpointCheckStub        func(context.Context, string) (db.UnweaveEndpointCheck, error)
+	endpointCheckMutex       sync.RWMutex
+	endpointCheckArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointCheckReturns struct {
+		result1 db.UnweaveEndpointCheck
+		result2 error
+	}
+	endpointCheckReturnsOnCall map[int]struct {
+		result1 db.UnweaveEndpointCheck
+		result2 error
+	}
+	EndpointCheckCreateStub        func(context.Context, db.EndpointCheckCreateParams) error
+	endpointCheckCreateMutex       sync.RWMutex
+	endpointCheckCreateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckCreateParams
+	}
+	endpointCheckCreateReturns struct {
+		result1 error
+	}
+	endpointCheckCreateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointCheckStepCreateStub        func(context.Context, db.EndpointCheckStepCreateParams) error
+	endpointCheckStepCreateMutex       sync.RWMutex
+	endpointCheckStepCreateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckStepCreateParams
+	}
+	endpointCheckStepCreateReturns struct {
+		result1 error
+	}
+	endpointCheckStepCreateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointCheckStepUpdateStub        func(context.Context, db.EndpointCheckStepUpdateParams) error
+	endpointCheckStepUpdateMutex       sync.RWMutex
+	endpointCheckStepUpdateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckStepUpdateParams
+	}
+	endpointCheckStepUpdateReturns struct {
+		result1 error
+	}
+	endpointCheckStepUpdateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointCheckStepsStub        func(context.Context, string) ([]db.UnweaveEndpointCheckStep, error)
+	endpointCheckStepsMutex       sync.RWMutex
+	endpointCheckStepsArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointCheckStepsReturns struct {
+		result1 []db.UnweaveEndpointCheckStep
+		result2 error
+	}
+	endpointCheckStepsReturnsOnCall map[int]struct {
+		result1 []db.UnweaveEndpointCheckStep
+		result2 error
+	}
+	EndpointCreateStub        func(context.Context, db.EndpointCreateParams) error
+	endpointCreateMutex       sync.RWMutex
+	endpointCreateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointCreateParams
+	}
+	endpointCreateReturns struct {
+		result1 error
+	}
+	endpointCreateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointDeleteStub        func(context.Context, string) error
+	endpointDeleteMutex       sync.RWMutex
+	endpointDeleteArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointDeleteReturns struct {
+		result1 error
+	}
+	endpointDeleteReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointEvalStub        func(context.Context, string) ([]db.UnweaveEndpointEval, error)
+	endpointEvalMutex       sync.RWMutex
+	endpointEvalArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointEvalReturns struct {
+		result1 []db.UnweaveEndpointEval
+		result2 error
+	}
+	endpointEvalReturnsOnCall map[int]struct {
+		result1 []db.UnweaveEndpointEval
+		result2 error
+	}
+	EndpointEvalAttachStub        func(context.Context, db.EndpointEvalAttachParams) error
+	endpointEvalAttachMutex       sync.RWMutex
+	endpointEvalAttachArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointEvalAttachParams
+	}
+	endpointEvalAttachReturns struct {
+		result1 error
+	}
+	endpointEvalAttachReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointGetStub        func(context.Context, string) (db.UnweaveEndpoint, error)
+	endpointGetMutex       sync.RWMutex
+	endpointGetArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointGetReturns struct {
+		result1 db.UnweaveEndpoint
+		result2 error
+	}
+	endpointGetReturnsOnCall map[int]struct {
+		result1 db.UnweaveEndpoint
+		result2 error
+	}
+	EndpointsForProjectStub        func(context.Context, string) ([]db.UnweaveEndpoint, error)
+	endpointsForProjectMutex       sync.RWMutex
+	endpointsForProjectArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointsForProjectReturns struct {
+		result1 []db.UnweaveEndpoint
+		result2 error
+	}
+	endpointsForProjectReturnsOnCall map[int]struct {
+		result1 []db.UnweaveEndpoint
+		result2 error
+	}
+	EvalCreateStub        func(context.Context, db.EvalCreateParams) error
+	evalCreateMutex       sync.RWMutex
+	evalCreateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EvalCreateParams
+	}
+	evalCreateReturns struct {
+		result1 error
+	}
+	evalCreateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EvalDeleteStub        func(context.Context, string) error
+	evalDeleteMutex       sync.RWMutex
+	evalDeleteArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	evalDeleteReturns struct {
+		result1 error
+	}
+	evalDeleteReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EvalGetStub        func(context.Context, string) (db.EvalGetRow, error)
+	evalGetMutex       sync.RWMutex
+	evalGetArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	evalGetReturns struct {
+		result1 db.EvalGetRow
+		result2 error
+	}
+	evalGetReturnsOnCall map[int]struct {
+		result1 db.EvalGetRow
+		result2 error
+	}
+	EvalListStub        func(context.Context, []string) ([]db.EvalListRow, error)
+	evalListMutex       sync.RWMutex
+	evalListArgsForCall []struct {
+		arg1 context.Context
+		arg2 []string
+	}
+	evalListReturns struct {
+		result1 []db.EvalListRow
+		result2 error
+	}
+	evalListReturnsOnCall map[int]struct {
+		result1 []db.EvalListRow
+		result2 error
+	}
+	EvalListForProjectStub        func(context.Context, string) ([]db.EvalListForProjectRow, error)
+	evalListForProjectMutex       sync.RWMutex
+	evalListForProjectArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	evalListForProjectReturns struct {
+		result1 []db.EvalListForProjectRow
+		result2 error
+	}
+	evalListForProjectReturnsOnCall map[int]struct {
+		result1 []db.EvalListForProjectRow
+		result2 error
+	}
 	ExecCreateStub        func(context.Context, db.ExecCreateParams) error
 	execCreateMutex       sync.RWMutex
 	execCreateArgsForCall []struct {
@@ -753,6 +961,1027 @@ func (fake *FakeQuerier) BuildUpdateReturnsOnCall(i int, result1 error) {
 	fake.buildUpdateReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheck(arg1 context.Context, arg2 string) (db.UnweaveEndpointCheck, error) {
+	fake.endpointCheckMutex.Lock()
+	ret, specificReturn := fake.endpointCheckReturnsOnCall[len(fake.endpointCheckArgsForCall)]
+	fake.endpointCheckArgsForCall = append(fake.endpointCheckArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointCheckStub
+	fakeReturns := fake.endpointCheckReturns
+	fake.recordInvocation("EndpointCheck", []interface{}{arg1, arg2})
+	fake.endpointCheckMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointCheckCallCount() int {
+	fake.endpointCheckMutex.RLock()
+	defer fake.endpointCheckMutex.RUnlock()
+	return len(fake.endpointCheckArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCheckCalls(stub func(context.Context, string) (db.UnweaveEndpointCheck, error)) {
+	fake.endpointCheckMutex.Lock()
+	defer fake.endpointCheckMutex.Unlock()
+	fake.EndpointCheckStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCheckArgsForCall(i int) (context.Context, string) {
+	fake.endpointCheckMutex.RLock()
+	defer fake.endpointCheckMutex.RUnlock()
+	argsForCall := fake.endpointCheckArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCheckReturns(result1 db.UnweaveEndpointCheck, result2 error) {
+	fake.endpointCheckMutex.Lock()
+	defer fake.endpointCheckMutex.Unlock()
+	fake.EndpointCheckStub = nil
+	fake.endpointCheckReturns = struct {
+		result1 db.UnweaveEndpointCheck
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointCheckReturnsOnCall(i int, result1 db.UnweaveEndpointCheck, result2 error) {
+	fake.endpointCheckMutex.Lock()
+	defer fake.endpointCheckMutex.Unlock()
+	fake.EndpointCheckStub = nil
+	if fake.endpointCheckReturnsOnCall == nil {
+		fake.endpointCheckReturnsOnCall = make(map[int]struct {
+			result1 db.UnweaveEndpointCheck
+			result2 error
+		})
+	}
+	fake.endpointCheckReturnsOnCall[i] = struct {
+		result1 db.UnweaveEndpointCheck
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointCheckCreate(arg1 context.Context, arg2 db.EndpointCheckCreateParams) error {
+	fake.endpointCheckCreateMutex.Lock()
+	ret, specificReturn := fake.endpointCheckCreateReturnsOnCall[len(fake.endpointCheckCreateArgsForCall)]
+	fake.endpointCheckCreateArgsForCall = append(fake.endpointCheckCreateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckCreateParams
+	}{arg1, arg2})
+	stub := fake.EndpointCheckCreateStub
+	fakeReturns := fake.endpointCheckCreateReturns
+	fake.recordInvocation("EndpointCheckCreate", []interface{}{arg1, arg2})
+	fake.endpointCheckCreateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointCheckCreateCallCount() int {
+	fake.endpointCheckCreateMutex.RLock()
+	defer fake.endpointCheckCreateMutex.RUnlock()
+	return len(fake.endpointCheckCreateArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCheckCreateCalls(stub func(context.Context, db.EndpointCheckCreateParams) error) {
+	fake.endpointCheckCreateMutex.Lock()
+	defer fake.endpointCheckCreateMutex.Unlock()
+	fake.EndpointCheckCreateStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCheckCreateArgsForCall(i int) (context.Context, db.EndpointCheckCreateParams) {
+	fake.endpointCheckCreateMutex.RLock()
+	defer fake.endpointCheckCreateMutex.RUnlock()
+	argsForCall := fake.endpointCheckCreateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCheckCreateReturns(result1 error) {
+	fake.endpointCheckCreateMutex.Lock()
+	defer fake.endpointCheckCreateMutex.Unlock()
+	fake.EndpointCheckCreateStub = nil
+	fake.endpointCheckCreateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckCreateReturnsOnCall(i int, result1 error) {
+	fake.endpointCheckCreateMutex.Lock()
+	defer fake.endpointCheckCreateMutex.Unlock()
+	fake.EndpointCheckCreateStub = nil
+	if fake.endpointCheckCreateReturnsOnCall == nil {
+		fake.endpointCheckCreateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointCheckCreateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreate(arg1 context.Context, arg2 db.EndpointCheckStepCreateParams) error {
+	fake.endpointCheckStepCreateMutex.Lock()
+	ret, specificReturn := fake.endpointCheckStepCreateReturnsOnCall[len(fake.endpointCheckStepCreateArgsForCall)]
+	fake.endpointCheckStepCreateArgsForCall = append(fake.endpointCheckStepCreateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckStepCreateParams
+	}{arg1, arg2})
+	stub := fake.EndpointCheckStepCreateStub
+	fakeReturns := fake.endpointCheckStepCreateReturns
+	fake.recordInvocation("EndpointCheckStepCreate", []interface{}{arg1, arg2})
+	fake.endpointCheckStepCreateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreateCallCount() int {
+	fake.endpointCheckStepCreateMutex.RLock()
+	defer fake.endpointCheckStepCreateMutex.RUnlock()
+	return len(fake.endpointCheckStepCreateArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreateCalls(stub func(context.Context, db.EndpointCheckStepCreateParams) error) {
+	fake.endpointCheckStepCreateMutex.Lock()
+	defer fake.endpointCheckStepCreateMutex.Unlock()
+	fake.EndpointCheckStepCreateStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreateArgsForCall(i int) (context.Context, db.EndpointCheckStepCreateParams) {
+	fake.endpointCheckStepCreateMutex.RLock()
+	defer fake.endpointCheckStepCreateMutex.RUnlock()
+	argsForCall := fake.endpointCheckStepCreateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreateReturns(result1 error) {
+	fake.endpointCheckStepCreateMutex.Lock()
+	defer fake.endpointCheckStepCreateMutex.Unlock()
+	fake.EndpointCheckStepCreateStub = nil
+	fake.endpointCheckStepCreateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckStepCreateReturnsOnCall(i int, result1 error) {
+	fake.endpointCheckStepCreateMutex.Lock()
+	defer fake.endpointCheckStepCreateMutex.Unlock()
+	fake.EndpointCheckStepCreateStub = nil
+	if fake.endpointCheckStepCreateReturnsOnCall == nil {
+		fake.endpointCheckStepCreateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointCheckStepCreateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdate(arg1 context.Context, arg2 db.EndpointCheckStepUpdateParams) error {
+	fake.endpointCheckStepUpdateMutex.Lock()
+	ret, specificReturn := fake.endpointCheckStepUpdateReturnsOnCall[len(fake.endpointCheckStepUpdateArgsForCall)]
+	fake.endpointCheckStepUpdateArgsForCall = append(fake.endpointCheckStepUpdateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointCheckStepUpdateParams
+	}{arg1, arg2})
+	stub := fake.EndpointCheckStepUpdateStub
+	fakeReturns := fake.endpointCheckStepUpdateReturns
+	fake.recordInvocation("EndpointCheckStepUpdate", []interface{}{arg1, arg2})
+	fake.endpointCheckStepUpdateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdateCallCount() int {
+	fake.endpointCheckStepUpdateMutex.RLock()
+	defer fake.endpointCheckStepUpdateMutex.RUnlock()
+	return len(fake.endpointCheckStepUpdateArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdateCalls(stub func(context.Context, db.EndpointCheckStepUpdateParams) error) {
+	fake.endpointCheckStepUpdateMutex.Lock()
+	defer fake.endpointCheckStepUpdateMutex.Unlock()
+	fake.EndpointCheckStepUpdateStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdateArgsForCall(i int) (context.Context, db.EndpointCheckStepUpdateParams) {
+	fake.endpointCheckStepUpdateMutex.RLock()
+	defer fake.endpointCheckStepUpdateMutex.RUnlock()
+	argsForCall := fake.endpointCheckStepUpdateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdateReturns(result1 error) {
+	fake.endpointCheckStepUpdateMutex.Lock()
+	defer fake.endpointCheckStepUpdateMutex.Unlock()
+	fake.EndpointCheckStepUpdateStub = nil
+	fake.endpointCheckStepUpdateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckStepUpdateReturnsOnCall(i int, result1 error) {
+	fake.endpointCheckStepUpdateMutex.Lock()
+	defer fake.endpointCheckStepUpdateMutex.Unlock()
+	fake.EndpointCheckStepUpdateStub = nil
+	if fake.endpointCheckStepUpdateReturnsOnCall == nil {
+		fake.endpointCheckStepUpdateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointCheckStepUpdateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCheckSteps(arg1 context.Context, arg2 string) ([]db.UnweaveEndpointCheckStep, error) {
+	fake.endpointCheckStepsMutex.Lock()
+	ret, specificReturn := fake.endpointCheckStepsReturnsOnCall[len(fake.endpointCheckStepsArgsForCall)]
+	fake.endpointCheckStepsArgsForCall = append(fake.endpointCheckStepsArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointCheckStepsStub
+	fakeReturns := fake.endpointCheckStepsReturns
+	fake.recordInvocation("EndpointCheckSteps", []interface{}{arg1, arg2})
+	fake.endpointCheckStepsMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointCheckStepsCallCount() int {
+	fake.endpointCheckStepsMutex.RLock()
+	defer fake.endpointCheckStepsMutex.RUnlock()
+	return len(fake.endpointCheckStepsArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCheckStepsCalls(stub func(context.Context, string) ([]db.UnweaveEndpointCheckStep, error)) {
+	fake.endpointCheckStepsMutex.Lock()
+	defer fake.endpointCheckStepsMutex.Unlock()
+	fake.EndpointCheckStepsStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCheckStepsArgsForCall(i int) (context.Context, string) {
+	fake.endpointCheckStepsMutex.RLock()
+	defer fake.endpointCheckStepsMutex.RUnlock()
+	argsForCall := fake.endpointCheckStepsArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCheckStepsReturns(result1 []db.UnweaveEndpointCheckStep, result2 error) {
+	fake.endpointCheckStepsMutex.Lock()
+	defer fake.endpointCheckStepsMutex.Unlock()
+	fake.EndpointCheckStepsStub = nil
+	fake.endpointCheckStepsReturns = struct {
+		result1 []db.UnweaveEndpointCheckStep
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointCheckStepsReturnsOnCall(i int, result1 []db.UnweaveEndpointCheckStep, result2 error) {
+	fake.endpointCheckStepsMutex.Lock()
+	defer fake.endpointCheckStepsMutex.Unlock()
+	fake.EndpointCheckStepsStub = nil
+	if fake.endpointCheckStepsReturnsOnCall == nil {
+		fake.endpointCheckStepsReturnsOnCall = make(map[int]struct {
+			result1 []db.UnweaveEndpointCheckStep
+			result2 error
+		})
+	}
+	fake.endpointCheckStepsReturnsOnCall[i] = struct {
+		result1 []db.UnweaveEndpointCheckStep
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointCreate(arg1 context.Context, arg2 db.EndpointCreateParams) error {
+	fake.endpointCreateMutex.Lock()
+	ret, specificReturn := fake.endpointCreateReturnsOnCall[len(fake.endpointCreateArgsForCall)]
+	fake.endpointCreateArgsForCall = append(fake.endpointCreateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointCreateParams
+	}{arg1, arg2})
+	stub := fake.EndpointCreateStub
+	fakeReturns := fake.endpointCreateReturns
+	fake.recordInvocation("EndpointCreate", []interface{}{arg1, arg2})
+	fake.endpointCreateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointCreateCallCount() int {
+	fake.endpointCreateMutex.RLock()
+	defer fake.endpointCreateMutex.RUnlock()
+	return len(fake.endpointCreateArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointCreateCalls(stub func(context.Context, db.EndpointCreateParams) error) {
+	fake.endpointCreateMutex.Lock()
+	defer fake.endpointCreateMutex.Unlock()
+	fake.EndpointCreateStub = stub
+}
+
+func (fake *FakeQuerier) EndpointCreateArgsForCall(i int) (context.Context, db.EndpointCreateParams) {
+	fake.endpointCreateMutex.RLock()
+	defer fake.endpointCreateMutex.RUnlock()
+	argsForCall := fake.endpointCreateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointCreateReturns(result1 error) {
+	fake.endpointCreateMutex.Lock()
+	defer fake.endpointCreateMutex.Unlock()
+	fake.EndpointCreateStub = nil
+	fake.endpointCreateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointCreateReturnsOnCall(i int, result1 error) {
+	fake.endpointCreateMutex.Lock()
+	defer fake.endpointCreateMutex.Unlock()
+	fake.EndpointCreateStub = nil
+	if fake.endpointCreateReturnsOnCall == nil {
+		fake.endpointCreateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointCreateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointDelete(arg1 context.Context, arg2 string) error {
+	fake.endpointDeleteMutex.Lock()
+	ret, specificReturn := fake.endpointDeleteReturnsOnCall[len(fake.endpointDeleteArgsForCall)]
+	fake.endpointDeleteArgsForCall = append(fake.endpointDeleteArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointDeleteStub
+	fakeReturns := fake.endpointDeleteReturns
+	fake.recordInvocation("EndpointDelete", []interface{}{arg1, arg2})
+	fake.endpointDeleteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointDeleteCallCount() int {
+	fake.endpointDeleteMutex.RLock()
+	defer fake.endpointDeleteMutex.RUnlock()
+	return len(fake.endpointDeleteArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointDeleteCalls(stub func(context.Context, string) error) {
+	fake.endpointDeleteMutex.Lock()
+	defer fake.endpointDeleteMutex.Unlock()
+	fake.EndpointDeleteStub = stub
+}
+
+func (fake *FakeQuerier) EndpointDeleteArgsForCall(i int) (context.Context, string) {
+	fake.endpointDeleteMutex.RLock()
+	defer fake.endpointDeleteMutex.RUnlock()
+	argsForCall := fake.endpointDeleteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointDeleteReturns(result1 error) {
+	fake.endpointDeleteMutex.Lock()
+	defer fake.endpointDeleteMutex.Unlock()
+	fake.EndpointDeleteStub = nil
+	fake.endpointDeleteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointDeleteReturnsOnCall(i int, result1 error) {
+	fake.endpointDeleteMutex.Lock()
+	defer fake.endpointDeleteMutex.Unlock()
+	fake.EndpointDeleteStub = nil
+	if fake.endpointDeleteReturnsOnCall == nil {
+		fake.endpointDeleteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointDeleteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointEval(arg1 context.Context, arg2 string) ([]db.UnweaveEndpointEval, error) {
+	fake.endpointEvalMutex.Lock()
+	ret, specificReturn := fake.endpointEvalReturnsOnCall[len(fake.endpointEvalArgsForCall)]
+	fake.endpointEvalArgsForCall = append(fake.endpointEvalArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointEvalStub
+	fakeReturns := fake.endpointEvalReturns
+	fake.recordInvocation("EndpointEval", []interface{}{arg1, arg2})
+	fake.endpointEvalMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointEvalCallCount() int {
+	fake.endpointEvalMutex.RLock()
+	defer fake.endpointEvalMutex.RUnlock()
+	return len(fake.endpointEvalArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointEvalCalls(stub func(context.Context, string) ([]db.UnweaveEndpointEval, error)) {
+	fake.endpointEvalMutex.Lock()
+	defer fake.endpointEvalMutex.Unlock()
+	fake.EndpointEvalStub = stub
+}
+
+func (fake *FakeQuerier) EndpointEvalArgsForCall(i int) (context.Context, string) {
+	fake.endpointEvalMutex.RLock()
+	defer fake.endpointEvalMutex.RUnlock()
+	argsForCall := fake.endpointEvalArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointEvalReturns(result1 []db.UnweaveEndpointEval, result2 error) {
+	fake.endpointEvalMutex.Lock()
+	defer fake.endpointEvalMutex.Unlock()
+	fake.EndpointEvalStub = nil
+	fake.endpointEvalReturns = struct {
+		result1 []db.UnweaveEndpointEval
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointEvalReturnsOnCall(i int, result1 []db.UnweaveEndpointEval, result2 error) {
+	fake.endpointEvalMutex.Lock()
+	defer fake.endpointEvalMutex.Unlock()
+	fake.EndpointEvalStub = nil
+	if fake.endpointEvalReturnsOnCall == nil {
+		fake.endpointEvalReturnsOnCall = make(map[int]struct {
+			result1 []db.UnweaveEndpointEval
+			result2 error
+		})
+	}
+	fake.endpointEvalReturnsOnCall[i] = struct {
+		result1 []db.UnweaveEndpointEval
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointEvalAttach(arg1 context.Context, arg2 db.EndpointEvalAttachParams) error {
+	fake.endpointEvalAttachMutex.Lock()
+	ret, specificReturn := fake.endpointEvalAttachReturnsOnCall[len(fake.endpointEvalAttachArgsForCall)]
+	fake.endpointEvalAttachArgsForCall = append(fake.endpointEvalAttachArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointEvalAttachParams
+	}{arg1, arg2})
+	stub := fake.EndpointEvalAttachStub
+	fakeReturns := fake.endpointEvalAttachReturns
+	fake.recordInvocation("EndpointEvalAttach", []interface{}{arg1, arg2})
+	fake.endpointEvalAttachMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointEvalAttachCallCount() int {
+	fake.endpointEvalAttachMutex.RLock()
+	defer fake.endpointEvalAttachMutex.RUnlock()
+	return len(fake.endpointEvalAttachArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointEvalAttachCalls(stub func(context.Context, db.EndpointEvalAttachParams) error) {
+	fake.endpointEvalAttachMutex.Lock()
+	defer fake.endpointEvalAttachMutex.Unlock()
+	fake.EndpointEvalAttachStub = stub
+}
+
+func (fake *FakeQuerier) EndpointEvalAttachArgsForCall(i int) (context.Context, db.EndpointEvalAttachParams) {
+	fake.endpointEvalAttachMutex.RLock()
+	defer fake.endpointEvalAttachMutex.RUnlock()
+	argsForCall := fake.endpointEvalAttachArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointEvalAttachReturns(result1 error) {
+	fake.endpointEvalAttachMutex.Lock()
+	defer fake.endpointEvalAttachMutex.Unlock()
+	fake.EndpointEvalAttachStub = nil
+	fake.endpointEvalAttachReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointEvalAttachReturnsOnCall(i int, result1 error) {
+	fake.endpointEvalAttachMutex.Lock()
+	defer fake.endpointEvalAttachMutex.Unlock()
+	fake.EndpointEvalAttachStub = nil
+	if fake.endpointEvalAttachReturnsOnCall == nil {
+		fake.endpointEvalAttachReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointEvalAttachReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointGet(arg1 context.Context, arg2 string) (db.UnweaveEndpoint, error) {
+	fake.endpointGetMutex.Lock()
+	ret, specificReturn := fake.endpointGetReturnsOnCall[len(fake.endpointGetArgsForCall)]
+	fake.endpointGetArgsForCall = append(fake.endpointGetArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointGetStub
+	fakeReturns := fake.endpointGetReturns
+	fake.recordInvocation("EndpointGet", []interface{}{arg1, arg2})
+	fake.endpointGetMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointGetCallCount() int {
+	fake.endpointGetMutex.RLock()
+	defer fake.endpointGetMutex.RUnlock()
+	return len(fake.endpointGetArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointGetCalls(stub func(context.Context, string) (db.UnweaveEndpoint, error)) {
+	fake.endpointGetMutex.Lock()
+	defer fake.endpointGetMutex.Unlock()
+	fake.EndpointGetStub = stub
+}
+
+func (fake *FakeQuerier) EndpointGetArgsForCall(i int) (context.Context, string) {
+	fake.endpointGetMutex.RLock()
+	defer fake.endpointGetMutex.RUnlock()
+	argsForCall := fake.endpointGetArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointGetReturns(result1 db.UnweaveEndpoint, result2 error) {
+	fake.endpointGetMutex.Lock()
+	defer fake.endpointGetMutex.Unlock()
+	fake.EndpointGetStub = nil
+	fake.endpointGetReturns = struct {
+		result1 db.UnweaveEndpoint
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointGetReturnsOnCall(i int, result1 db.UnweaveEndpoint, result2 error) {
+	fake.endpointGetMutex.Lock()
+	defer fake.endpointGetMutex.Unlock()
+	fake.EndpointGetStub = nil
+	if fake.endpointGetReturnsOnCall == nil {
+		fake.endpointGetReturnsOnCall = make(map[int]struct {
+			result1 db.UnweaveEndpoint
+			result2 error
+		})
+	}
+	fake.endpointGetReturnsOnCall[i] = struct {
+		result1 db.UnweaveEndpoint
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointsForProject(arg1 context.Context, arg2 string) ([]db.UnweaveEndpoint, error) {
+	fake.endpointsForProjectMutex.Lock()
+	ret, specificReturn := fake.endpointsForProjectReturnsOnCall[len(fake.endpointsForProjectArgsForCall)]
+	fake.endpointsForProjectArgsForCall = append(fake.endpointsForProjectArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointsForProjectStub
+	fakeReturns := fake.endpointsForProjectReturns
+	fake.recordInvocation("EndpointsForProject", []interface{}{arg1, arg2})
+	fake.endpointsForProjectMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointsForProjectCallCount() int {
+	fake.endpointsForProjectMutex.RLock()
+	defer fake.endpointsForProjectMutex.RUnlock()
+	return len(fake.endpointsForProjectArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointsForProjectCalls(stub func(context.Context, string) ([]db.UnweaveEndpoint, error)) {
+	fake.endpointsForProjectMutex.Lock()
+	defer fake.endpointsForProjectMutex.Unlock()
+	fake.EndpointsForProjectStub = stub
+}
+
+func (fake *FakeQuerier) EndpointsForProjectArgsForCall(i int) (context.Context, string) {
+	fake.endpointsForProjectMutex.RLock()
+	defer fake.endpointsForProjectMutex.RUnlock()
+	argsForCall := fake.endpointsForProjectArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointsForProjectReturns(result1 []db.UnweaveEndpoint, result2 error) {
+	fake.endpointsForProjectMutex.Lock()
+	defer fake.endpointsForProjectMutex.Unlock()
+	fake.EndpointsForProjectStub = nil
+	fake.endpointsForProjectReturns = struct {
+		result1 []db.UnweaveEndpoint
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointsForProjectReturnsOnCall(i int, result1 []db.UnweaveEndpoint, result2 error) {
+	fake.endpointsForProjectMutex.Lock()
+	defer fake.endpointsForProjectMutex.Unlock()
+	fake.EndpointsForProjectStub = nil
+	if fake.endpointsForProjectReturnsOnCall == nil {
+		fake.endpointsForProjectReturnsOnCall = make(map[int]struct {
+			result1 []db.UnweaveEndpoint
+			result2 error
+		})
+	}
+	fake.endpointsForProjectReturnsOnCall[i] = struct {
+		result1 []db.UnweaveEndpoint
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalCreate(arg1 context.Context, arg2 db.EvalCreateParams) error {
+	fake.evalCreateMutex.Lock()
+	ret, specificReturn := fake.evalCreateReturnsOnCall[len(fake.evalCreateArgsForCall)]
+	fake.evalCreateArgsForCall = append(fake.evalCreateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EvalCreateParams
+	}{arg1, arg2})
+	stub := fake.EvalCreateStub
+	fakeReturns := fake.evalCreateReturns
+	fake.recordInvocation("EvalCreate", []interface{}{arg1, arg2})
+	fake.evalCreateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EvalCreateCallCount() int {
+	fake.evalCreateMutex.RLock()
+	defer fake.evalCreateMutex.RUnlock()
+	return len(fake.evalCreateArgsForCall)
+}
+
+func (fake *FakeQuerier) EvalCreateCalls(stub func(context.Context, db.EvalCreateParams) error) {
+	fake.evalCreateMutex.Lock()
+	defer fake.evalCreateMutex.Unlock()
+	fake.EvalCreateStub = stub
+}
+
+func (fake *FakeQuerier) EvalCreateArgsForCall(i int) (context.Context, db.EvalCreateParams) {
+	fake.evalCreateMutex.RLock()
+	defer fake.evalCreateMutex.RUnlock()
+	argsForCall := fake.evalCreateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EvalCreateReturns(result1 error) {
+	fake.evalCreateMutex.Lock()
+	defer fake.evalCreateMutex.Unlock()
+	fake.EvalCreateStub = nil
+	fake.evalCreateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EvalCreateReturnsOnCall(i int, result1 error) {
+	fake.evalCreateMutex.Lock()
+	defer fake.evalCreateMutex.Unlock()
+	fake.EvalCreateStub = nil
+	if fake.evalCreateReturnsOnCall == nil {
+		fake.evalCreateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.evalCreateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EvalDelete(arg1 context.Context, arg2 string) error {
+	fake.evalDeleteMutex.Lock()
+	ret, specificReturn := fake.evalDeleteReturnsOnCall[len(fake.evalDeleteArgsForCall)]
+	fake.evalDeleteArgsForCall = append(fake.evalDeleteArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EvalDeleteStub
+	fakeReturns := fake.evalDeleteReturns
+	fake.recordInvocation("EvalDelete", []interface{}{arg1, arg2})
+	fake.evalDeleteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EvalDeleteCallCount() int {
+	fake.evalDeleteMutex.RLock()
+	defer fake.evalDeleteMutex.RUnlock()
+	return len(fake.evalDeleteArgsForCall)
+}
+
+func (fake *FakeQuerier) EvalDeleteCalls(stub func(context.Context, string) error) {
+	fake.evalDeleteMutex.Lock()
+	defer fake.evalDeleteMutex.Unlock()
+	fake.EvalDeleteStub = stub
+}
+
+func (fake *FakeQuerier) EvalDeleteArgsForCall(i int) (context.Context, string) {
+	fake.evalDeleteMutex.RLock()
+	defer fake.evalDeleteMutex.RUnlock()
+	argsForCall := fake.evalDeleteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EvalDeleteReturns(result1 error) {
+	fake.evalDeleteMutex.Lock()
+	defer fake.evalDeleteMutex.Unlock()
+	fake.EvalDeleteStub = nil
+	fake.evalDeleteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EvalDeleteReturnsOnCall(i int, result1 error) {
+	fake.evalDeleteMutex.Lock()
+	defer fake.evalDeleteMutex.Unlock()
+	fake.EvalDeleteStub = nil
+	if fake.evalDeleteReturnsOnCall == nil {
+		fake.evalDeleteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.evalDeleteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EvalGet(arg1 context.Context, arg2 string) (db.EvalGetRow, error) {
+	fake.evalGetMutex.Lock()
+	ret, specificReturn := fake.evalGetReturnsOnCall[len(fake.evalGetArgsForCall)]
+	fake.evalGetArgsForCall = append(fake.evalGetArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EvalGetStub
+	fakeReturns := fake.evalGetReturns
+	fake.recordInvocation("EvalGet", []interface{}{arg1, arg2})
+	fake.evalGetMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EvalGetCallCount() int {
+	fake.evalGetMutex.RLock()
+	defer fake.evalGetMutex.RUnlock()
+	return len(fake.evalGetArgsForCall)
+}
+
+func (fake *FakeQuerier) EvalGetCalls(stub func(context.Context, string) (db.EvalGetRow, error)) {
+	fake.evalGetMutex.Lock()
+	defer fake.evalGetMutex.Unlock()
+	fake.EvalGetStub = stub
+}
+
+func (fake *FakeQuerier) EvalGetArgsForCall(i int) (context.Context, string) {
+	fake.evalGetMutex.RLock()
+	defer fake.evalGetMutex.RUnlock()
+	argsForCall := fake.evalGetArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EvalGetReturns(result1 db.EvalGetRow, result2 error) {
+	fake.evalGetMutex.Lock()
+	defer fake.evalGetMutex.Unlock()
+	fake.EvalGetStub = nil
+	fake.evalGetReturns = struct {
+		result1 db.EvalGetRow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalGetReturnsOnCall(i int, result1 db.EvalGetRow, result2 error) {
+	fake.evalGetMutex.Lock()
+	defer fake.evalGetMutex.Unlock()
+	fake.EvalGetStub = nil
+	if fake.evalGetReturnsOnCall == nil {
+		fake.evalGetReturnsOnCall = make(map[int]struct {
+			result1 db.EvalGetRow
+			result2 error
+		})
+	}
+	fake.evalGetReturnsOnCall[i] = struct {
+		result1 db.EvalGetRow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalList(arg1 context.Context, arg2 []string) ([]db.EvalListRow, error) {
+	var arg2Copy []string
+	if arg2 != nil {
+		arg2Copy = make([]string, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	fake.evalListMutex.Lock()
+	ret, specificReturn := fake.evalListReturnsOnCall[len(fake.evalListArgsForCall)]
+	fake.evalListArgsForCall = append(fake.evalListArgsForCall, struct {
+		arg1 context.Context
+		arg2 []string
+	}{arg1, arg2Copy})
+	stub := fake.EvalListStub
+	fakeReturns := fake.evalListReturns
+	fake.recordInvocation("EvalList", []interface{}{arg1, arg2Copy})
+	fake.evalListMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EvalListCallCount() int {
+	fake.evalListMutex.RLock()
+	defer fake.evalListMutex.RUnlock()
+	return len(fake.evalListArgsForCall)
+}
+
+func (fake *FakeQuerier) EvalListCalls(stub func(context.Context, []string) ([]db.EvalListRow, error)) {
+	fake.evalListMutex.Lock()
+	defer fake.evalListMutex.Unlock()
+	fake.EvalListStub = stub
+}
+
+func (fake *FakeQuerier) EvalListArgsForCall(i int) (context.Context, []string) {
+	fake.evalListMutex.RLock()
+	defer fake.evalListMutex.RUnlock()
+	argsForCall := fake.evalListArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EvalListReturns(result1 []db.EvalListRow, result2 error) {
+	fake.evalListMutex.Lock()
+	defer fake.evalListMutex.Unlock()
+	fake.EvalListStub = nil
+	fake.evalListReturns = struct {
+		result1 []db.EvalListRow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalListReturnsOnCall(i int, result1 []db.EvalListRow, result2 error) {
+	fake.evalListMutex.Lock()
+	defer fake.evalListMutex.Unlock()
+	fake.EvalListStub = nil
+	if fake.evalListReturnsOnCall == nil {
+		fake.evalListReturnsOnCall = make(map[int]struct {
+			result1 []db.EvalListRow
+			result2 error
+		})
+	}
+	fake.evalListReturnsOnCall[i] = struct {
+		result1 []db.EvalListRow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalListForProject(arg1 context.Context, arg2 string) ([]db.EvalListForProjectRow, error) {
+	fake.evalListForProjectMutex.Lock()
+	ret, specificReturn := fake.evalListForProjectReturnsOnCall[len(fake.evalListForProjectArgsForCall)]
+	fake.evalListForProjectArgsForCall = append(fake.evalListForProjectArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EvalListForProjectStub
+	fakeReturns := fake.evalListForProjectReturns
+	fake.recordInvocation("EvalListForProject", []interface{}{arg1, arg2})
+	fake.evalListForProjectMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EvalListForProjectCallCount() int {
+	fake.evalListForProjectMutex.RLock()
+	defer fake.evalListForProjectMutex.RUnlock()
+	return len(fake.evalListForProjectArgsForCall)
+}
+
+func (fake *FakeQuerier) EvalListForProjectCalls(stub func(context.Context, string) ([]db.EvalListForProjectRow, error)) {
+	fake.evalListForProjectMutex.Lock()
+	defer fake.evalListForProjectMutex.Unlock()
+	fake.EvalListForProjectStub = stub
+}
+
+func (fake *FakeQuerier) EvalListForProjectArgsForCall(i int) (context.Context, string) {
+	fake.evalListForProjectMutex.RLock()
+	defer fake.evalListForProjectMutex.RUnlock()
+	argsForCall := fake.evalListForProjectArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EvalListForProjectReturns(result1 []db.EvalListForProjectRow, result2 error) {
+	fake.evalListForProjectMutex.Lock()
+	defer fake.evalListForProjectMutex.Unlock()
+	fake.EvalListForProjectStub = nil
+	fake.evalListForProjectReturns = struct {
+		result1 []db.EvalListForProjectRow
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EvalListForProjectReturnsOnCall(i int, result1 []db.EvalListForProjectRow, result2 error) {
+	fake.evalListForProjectMutex.Lock()
+	defer fake.evalListForProjectMutex.Unlock()
+	fake.EvalListForProjectStub = nil
+	if fake.evalListForProjectReturnsOnCall == nil {
+		fake.evalListForProjectReturnsOnCall = make(map[int]struct {
+			result1 []db.EvalListForProjectRow
+			result2 error
+		})
+	}
+	fake.evalListForProjectReturnsOnCall[i] = struct {
+		result1 []db.EvalListForProjectRow
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeQuerier) ExecCreate(arg1 context.Context, arg2 db.ExecCreateParams) error {
@@ -2870,6 +4099,38 @@ func (fake *FakeQuerier) Invocations() map[string][][]interface{} {
 	defer fake.buildGetUsedByMutex.RUnlock()
 	fake.buildUpdateMutex.RLock()
 	defer fake.buildUpdateMutex.RUnlock()
+	fake.endpointCheckMutex.RLock()
+	defer fake.endpointCheckMutex.RUnlock()
+	fake.endpointCheckCreateMutex.RLock()
+	defer fake.endpointCheckCreateMutex.RUnlock()
+	fake.endpointCheckStepCreateMutex.RLock()
+	defer fake.endpointCheckStepCreateMutex.RUnlock()
+	fake.endpointCheckStepUpdateMutex.RLock()
+	defer fake.endpointCheckStepUpdateMutex.RUnlock()
+	fake.endpointCheckStepsMutex.RLock()
+	defer fake.endpointCheckStepsMutex.RUnlock()
+	fake.endpointCreateMutex.RLock()
+	defer fake.endpointCreateMutex.RUnlock()
+	fake.endpointDeleteMutex.RLock()
+	defer fake.endpointDeleteMutex.RUnlock()
+	fake.endpointEvalMutex.RLock()
+	defer fake.endpointEvalMutex.RUnlock()
+	fake.endpointEvalAttachMutex.RLock()
+	defer fake.endpointEvalAttachMutex.RUnlock()
+	fake.endpointGetMutex.RLock()
+	defer fake.endpointGetMutex.RUnlock()
+	fake.endpointsForProjectMutex.RLock()
+	defer fake.endpointsForProjectMutex.RUnlock()
+	fake.evalCreateMutex.RLock()
+	defer fake.evalCreateMutex.RUnlock()
+	fake.evalDeleteMutex.RLock()
+	defer fake.evalDeleteMutex.RUnlock()
+	fake.evalGetMutex.RLock()
+	defer fake.evalGetMutex.RUnlock()
+	fake.evalListMutex.RLock()
+	defer fake.evalListMutex.RUnlock()
+	fake.evalListForProjectMutex.RLock()
+	defer fake.evalListForProjectMutex.RUnlock()
 	fake.execCreateMutex.RLock()
 	defer fake.execCreateMutex.RUnlock()
 	fake.execGetMutex.RLock()

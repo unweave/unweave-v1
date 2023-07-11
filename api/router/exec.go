@@ -18,17 +18,10 @@ type ExecRouter struct {
 	service execsrv.Service
 }
 
-func NewExecRouter(store execsrv.Store, services ...execsrv.Service) *ExecRouter {
-	delegates := make(map[types.Provider]execsrv.Service)
-
-	for i := range services {
-		svc := services[i]
-		delegates[svc.Provider()] = svc
-	}
-
+func NewExecRouter(store execsrv.Store, service execsrv.Service) *ExecRouter {
 	return &ExecRouter{
 		store:   store,
-		service: execsrv.NewServiceRouter(store, delegates),
+		service: service,
 	}
 }
 
