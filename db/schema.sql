@@ -132,6 +132,7 @@ CREATE TABLE unweave.endpoint (
     id text NOT NULL,
     exec_id text NOT NULL,
     project_id text NOT NULL,
+    http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone
 );
@@ -169,6 +170,7 @@ CREATE TABLE unweave.eval (
     id text NOT NULL,
     exec_id text NOT NULL,
     project_id text NOT NULL,
+    http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 

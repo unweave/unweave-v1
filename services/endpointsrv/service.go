@@ -1,4 +1,4 @@
-//nolint:noctx,godox
+//nolint:noctx
 package endpointsrv
 
 import (
@@ -20,6 +20,12 @@ import (
 	"go.jetpack.io/typeid"
 )
 
+type Driver interface {
+	EndpointDriverName() string
+	EndpointProvider() types.Provider
+	EndpointCreate(ctx context.Context, project, endpointID, execID string, internalPort int32) (string, error)
+}
+
 type Service interface {
 	EndpointExecCreate(ctx context.Context, projectID, execID string) (types.Endpoint, error)
 	EndpointAttachEval(ctx context.Context, endpointID, evalID string) error
@@ -30,9 +36,10 @@ type Service interface {
 }
 
 type EndpointService struct {
-	store Store
-	evals evalsrv.Service
-	execs execsrv.Service
+	store  Store
+	evals  evalsrv.Service
+	execs  execsrv.Service
+	driver Driver
 }
 
 type Store interface {
@@ -52,17 +59,17 @@ func NewEndpointService(
 	store Store,
 	evals evalsrv.Service,
 	execs execsrv.Service,
+	driver Driver,
 ) *EndpointService {
 	return &EndpointService{
-		store: store,
-		evals: evals,
-		execs: execs,
+		store:  store,
+		evals:  evals,
+		execs:  execs,
+		driver: driver,
 	}
 }
 
 func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, execID string) (types.Endpoint, error) {
-	// TODO; we probably want to change the attachment of a service onto an "endpoint"
-	// and make it's hostname specific to the endpoint, not the exec
 	endpointID := typeid.Must(typeid.New("end")).String()
 
 	exec, err := e.execs.Get(ctx, execID)
@@ -70,7 +77,17 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		return types.Endpoint{}, fmt.Errorf("get exec: %w", err)
 	}
 
-	if exec.Network.HTTPService == nil {
+	if exec.Provider != e.driver.EndpointProvider() {
+		return types.Endpoint{}, &types.Error{
+			Message:    "Cannot create endpoint",
+			Suggestion: fmt.Sprintf("Endpoints can only be created with the %s provider", e.driver.EndpointProvider().String()),
+			Provider:   e.driver.EndpointProvider(),
+		}
+	}
+
+	httpSerivice := exec.Network.HTTPService
+
+	if httpSerivice == nil {
 		return types.Endpoint{}, &types.Error{
 			Code:       400,
 			Message:    "Endpoints can only be created on execs that expose a service",
@@ -78,18 +95,30 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		}
 	}
 
+	httpAddr, err := e.driver.EndpointCreate(
+		ctx,
+		projectID,
+		endpointID,
+		execID,
+		httpSerivice.InternalPort,
+	)
+	if err != nil {
+		return types.Endpoint{}, fmt.Errorf("drvier create endpoint: %w", err)
+	}
+
 	dbe := db.EndpointCreateParams{
-		ID:        endpointID,
-		ExecID:    execID,
-		ProjectID: projectID,
-		CreatedAt: time.Now(),
+		ID:          endpointID,
+		ExecID:      execID,
+		ProjectID:   projectID,
+		HttpAddress: httpAddr,
+		CreatedAt:   time.Now(),
 	}
 
 	if err := e.store.EndpointCreate(ctx, dbe); err != nil {
 		return types.Endpoint{}, fmt.Errorf("save endpoint: %w", err)
 	}
 
-	return endpoint(endpointID, projectID, dbe.CreatedAt, exec, []string{}), nil
+	return endpoint(endpointID, projectID, dbe.CreatedAt, httpAddr, execID, []string{}), nil
 }
 
 func (e *EndpointService) EndpointAttachEval(ctx context.Context, endpointID, evalID string) error {
@@ -109,27 +138,9 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 		return nil, fmt.Errorf("get endpoint: %w", err)
 	}
 
-	projectExecs, err := e.execs.List(ctx, projectID)
-	if err != nil {
-		return nil, fmt.Errorf("list exec: %w", err)
-	}
-
-	execByID := make(map[string]types.Exec)
-
-	for _, pe := range projectExecs {
-		pe := pe
-		execByID[pe.ID] = pe
-	}
-
 	out := []types.Endpoint{}
 
 	for _, end := range dbEnds {
-		exec, ok := execByID[end.ExecID]
-
-		if !ok {
-			continue
-		}
-
 		// TODO: fix query in loop
 		endEvals, err := e.store.EndpointEval(ctx, end.ID)
 		if err != nil {
@@ -141,7 +152,7 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 			ids[i] = eval.EvalID
 		}
 
-		out = append(out, endpoint(end.ID, end.ProjectID, end.CreatedAt, exec, ids))
+		out = append(out, endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, ids))
 	}
 
 	return out, nil
@@ -151,11 +162,6 @@ func (e *EndpointService) EndpointGet(ctx context.Context, id string) (types.End
 	end, err := e.store.EndpointGet(ctx, id)
 	if err != nil {
 		return types.Endpoint{}, fmt.Errorf("get endpoint: %w", err)
-	}
-
-	exec, err := e.execs.Get(ctx, end.ExecID)
-	if err != nil {
-		return types.Endpoint{}, fmt.Errorf("get exec: %w", err)
 	}
 
 	endEvals, err := e.store.EndpointEval(ctx, end.ID)
@@ -168,7 +174,7 @@ func (e *EndpointService) EndpointGet(ctx context.Context, id string) (types.End
 		ids[i] = eval.EvalID
 	}
 
-	return endpoint(end.ID, end.ProjectID, end.CreatedAt, exec, ids), nil
+	return endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, ids), nil
 }
 
 func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID string) (string, error) {
@@ -188,8 +194,6 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 		return "", fmt.Errorf("verify checks: %w", err)
 	}
 
-	// TODO: does it make more sense to be an EndpointCheck or an EndpointCheck
-	// probably and EndpointCheck
 	if err := e.store.EndpointCheckCreate(ctx, db.EndpointCheckCreateParams{
 		ID:         checkID,
 		EndpointID: endpoint.ID,
@@ -214,8 +218,6 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID strin
 				log.Error().Err(check.err).Msg("check failed")
 			}
 
-			// TODO: store check progress / data somewhere
-			// make it pollable
 			log.Debug().
 				Str("check_id", check.checkID).
 				Str("step_id", check.stepID).
@@ -385,19 +387,17 @@ type datasetItemEndpointResponse struct {
 	EndpointResponse json.RawMessage `json:"endpointResponse"`
 }
 
-func endpoint(endpointID, projectID string, createdAt time.Time, exec types.Exec, ids []string) types.Endpoint {
+func endpoint(endpointID, projectID string, createdAt time.Time, httpAddress, execID string, ids []string) types.Endpoint {
 	endpoint := types.Endpoint{
 		ID:        endpointID,
 		ProjectID: projectID,
-		ExecID:    exec.ID,
+		ExecID:    execID,
 		EvalIDs:   ids,
 		CreatedAt: createdAt,
 		Status:    types.EndpointStatusDeployed,
 	}
 
-	if exec.Network.HTTPService != nil && exec.Network.HTTPService.Hostname != "" {
-		endpoint.HTTPEndpoint = exec.Network.HTTPService.Hostname
-	}
+	endpoint.HTTPEndpoint = httpAddress
 
 	return endpoint
 }

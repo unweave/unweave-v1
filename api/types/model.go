@@ -134,8 +134,7 @@ type ConnectionInfo struct {
 }
 
 type HTTPService struct {
-	Hostname     string `json:"hostname"`
-	InternalPort int32  `json:"internal_port"`
+	InternalPort int32 `json:"internal_port"`
 }
 
 type ExecNetwork struct {

@@ -48,7 +48,9 @@ func (p postgresStore) Create(projectID string, exec types.Exec) error {
 		return fmt.Errorf("failed to marshal spec to JSON: %w", err)
 	}
 
-	metadata, err := json.Marshal(&types.NodeMetadataV1{})
+	metadata, err := json.Marshal(&types.NodeMetadataV1{
+		HTTPService: exec.Network.HTTPService,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
 	}

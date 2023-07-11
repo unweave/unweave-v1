@@ -13,17 +13,23 @@ import (
 )
 
 const EvalCreate = `-- name: EvalCreate :exec
-INSERT INTO unweave.eval (id, exec_id, project_id) VALUES ($1, $2, $3)
+INSERT INTO unweave.eval (id, exec_id, http_address, project_id) VALUES ($1, $2, $3, $4)
 `
 
 type EvalCreateParams struct {
-	ID        string `json:"id"`
-	ExecID    string `json:"execID"`
-	ProjectID string `json:"projectID"`
+	ID          string `json:"id"`
+	ExecID      string `json:"execID"`
+	HttpAddress string `json:"httpAddress"`
+	ProjectID   string `json:"projectID"`
 }
 
 func (q *Queries) EvalCreate(ctx context.Context, arg EvalCreateParams) error {
-	_, err := q.db.ExecContext(ctx, EvalCreate, arg.ID, arg.ExecID, arg.ProjectID)
+	_, err := q.db.ExecContext(ctx, EvalCreate,
+		arg.ID,
+		arg.ExecID,
+		arg.HttpAddress,
+		arg.ProjectID,
+	)
 	return err
 }
 
@@ -37,30 +43,37 @@ func (q *Queries) EvalDelete(ctx context.Context, id string) error {
 }
 
 const EvalGet = `-- name: EvalGet :one
-SELECT id, exec_id, project_id FROM unweave.eval WHERE id = $1
+SELECT id, exec_id, http_address, project_id FROM unweave.eval WHERE id = $1
 `
 
 type EvalGetRow struct {
-	ID        string `json:"id"`
-	ExecID    string `json:"execID"`
-	ProjectID string `json:"projectID"`
+	ID          string `json:"id"`
+	ExecID      string `json:"execID"`
+	HttpAddress string `json:"httpAddress"`
+	ProjectID   string `json:"projectID"`
 }
 
 func (q *Queries) EvalGet(ctx context.Context, id string) (EvalGetRow, error) {
 	row := q.db.QueryRowContext(ctx, EvalGet, id)
 	var i EvalGetRow
-	err := row.Scan(&i.ID, &i.ExecID, &i.ProjectID)
+	err := row.Scan(
+		&i.ID,
+		&i.ExecID,
+		&i.HttpAddress,
+		&i.ProjectID,
+	)
 	return i, err
 }
 
 const EvalList = `-- name: EvalList :many
-SELECT id, exec_id, created_at FROM unweave.eval WHERE id = ANY($1::text[])
+SELECT id, exec_id, http_address, created_at FROM unweave.eval WHERE id = ANY($1::text[])
 `
 
 type EvalListRow struct {
-	ID        string    `json:"id"`
-	ExecID    string    `json:"execID"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID          string    `json:"id"`
+	ExecID      string    `json:"execID"`
+	HttpAddress string    `json:"httpAddress"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 func (q *Queries) EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRow, error) {
@@ -72,7 +85,12 @@ func (q *Queries) EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRo
 	var items []EvalListRow
 	for rows.Next() {
 		var i EvalListRow
-		if err := rows.Scan(&i.ID, &i.ExecID, &i.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExecID,
+			&i.HttpAddress,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -87,13 +105,14 @@ func (q *Queries) EvalList(ctx context.Context, dollar_1 []string) ([]EvalListRo
 }
 
 const EvalListForProject = `-- name: EvalListForProject :many
-SELECT id, exec_id, project_id from unweave.eval WHERE project_id = $1
+SELECT id, exec_id, http_address, project_id from unweave.eval WHERE project_id = $1
 `
 
 type EvalListForProjectRow struct {
-	ID        string `json:"id"`
-	ExecID    string `json:"execID"`
-	ProjectID string `json:"projectID"`
+	ID          string `json:"id"`
+	ExecID      string `json:"execID"`
+	HttpAddress string `json:"httpAddress"`
+	ProjectID   string `json:"projectID"`
 }
 
 func (q *Queries) EvalListForProject(ctx context.Context, projectID string) ([]EvalListForProjectRow, error) {
@@ -105,7 +124,12 @@ func (q *Queries) EvalListForProject(ctx context.Context, projectID string) ([]E
 	var items []EvalListForProjectRow
 	for rows.Next() {
 		var i EvalListForProjectRow
-		if err := rows.Scan(&i.ID, &i.ExecID, &i.ProjectID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.ExecID,
+			&i.HttpAddress,
+			&i.ProjectID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

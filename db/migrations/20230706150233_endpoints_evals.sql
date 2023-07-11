@@ -4,6 +4,7 @@ CREATE TABLE unweave.eval (
     id text NOT NULL PRIMARY KEY,
     exec_id text NOT NULL REFERENCES unweave.exec (id),
     project_id text NOT NULL REFERENCES unweave.project (id),
+    http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -11,6 +12,7 @@ CREATE TABLE unweave.endpoint (
     id text NOT NULL PRIMARY KEY,
     exec_id text NOT NULL REFERENCES unweave.exec (id),
     project_id text NOT NULL REFERENCES unweave.project (id),
+    http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     deleted_at timestamp with time zone
 );
