@@ -17,6 +17,6 @@ func (e *EndpointDriver) EndpointProvider() types.Provider {
 	return types.LambdaLabsProvider
 }
 
-func (e *EndpointDriver) EndpointCreate(ctx context.Context, project string, endpointID string, execID string, internalPort int32) (string, error) {
+func (e *EndpointDriver) EndpointCreate(_ context.Context, _, _, _ string, _ int32) (string, error) {
 	return "", errors.New("endpoints unsupported for lambdalabs provider")
 }

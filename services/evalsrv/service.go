@@ -1,4 +1,3 @@
-//nolint:godox
 package evalsrv
 
 import (

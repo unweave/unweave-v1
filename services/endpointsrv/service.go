@@ -1,4 +1,4 @@
-//nolint:noctx
+//nolint:noctx,godox
 package endpointsrv
 
 import (
