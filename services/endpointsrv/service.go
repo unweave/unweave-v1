@@ -508,12 +508,15 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 
 	out := make([]types.EndpointCheckStep, len(steps))
 	for idx, step := range steps {
+		status, conclusion := StepStatusAndConclusion(step)
 		out[idx] = types.EndpointCheckStep{
-			StepID:    step.ID,
-			EvalID:    step.EvalID,
-			Input:     []byte(step.Input.String),
-			Output:    []byte(step.Output.String),
-			Assertion: step.Assertion.String,
+			StepID:     step.ID,
+			EvalID:     step.EvalID,
+			Input:      []byte(step.Input.String),
+			Output:     []byte(step.Output.String),
+			Assertion:  step.Assertion.String,
+			Status:     status,
+			Conclusion: conclusion,
 		}
 	}
 
@@ -651,4 +654,50 @@ func demoteVersions(end *types.Endpoint) {
 	for i := range end.Versions {
 		end.Versions[i].Primary = false
 	}
+}
+
+// StepStatusAndConclusion infers the status of a step based on the contents of the database.
+func StepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+	if !step.Output.Valid {
+		return types.CheckPending, nil
+	}
+	if !step.Assertion.Valid {
+		return types.CheckInProgress, nil
+	}
+
+	switch step.Assertion.String {
+	case "":
+		return types.CheckInProgress, nil
+	case "success":
+		return types.CheckCompleted, &types.CheckSuccess
+	case "failure":
+		return types.CheckCompleted, &types.CheckFailure
+	default:
+		return types.CheckCompleted, &types.CheckError
+	}
+}
+
+// CheckStatusAndConclusion infers the status of a check based on the status of the steps.
+func CheckStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+	conclusions := map[string]struct{}{}
+
+	for _, step := range steps {
+		switch step.Status {
+		case types.CheckCompleted:
+		default:
+			return types.CheckInProgress, nil
+		}
+
+		key := step.Conclusion.String()
+		conclusions[key] = struct{}{}
+	}
+
+	if _, ok := conclusions[types.CheckError.String()]; ok {
+		return types.CheckCompleted, &types.CheckError
+	}
+	if _, ok := conclusions[types.CheckFailure.String()]; ok {
+		return types.CheckCompleted, &types.CheckFailure
+	}
+
+	return types.CheckCompleted, &types.CheckSuccess
 }

@@ -82,14 +82,18 @@ type EndpointCheckRun struct {
 }
 
 type EndpointCheck struct {
-	CheckID string
-	Steps   []EndpointCheckStep
+	CheckID    string
+	Steps      []EndpointCheckStep
+	Status     CheckStatus
+	Conclusion *CheckConclusion `json:",omitempty"`
 }
 
 type EndpointCheckStep struct {
-	StepID    string
-	EvalID    string
-	Input     json.RawMessage
-	Output    json.RawMessage
-	Assertion string
+	StepID     string
+	EvalID     string
+	Input      json.RawMessage
+	Output     json.RawMessage
+	Assertion  string
+	Status     CheckStatus
+	Conclusion *CheckConclusion `json:",omitempty"`
 }
