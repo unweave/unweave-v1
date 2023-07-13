@@ -9,7 +9,16 @@ import (
 //
 // This needs to be initialized when the db connection is first established. It is then
 // safe to use across go routines.
-var Q Querier
+var Q TxQuerier
+
+type TxQuerier interface {
+	Querier
+	Txer
+}
+
+type Txer interface {
+	Tx(txFunc func(Querier) error) error
+}
 
 type Config struct {
 	Host     string `json:"host" env:"UNWEAVE_DB_HOST"`

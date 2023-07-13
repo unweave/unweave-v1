@@ -10,12 +10,25 @@ type EndpointCreate struct {
 	ExecID string `json:"execId"`
 }
 
+type EndpointVersionCreate struct {
+	ExecID  string `json:"execId"`
+	Promote bool   `json:"promote"`
+}
+
 type EndpointEvalAttach struct {
 	EvalID string `json:"evalId"`
 }
 
 type EndpointList struct {
-	Endpoints []Endpoint `json:"endpoints"`
+	Endpoints []EndpointListItem `json:"endpoints"`
+}
+
+type EndpointListItem struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	ProjectID   string    `json:"projectId"`
+	HTTPAddress string    `json:"httpAddress"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 type EvalList struct {
@@ -23,14 +36,23 @@ type EvalList struct {
 }
 
 type Endpoint struct {
-	ID           string         `json:"id"`
-	ProjectID    string         `json:"projectId"`
-	ExecID       string         `json:"execId"`
-	Name         string         `json:"name"`
-	HTTPEndpoint string         `json:"httpEndpoint"`
-	EvalIDs      []string       `json:"evalIDs"`
-	Status       EndpointStatus `json:"status"`
-	CreatedAt    time.Time      `json:"createdAt"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	ProjectID   string            `json:"projectId"`
+	HTTPAddress string            `json:"httpAddress"`
+	EvalIDs     []string          `json:"evalIDs"`
+	Status      EndpointStatus    `json:"status"`
+	Versions    []EndpointVersion `json:"versions"`
+	CreatedAt   time.Time         `json:"createdAt"`
+}
+
+type EndpointVersion struct {
+	ID          string         `json:"id"`
+	ExecID      string         `json:"execId"`
+	HTTPAddress string         `json:"httpAddress"`
+	Status      EndpointStatus `json:"status"`
+	Primary     bool           `json:"primary"`
+	CreatedAt   time.Time      `json:"createdAt"`
 }
 
 type EndpointStatus string

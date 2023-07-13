@@ -26,8 +26,9 @@ type EndpointRouter struct {
 func (e *EndpointRouter) EndpointRunCheckHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	endpointID := chi.URLParam(r, "endpointRef")
+	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	id, err := e.endpoints.RunEndpointEvals(ctx, endpointID)
+	id, err := e.endpoints.RunEndpointEvals(ctx, projectID, endpointID)
 	if err != nil {
 		_ = render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to run endpoint evals"))
 
@@ -108,4 +109,26 @@ func (e *EndpointRouter) EndpointEvalCheckStatus(w http.ResponseWriter, r *http.
 	}
 
 	render.JSON(w, r, status)
+}
+
+func (e *EndpointRouter) EndpointCreateVersion(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	endpointID := chi.URLParam(r, "endpointRef")
+	projectID := middleware.GetProjectIDFromContext(ctx)
+
+	var req types.EndpointVersionCreate
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		_ = render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
+
+		return
+	}
+
+	version, err := e.endpoints.EndpointVersionCreate(ctx, projectID, endpointID, req.ExecID, req.Promote)
+	if err != nil {
+		_ = render.Render(w, r, types.ErrHTTPError(err, "create endpoint version"))
+
+		return
+	}
+
+	render.JSON(w, r, version)
 }

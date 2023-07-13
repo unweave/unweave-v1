@@ -9,23 +9,49 @@ import (
 	"database/sql"
 )
 
-type DBTX interface {
+type DB interface {
 	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
 	PrepareContext(context.Context, string) (*sql.Stmt, error)
 	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
 	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
 }
 
+type Tx interface {
+	Begin() (*sql.Tx, error)
+}
+
+type DBTX interface {
+	DB
+	Tx
+}
+
 func New(db DBTX) *Queries {
-	return &Queries{db: db}
+	return &Queries{tx: db, db: db}
 }
 
 type Queries struct {
-	db DBTX
+	tx Tx
+	db DB
 }
 
-func (q *Queries) WithTx(tx *sql.Tx) *Queries {
-	return &Queries{
-		db: tx,
+func (q *Queries) Tx(txFunc func(db Querier) error) (err error) {
+	tx, err := q.tx.Begin()
+	if err != nil {
+		return
 	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p) // re-throw panic after Rollback
+		} else if err != nil {
+			tx.Rollback() // err is non-nil; don't change it
+		} else {
+			err = tx.Commit() // err is nil; if Commit returns error update err
+		}
+	}()
+
+	err = txFunc(&Queries{tx: q.tx, db: tx})
+
+	return err
 }
