@@ -24,7 +24,7 @@ type Store interface {
 }
 
 type EndpointDriver interface {
-	EndpointCreate(ctx context.Context, project, endpointID, execID string, internalPort int32) (string, error)
+	EndpointCreate(ctx context.Context, project, endpointID, execID, name string, internalPort int32) (string, error)
 }
 
 func NewEvalService(store Store, execService execsrv.Service, driver EndpointDriver) *EvalService {
@@ -68,7 +68,7 @@ func (e *EvalService) EvalCreate(ctx context.Context, projectID, execID string) 
 		}
 	}
 
-	addr, err := e.driver.EndpointCreate(ctx, projectID, evalID, execID, exec.Network.HTTPService.InternalPort)
+	addr, err := e.driver.EndpointCreate(ctx, projectID, evalID, execID, evalID, exec.Network.HTTPService.InternalPort)
 	if err != nil {
 		return types.Eval{}, fmt.Errorf("failed to create endpoint for eval: %w", err)
 	}

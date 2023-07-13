@@ -48,7 +48,7 @@ func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	endpoint, err := e.endpoints.EndpointExecCreate(ctx, projectID, req.ExecID)
+	endpoint, err := e.endpoints.EndpointExecCreate(ctx, projectID, req.ExecID, req.Name)
 	if err != nil {
 		_ = render.Render(w, r, types.ErrHTTPError(err, "create endpoint failed"))
 

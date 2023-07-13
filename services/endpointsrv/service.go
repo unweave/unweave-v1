@@ -17,17 +17,18 @@ import (
 	"github.com/unweave/unweave/db"
 	"github.com/unweave/unweave/services/evalsrv"
 	"github.com/unweave/unweave/services/execsrv"
+	"github.com/unweave/unweave/tools/random"
 	"go.jetpack.io/typeid"
 )
 
 type Driver interface {
 	EndpointDriverName() string
 	EndpointProvider() types.Provider
-	EndpointCreate(ctx context.Context, project, endpointID, execID string, internalPort int32) (string, error)
+	EndpointCreate(ctx context.Context, project, endpointID, execID, name string, internalPort int32) (string, error)
 }
 
 type Service interface {
-	EndpointExecCreate(ctx context.Context, projectID, execID string) (types.Endpoint, error)
+	EndpointExecCreate(ctx context.Context, projectID, execID, name string) (types.Endpoint, error)
 	EndpointAttachEval(ctx context.Context, endpointID, evalID string) error
 	EndpointList(ctx context.Context, projectID string) ([]types.Endpoint, error)
 	EndpointGet(ctx context.Context, id string) (types.Endpoint, error)
@@ -69,8 +70,12 @@ func NewEndpointService(
 	}
 }
 
-func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, execID string) (types.Endpoint, error) {
+func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, execID, name string) (types.Endpoint, error) {
 	endpointID := typeid.Must(typeid.New("end")).String()
+
+	if name == "" {
+		name = random.GenerateRandomPhrase(3, "-")
+	}
 
 	exec, err := e.execs.Get(ctx, execID)
 	if err != nil {
@@ -100,6 +105,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		projectID,
 		endpointID,
 		execID,
+		name,
 		httpSerivice.InternalPort,
 	)
 	if err != nil {
@@ -109,6 +115,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 	dbe := db.EndpointCreateParams{
 		ID:          endpointID,
 		ExecID:      execID,
+		Name:        sql.NullString{String: name, Valid: true},
 		ProjectID:   projectID,
 		HttpAddress: httpAddr,
 		CreatedAt:   time.Now(),
@@ -118,7 +125,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		return types.Endpoint{}, fmt.Errorf("save endpoint: %w", err)
 	}
 
-	return endpoint(endpointID, projectID, dbe.CreatedAt, httpAddr, execID, []string{}), nil
+	return endpoint(endpointID, projectID, dbe.CreatedAt, httpAddr, execID, name, []string{}), nil
 }
 
 func (e *EndpointService) EndpointAttachEval(ctx context.Context, endpointID, evalID string) error {
@@ -152,7 +159,7 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 			ids[i] = eval.EvalID
 		}
 
-		out = append(out, endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, ids))
+		out = append(out, endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, end.Name.String, ids))
 	}
 
 	return out, nil
@@ -174,7 +181,7 @@ func (e *EndpointService) EndpointGet(ctx context.Context, id string) (types.End
 		ids[i] = eval.EvalID
 	}
 
-	return endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, ids), nil
+	return endpoint(end.ID, end.ProjectID, end.CreatedAt, end.HttpAddress, end.ExecID, end.Name.String, ids), nil
 }
 
 func (e *EndpointService) RunEndpointEvals(ctx context.Context, endpointID string) (string, error) {
@@ -387,11 +394,12 @@ type datasetItemEndpointResponse struct {
 	EndpointResponse json.RawMessage `json:"endpointResponse"`
 }
 
-func endpoint(endpointID, projectID string, createdAt time.Time, httpAddress, execID string, ids []string) types.Endpoint {
+func endpoint(endpointID, projectID string, createdAt time.Time, httpAddress, execID, name string, ids []string) types.Endpoint {
 	endpoint := types.Endpoint{
 		ID:        endpointID,
 		ProjectID: projectID,
 		ExecID:    execID,
+		Name:      name,
 		EvalIDs:   ids,
 		CreatedAt: createdAt,
 		Status:    types.EndpointStatusDeployed,
