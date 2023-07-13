@@ -520,9 +520,12 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 		}
 	}
 
+	status, conclusion := CheckStatusAndConclusion(out)
 	return types.EndpointCheck{
-		CheckID: checkID,
-		Steps:   out,
+		CheckID:    checkID,
+		Steps:      out,
+		Status:     status,
+		Conclusion: conclusion,
 	}, nil
 }
 
