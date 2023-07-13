@@ -85,7 +85,7 @@ type EndpointCheck struct {
 	CheckID    string
 	Steps      []EndpointCheckStep
 	Status     CheckStatus
-	Conclusion *CheckConclusion `json:",omitempty"`
+	Conclusion *CheckConclusion `json:"conclusion,omitempty"`
 }
 
 type EndpointCheckStep struct {
@@ -95,5 +95,5 @@ type EndpointCheckStep struct {
 	Output     json.RawMessage
 	Assertion  string
 	Status     CheckStatus
-	Conclusion *CheckConclusion `json:",omitempty"`
+	Conclusion *CheckConclusion `json:"conclusion,omitempty"`
 }

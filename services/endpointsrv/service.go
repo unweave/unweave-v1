@@ -661,6 +661,7 @@ func StepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatu
 	if !step.Output.Valid {
 		return types.CheckPending, nil
 	}
+
 	if !step.Assertion.Valid {
 		return types.CheckInProgress, nil
 	}
@@ -695,6 +696,7 @@ func CheckStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatu
 	if _, ok := conclusions[types.CheckError.String()]; ok {
 		return types.CheckCompleted, &types.CheckError
 	}
+
 	if _, ok := conclusions[types.CheckFailure.String()]; ok {
 		return types.CheckCompleted, &types.CheckFailure
 	}
