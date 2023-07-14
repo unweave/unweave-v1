@@ -17,6 +17,6 @@ func (e *EndpointDriver) EndpointProvider() types.Provider {
 	return types.AWSProvider
 }
 
-func (e *EndpointDriver) EndpointCreate(_ context.Context, _, _, _ string, _ int32) (string, error) {
+func (e *EndpointDriver) EndpointCreate(_ context.Context, _, _, _, _ string, _ int32) (string, error) {
 	return "", errors.New("endpoints unsupported for aws provider")
 }

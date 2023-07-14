@@ -24,7 +24,7 @@ func TestPollingStateInformerManager(t *testing.T) {
 	store := new(execsrvfakes.FakeStore)
 	store.GetCalls(func(s string) (types.Exec, error) {
 		assert.Equal(t, s, "abc123")
-		safeClose(storeDone)
+		defer safeClose(storeDone)
 
 		return types.Exec{ID: "abc123", Status: types.StatusInitializing}, nil
 	})
@@ -35,7 +35,7 @@ func TestPollingStateInformerManager(t *testing.T) {
 		select {
 		case <-storeDone:
 			// if the store was called first
-			safeClose(driverDone)
+			defer safeClose(driverDone)
 
 			return types.StatusTerminated, nil
 		default:
@@ -65,7 +65,7 @@ func TestPollingStateInformerManager(t *testing.T) {
 
 	go informer.Watch()
 
-	chans := []chan struct{}{storeDone, driverDone, waitForCalls(observer, 3)}
+	chans := []chan struct{}{storeDone, driverDone, waitForCalls(observer, 2)}
 	<-waitAll(chans)
 
 	assert.GreaterOrEqual(t, observer.UpdateCallCount(), 3)
@@ -103,6 +103,8 @@ func waitForCalls(observer *execsrvfakes.FakeStateObserver, calls int) chan stru
 			if observer.UpdateCallCount() >= calls {
 				return
 			}
+
+			<-time.After(250 * time.Millisecond)
 		}
 	}()
 

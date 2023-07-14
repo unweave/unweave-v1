@@ -124,12 +124,13 @@ type UnweaveBuild struct {
 }
 
 type UnweaveEndpoint struct {
-	ID          string       `json:"id"`
-	ExecID      string       `json:"execID"`
-	ProjectID   string       `json:"projectID"`
-	HttpAddress string       `json:"httpAddress"`
-	CreatedAt   time.Time    `json:"createdAt"`
-	DeletedAt   sql.NullTime `json:"deletedAt"`
+	ID          string         `json:"id"`
+	ExecID      string         `json:"execID"`
+	ProjectID   string         `json:"projectID"`
+	HttpAddress string         `json:"httpAddress"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	DeletedAt   sql.NullTime   `json:"deletedAt"`
+	Name        sql.NullString `json:"name"`
 }
 
 type UnweaveEndpointCheck struct {

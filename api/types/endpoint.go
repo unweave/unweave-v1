@@ -6,6 +6,7 @@ import (
 )
 
 type EndpointCreate struct {
+	Name   string `json:"name"`
 	ExecID string `json:"execId"`
 }
 
@@ -25,6 +26,7 @@ type Endpoint struct {
 	ID           string         `json:"id"`
 	ProjectID    string         `json:"projectId"`
 	ExecID       string         `json:"execId"`
+	Name         string         `json:"name"`
 	HTTPEndpoint string         `json:"httpEndpoint"`
 	EvalIDs      []string       `json:"evalIDs"`
 	Status       EndpointStatus `json:"status"`

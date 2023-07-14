@@ -125,21 +125,23 @@ func (q *Queries) EndpointCheckSteps(ctx context.Context, checkID string) ([]Unw
 }
 
 const EndpointCreate = `-- name: EndpointCreate :exec
-INSERT INTO unweave.endpoint (id, exec_id, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5)
+INSERT INTO unweave.endpoint (id, exec_id, name, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type EndpointCreateParams struct {
-	ID          string    `json:"id"`
-	ExecID      string    `json:"execID"`
-	ProjectID   string    `json:"projectID"`
-	HttpAddress string    `json:"httpAddress"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ID          string         `json:"id"`
+	ExecID      string         `json:"execID"`
+	Name        sql.NullString `json:"name"`
+	ProjectID   string         `json:"projectID"`
+	HttpAddress string         `json:"httpAddress"`
+	CreatedAt   time.Time      `json:"createdAt"`
 }
 
 func (q *Queries) EndpointCreate(ctx context.Context, arg EndpointCreateParams) error {
 	_, err := q.db.ExecContext(ctx, EndpointCreate,
 		arg.ID,
 		arg.ExecID,
+		arg.Name,
 		arg.ProjectID,
 		arg.HttpAddress,
 		arg.CreatedAt,
@@ -198,7 +200,7 @@ func (q *Queries) EndpointEvalAttach(ctx context.Context, arg EndpointEvalAttach
 }
 
 const EndpointGet = `-- name: EndpointGet :one
-SELECT id, exec_id, project_id, http_address, created_at, deleted_at FROM unweave.endpoint WHERE id = $1
+SELECT id, exec_id, project_id, http_address, created_at, deleted_at, name FROM unweave.endpoint WHERE id = $1
 `
 
 func (q *Queries) EndpointGet(ctx context.Context, id string) (UnweaveEndpoint, error) {
@@ -211,12 +213,13 @@ func (q *Queries) EndpointGet(ctx context.Context, id string) (UnweaveEndpoint, 
 		&i.HttpAddress,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Name,
 	)
 	return i, err
 }
 
 const EndpointsForProject = `-- name: EndpointsForProject :many
-SELECT id, exec_id, project_id, http_address, created_at, deleted_at FROM unweave.endpoint WHERE project_id = $1
+SELECT id, exec_id, project_id, http_address, created_at, deleted_at, name FROM unweave.endpoint WHERE project_id = $1
 `
 
 func (q *Queries) EndpointsForProject(ctx context.Context, projectID string) ([]UnweaveEndpoint, error) {
@@ -235,6 +238,7 @@ func (q *Queries) EndpointsForProject(ctx context.Context, projectID string) ([]
 			&i.HttpAddress,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Name,
 		); err != nil {
 			return nil, err
 		}

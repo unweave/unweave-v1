@@ -134,7 +134,8 @@ CREATE TABLE unweave.endpoint (
     project_id text NOT NULL,
     http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    name text
 );
 
 ALTER TABLE unweave.endpoint OWNER TO postgres;
@@ -273,6 +274,12 @@ ALTER TABLE ONLY unweave.ssh_key
 
 ALTER TABLE ONLY unweave.ssh_key
     ADD CONSTRAINT ssh_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT unweave_endpoint_unique_http_address UNIQUE (http_address);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT unweave_endpoint_unique_name_by_project UNIQUE (project_id, name);
 
 ALTER TABLE ONLY unweave.volume
     ADD CONSTRAINT volume_pkey PRIMARY KEY (id);
