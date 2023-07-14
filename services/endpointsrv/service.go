@@ -24,7 +24,7 @@ import (
 type Driver interface {
 	EndpointDriverName() string
 	EndpointProvider() types.Provider
-	EndpointCreate(ctx context.Context, project, endpointID, execID, name string, internalPort int32) (string, error)
+	EndpointCreate(ctx context.Context, project, endpointID, execID, subdomain string, internalPort int32) (string, error)
 }
 
 type Service interface {
@@ -70,12 +70,14 @@ func NewEndpointService(
 	}
 }
 
-func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, execID, name string) (types.Endpoint, error) {
+func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, execID, endpointName string) (types.Endpoint, error) {
 	endpointID := typeid.Must(typeid.New("end")).String()
 
-	if name == "" {
-		name = random.GenerateRandomPhrase(3, "-")
+	if endpointName == "" {
+		endpointName = random.GenerateRandomPhrase(3, "-")
 	}
+
+	subdomain := fmt.Sprint(endpointName, "-", random.GenerateRandomLower(5))
 
 	exec, err := e.execs.Get(ctx, execID)
 	if err != nil {
@@ -105,7 +107,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		projectID,
 		endpointID,
 		execID,
-		name,
+		subdomain,
 		httpSerivice.InternalPort,
 	)
 	if err != nil {
@@ -115,7 +117,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 	dbe := db.EndpointCreateParams{
 		ID:          endpointID,
 		ExecID:      execID,
-		Name:        sql.NullString{String: name, Valid: true},
+		Name:        sql.NullString{String: endpointName, Valid: true},
 		ProjectID:   projectID,
 		HttpAddress: httpAddr,
 		CreatedAt:   time.Now(),
@@ -125,7 +127,7 @@ func (e *EndpointService) EndpointExecCreate(ctx context.Context, projectID, exe
 		return types.Endpoint{}, fmt.Errorf("save endpoint: %w", err)
 	}
 
-	return endpoint(endpointID, projectID, dbe.CreatedAt, httpAddr, execID, name, []string{}), nil
+	return endpoint(endpointID, projectID, dbe.CreatedAt, httpAddr, execID, endpointName, []string{}), nil
 }
 
 func (e *EndpointService) EndpointAttachEval(ctx context.Context, endpointID, evalID string) error {

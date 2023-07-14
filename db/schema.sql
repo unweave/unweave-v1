@@ -243,9 +243,6 @@ ALTER TABLE ONLY unweave.endpoint_eval
     ADD CONSTRAINT endpoint_eval_pkey PRIMARY KEY (endpoint_id, eval_id);
 
 ALTER TABLE ONLY unweave.endpoint
-    ADD CONSTRAINT endpoint_name_key UNIQUE (name);
-
-ALTER TABLE ONLY unweave.endpoint
     ADD CONSTRAINT endpoint_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY unweave.eval
@@ -277,6 +274,12 @@ ALTER TABLE ONLY unweave.ssh_key
 
 ALTER TABLE ONLY unweave.ssh_key
     ADD CONSTRAINT ssh_key_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT unweave_endpoint_unique_http_address UNIQUE (http_address);
+
+ALTER TABLE ONLY unweave.endpoint
+    ADD CONSTRAINT unweave_endpoint_unique_name_by_project UNIQUE (project_id, name);
 
 ALTER TABLE ONLY unweave.volume
     ADD CONSTRAINT volume_pkey PRIMARY KEY (id);
