@@ -560,10 +560,10 @@ func (e *EndpointService) createAttachEndpointVersion(
 	versionID := typeid.Must(typeid.New("version")).String()
 
 	log.Debug().
-		Str("project", end.ProjectID).
-		Str("endpoint_id", end.ID).
-		Str("exec_id", execID).
-		Str("version", versionID).
+		Str(types.ProjectIDCtxKey, end.ProjectID).
+		Str(types.EndpointIDCtxKey, end.ID).
+		Str(types.ExecIDCtxKey, execID).
+		Str(types.VersionIDCtxKey, versionID).
 		Bool("promote", promote).
 		Msg("creating endpoint version")
 
