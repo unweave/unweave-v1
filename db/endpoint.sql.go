@@ -125,12 +125,13 @@ func (q *Queries) EndpointCheckSteps(ctx context.Context, checkID string) ([]Unw
 }
 
 const EndpointCreate = `-- name: EndpointCreate :exec
-INSERT INTO unweave.endpoint (id, name, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5)
+INSERT INTO unweave.endpoint (id, name, icon, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type EndpointCreateParams struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
+	Icon        string    `json:"icon"`
 	ProjectID   string    `json:"projectID"`
 	HttpAddress string    `json:"httpAddress"`
 	CreatedAt   time.Time `json:"createdAt"`
@@ -140,6 +141,7 @@ func (q *Queries) EndpointCreate(ctx context.Context, arg EndpointCreateParams) 
 	_, err := q.db.ExecContext(ctx, EndpointCreate,
 		arg.ID,
 		arg.Name,
+		arg.Icon,
 		arg.ProjectID,
 		arg.HttpAddress,
 		arg.CreatedAt,
@@ -198,7 +200,7 @@ func (q *Queries) EndpointEvalAttach(ctx context.Context, arg EndpointEvalAttach
 }
 
 const EndpointGet = `-- name: EndpointGet :one
-SELECT id, name, project_id, http_address, created_at, deleted_at
+SELECT id, name, icon, project_id, http_address, created_at, deleted_at
 FROM unweave.endpoint
 WHERE id = $1 OR (name = $1 AND project_id = $2)
 `
@@ -214,6 +216,7 @@ func (q *Queries) EndpointGet(ctx context.Context, arg EndpointGetParams) (Unwea
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
+		&i.Icon,
 		&i.ProjectID,
 		&i.HttpAddress,
 		&i.CreatedAt,
@@ -223,7 +226,7 @@ func (q *Queries) EndpointGet(ctx context.Context, arg EndpointGetParams) (Unwea
 }
 
 const EndpointsForProject = `-- name: EndpointsForProject :many
-SELECT id, name, project_id, http_address, created_at, deleted_at
+SELECT id, name, icon, project_id, http_address, created_at, deleted_at
 FROM unweave.endpoint
 WHERE project_id = $1
 `
@@ -240,6 +243,7 @@ func (q *Queries) EndpointsForProject(ctx context.Context, projectID string) ([]
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
+			&i.Icon,
 			&i.ProjectID,
 			&i.HttpAddress,
 			&i.CreatedAt,

@@ -126,6 +126,7 @@ type UnweaveBuild struct {
 type UnweaveEndpoint struct {
 	ID          string       `json:"id"`
 	Name        string       `json:"name"`
+	Icon        string       `json:"icon"`
 	ProjectID   string       `json:"projectID"`
 	HttpAddress string       `json:"httpAddress"`
 	CreatedAt   time.Time    `json:"createdAt"`

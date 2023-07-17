@@ -29,8 +29,7 @@ type Driver interface {
 		ctx context.Context,
 		project,
 		endpointID,
-		subdomain string,
-		internalPort int32) (string, error)
+		subdomain string) (string, error)
 
 	EndpointVersionCreate(
 		ctx context.Context,
@@ -134,7 +133,6 @@ func (e *EndpointService) createEndpoint(
 		projectID,
 		endpointID,
 		subdomain,
-		8080,
 	)
 	if err != nil {
 		return types.Endpoint{}, fmt.Errorf("drvier create endpoint: %w", err)
@@ -143,6 +141,7 @@ func (e *EndpointService) createEndpoint(
 	end := types.Endpoint{
 		ID:          endpointID,
 		Name:        endpointName,
+		Icon:        "🚀",
 		ProjectID:   projectID,
 		HTTPAddress: httpAddr,
 		EvalIDs:     []string{},
@@ -154,6 +153,7 @@ func (e *EndpointService) createEndpoint(
 	dbe := db.EndpointCreateParams{
 		ID:          end.ID,
 		Name:        endpointName,
+		Icon:        "🚀",
 		ProjectID:   end.ProjectID,
 		HttpAddress: end.HTTPAddress,
 		CreatedAt:   end.CreatedAt,
@@ -178,6 +178,7 @@ func (e *EndpointService) EndpointList(ctx context.Context, projectID string) ([
 		out = append(out, types.EndpointListItem{
 			ID:          end.ID,
 			Name:        end.Name,
+			Icon:        end.Icon,
 			ProjectID:   end.ProjectID,
 			HTTPAddress: end.HttpAddress,
 			CreatedAt:   end.CreatedAt,
@@ -216,6 +217,7 @@ func (e *EndpointService) EndpointGet(ctx context.Context, projectID, endpointID
 	endpoint := types.Endpoint{
 		ID:          end.ID,
 		Name:        end.Name,
+		Icon:        end.Icon,
 		ProjectID:   end.ProjectID,
 		HTTPAddress: end.HttpAddress,
 		EvalIDs:     ids,

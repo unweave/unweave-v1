@@ -26,6 +26,7 @@ type EndpointList struct {
 type EndpointListItem struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
+	Icon        string    `json:"icon"`
 	ProjectID   string    `json:"projectId"`
 	HTTPAddress string    `json:"httpAddress"`
 	CreatedAt   time.Time `json:"createdAt"`
@@ -38,6 +39,7 @@ type EvalList struct {
 type Endpoint struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
+	Icon        string            `json:"icon"`
 	ProjectID   string            `json:"projectId"`
 	HTTPAddress string            `json:"httpAddress"`
 	EvalIDs     []string          `json:"evalIDs"`

@@ -28,8 +28,7 @@ type EndpointDriver interface {
 		ctx context.Context,
 		project,
 		endpointID,
-		subdomain string,
-		internalPort int32) (string, error)
+		subdomain string) (string, error)
 
 	EndpointVersionCreate(
 		ctx context.Context,

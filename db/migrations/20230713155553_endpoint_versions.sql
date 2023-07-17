@@ -18,6 +18,7 @@ DROP TABLE unweave.endpoint;
 CREATE TABLE unweave.endpoint (
     id text NOT NULL PRIMARY KEY,
     name text NOT NULL,
+    icon text NOT NULL DEFAULT '🚀',
     project_id text NOT NULL,
     http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,

@@ -131,6 +131,7 @@ ALTER TABLE unweave.account OWNER TO postgres;
 CREATE TABLE unweave.endpoint (
     id text NOT NULL,
     name text NOT NULL,
+    icon text DEFAULT '🚀'::text NOT NULL,
     project_id text NOT NULL,
     http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
