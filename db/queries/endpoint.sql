@@ -1,14 +1,18 @@
 -- name: EndpointCreate :exec
-INSERT INTO unweave.endpoint (id, exec_id, name, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO unweave.endpoint (id, name, icon, project_id, http_address, created_at) VALUES ($1, $2, $3, $4, $5, $6);
 
 -- name: EndpointGet :one
-SELECT id, exec_id, project_id, http_address, created_at, deleted_at, name FROM unweave.endpoint WHERE id = $1;
+SELECT id, name, icon, project_id, http_address, created_at, deleted_at
+FROM unweave.endpoint
+WHERE id = $1 OR (name = $1 AND project_id = $2);
 
 -- name: EndpointDelete :exec
 DELETE FROM unweave.endpoint WHERE id = $1;
 
 -- name: EndpointsForProject :many
-SELECT id, exec_id, project_id, http_address, created_at, deleted_at, name FROM unweave.endpoint WHERE project_id = $1;
+SELECT id, name, icon, project_id, http_address, created_at, deleted_at
+FROM unweave.endpoint
+WHERE project_id = $1;
 
 -- name: EndpointEval :many
 SELECT endpoint_id, eval_id FROM unweave.endpoint_eval WHERE endpoint_id = $1;

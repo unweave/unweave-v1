@@ -24,7 +24,19 @@ type Store interface {
 }
 
 type EndpointDriver interface {
-	EndpointCreate(ctx context.Context, project, endpointID, execID, subdomain string, internalPort int32) (string, error)
+	EndpointCreate(
+		ctx context.Context,
+		project,
+		endpointID,
+		subdomain string) (string, error)
+
+	EndpointVersionCreate(
+		ctx context.Context,
+		project,
+		endpointID,
+		versionID,
+		execID string,
+		internalPort int32) (string, error)
 }
 
 func NewEvalService(store Store, execService execsrv.Service, driver EndpointDriver) *EvalService {
@@ -68,16 +80,12 @@ func (e *EvalService) EvalCreate(ctx context.Context, projectID, execID string) 
 		}
 	}
 
-	// evals have an endpoiint subdomain
-	// equal to their evalID.
-	subdomain := evalID
-
-	addr, err := e.driver.EndpointCreate(
+	addr, err := e.driver.EndpointVersionCreate(
 		ctx,
 		projectID,
 		evalID,
+		evalID,
 		execID,
-		subdomain,
 		exec.Network.HTTPService.InternalPort,
 	)
 	if err != nil {

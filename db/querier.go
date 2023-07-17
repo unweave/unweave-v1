@@ -22,7 +22,12 @@ type Querier interface {
 	EndpointDelete(ctx context.Context, id string) error
 	EndpointEval(ctx context.Context, endpointID string) ([]UnweaveEndpointEval, error)
 	EndpointEvalAttach(ctx context.Context, arg EndpointEvalAttachParams) error
-	EndpointGet(ctx context.Context, id string) (UnweaveEndpoint, error)
+	EndpointGet(ctx context.Context, arg EndpointGetParams) (UnweaveEndpoint, error)
+	EndpointVersion(ctx context.Context, id string) (UnweaveEndpointVersion, error)
+	EndpointVersionCreate(ctx context.Context, arg EndpointVersionCreateParams) error
+	EndpointVersionDemote(ctx context.Context, endpointID string) error
+	EndpointVersionList(ctx context.Context, endpointID string) ([]UnweaveEndpointVersion, error)
+	EndpointVersionPromote(ctx context.Context, id string) error
 	EndpointsForProject(ctx context.Context, projectID string) ([]UnweaveEndpoint, error)
 	EvalCreate(ctx context.Context, arg EvalCreateParams) error
 	EvalDelete(ctx context.Context, id string) error

@@ -130,12 +130,12 @@ ALTER TABLE unweave.account OWNER TO postgres;
 
 CREATE TABLE unweave.endpoint (
     id text NOT NULL,
-    exec_id text NOT NULL,
+    name text NOT NULL,
+    icon text DEFAULT '🚀'::text NOT NULL,
     project_id text NOT NULL,
     http_address text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    deleted_at timestamp with time zone,
-    name text
+    deleted_at timestamp with time zone
 );
 
 ALTER TABLE unweave.endpoint OWNER TO postgres;
@@ -166,6 +166,19 @@ CREATE TABLE unweave.endpoint_eval (
 );
 
 ALTER TABLE unweave.endpoint_eval OWNER TO postgres;
+
+CREATE TABLE unweave.endpoint_version (
+    id text NOT NULL,
+    endpoint_id text NOT NULL,
+    exec_id text NOT NULL,
+    project_id text NOT NULL,
+    http_address text NOT NULL,
+    primary_version boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    deleted_at timestamp with time zone
+);
+
+ALTER TABLE unweave.endpoint_version OWNER TO postgres;
 
 CREATE TABLE unweave.eval (
     id text NOT NULL,
@@ -245,6 +258,9 @@ ALTER TABLE ONLY unweave.endpoint_eval
 ALTER TABLE ONLY unweave.endpoint
     ADD CONSTRAINT endpoint_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY unweave.endpoint_version
+    ADD CONSTRAINT endpoint_version_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY unweave.eval
     ADD CONSTRAINT eval_pkey PRIMARY KEY (id);
 
@@ -275,20 +291,19 @@ ALTER TABLE ONLY unweave.ssh_key
 ALTER TABLE ONLY unweave.ssh_key
     ADD CONSTRAINT ssh_key_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY unweave.endpoint
-    ADD CONSTRAINT unweave_endpoint_unique_http_address UNIQUE (http_address);
-
-ALTER TABLE ONLY unweave.endpoint
-    ADD CONSTRAINT unweave_endpoint_unique_name_by_project UNIQUE (project_id, name);
-
 ALTER TABLE ONLY unweave.volume
     ADD CONSTRAINT volume_pkey PRIMARY KEY (id);
+
+CREATE INDEX unweave_endpoint_name_idx ON unweave.endpoint USING btree (name);
 
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_created_by_fkey FOREIGN KEY (created_by) REFERENCES unweave.account(id);
 
 ALTER TABLE ONLY unweave.build
     ADD CONSTRAINT build_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+
+ALTER TABLE ONLY unweave.endpoint_eval
+    ADD CONSTRAINT endpoint_check_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
 
 ALTER TABLE ONLY unweave.endpoint_check
     ADD CONSTRAINT endpoint_check_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
@@ -303,16 +318,13 @@ ALTER TABLE ONLY unweave.endpoint_check_step
     ADD CONSTRAINT endpoint_check_step_eval_id_fkey FOREIGN KEY (eval_id) REFERENCES unweave.eval(id);
 
 ALTER TABLE ONLY unweave.endpoint_eval
-    ADD CONSTRAINT endpoint_eval_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
-
-ALTER TABLE ONLY unweave.endpoint_eval
     ADD CONSTRAINT endpoint_eval_eval_id_fkey FOREIGN KEY (eval_id) REFERENCES unweave.eval(id);
 
-ALTER TABLE ONLY unweave.endpoint
-    ADD CONSTRAINT endpoint_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
+ALTER TABLE ONLY unweave.endpoint_version
+    ADD CONSTRAINT endpoint_version_endpoint_id_fkey FOREIGN KEY (endpoint_id) REFERENCES unweave.endpoint(id);
 
-ALTER TABLE ONLY unweave.endpoint
-    ADD CONSTRAINT endpoint_project_id_fkey FOREIGN KEY (project_id) REFERENCES unweave.project(id);
+ALTER TABLE ONLY unweave.endpoint_version
+    ADD CONSTRAINT endpoint_version_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
 
 ALTER TABLE ONLY unweave.eval
     ADD CONSTRAINT eval_exec_id_fkey FOREIGN KEY (exec_id) REFERENCES unweave.exec(id);
