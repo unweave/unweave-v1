@@ -177,11 +177,11 @@ type FakeQuerier struct {
 	endpointEvalAttachReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EndpointGetStub        func(context.Context, string) (db.UnweaveEndpoint, error)
+	EndpointGetStub        func(context.Context, db.EndpointGetParams) (db.UnweaveEndpoint, error)
 	endpointGetMutex       sync.RWMutex
 	endpointGetArgsForCall []struct {
 		arg1 context.Context
-		arg2 string
+		arg2 db.EndpointGetParams
 	}
 	endpointGetReturns struct {
 		result1 db.UnweaveEndpoint
@@ -190,6 +190,70 @@ type FakeQuerier struct {
 	endpointGetReturnsOnCall map[int]struct {
 		result1 db.UnweaveEndpoint
 		result2 error
+	}
+	EndpointVersionStub        func(context.Context, string) (db.UnweaveEndpointVersion, error)
+	endpointVersionMutex       sync.RWMutex
+	endpointVersionArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointVersionReturns struct {
+		result1 db.UnweaveEndpointVersion
+		result2 error
+	}
+	endpointVersionReturnsOnCall map[int]struct {
+		result1 db.UnweaveEndpointVersion
+		result2 error
+	}
+	EndpointVersionCreateStub        func(context.Context, db.EndpointVersionCreateParams) error
+	endpointVersionCreateMutex       sync.RWMutex
+	endpointVersionCreateArgsForCall []struct {
+		arg1 context.Context
+		arg2 db.EndpointVersionCreateParams
+	}
+	endpointVersionCreateReturns struct {
+		result1 error
+	}
+	endpointVersionCreateReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointVersionDemoteStub        func(context.Context, string) error
+	endpointVersionDemoteMutex       sync.RWMutex
+	endpointVersionDemoteArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointVersionDemoteReturns struct {
+		result1 error
+	}
+	endpointVersionDemoteReturnsOnCall map[int]struct {
+		result1 error
+	}
+	EndpointVersionListStub        func(context.Context, string) ([]db.UnweaveEndpointVersion, error)
+	endpointVersionListMutex       sync.RWMutex
+	endpointVersionListArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointVersionListReturns struct {
+		result1 []db.UnweaveEndpointVersion
+		result2 error
+	}
+	endpointVersionListReturnsOnCall map[int]struct {
+		result1 []db.UnweaveEndpointVersion
+		result2 error
+	}
+	EndpointVersionPromoteStub        func(context.Context, string) error
+	endpointVersionPromoteMutex       sync.RWMutex
+	endpointVersionPromoteArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+	}
+	endpointVersionPromoteReturns struct {
+		result1 error
+	}
+	endpointVersionPromoteReturnsOnCall map[int]struct {
+		result1 error
 	}
 	EndpointsForProjectStub        func(context.Context, string) ([]db.UnweaveEndpoint, error)
 	endpointsForProjectMutex       sync.RWMutex
@@ -1530,12 +1594,12 @@ func (fake *FakeQuerier) EndpointEvalAttachReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeQuerier) EndpointGet(arg1 context.Context, arg2 string) (db.UnweaveEndpoint, error) {
+func (fake *FakeQuerier) EndpointGet(arg1 context.Context, arg2 db.EndpointGetParams) (db.UnweaveEndpoint, error) {
 	fake.endpointGetMutex.Lock()
 	ret, specificReturn := fake.endpointGetReturnsOnCall[len(fake.endpointGetArgsForCall)]
 	fake.endpointGetArgsForCall = append(fake.endpointGetArgsForCall, struct {
 		arg1 context.Context
-		arg2 string
+		arg2 db.EndpointGetParams
 	}{arg1, arg2})
 	stub := fake.EndpointGetStub
 	fakeReturns := fake.endpointGetReturns
@@ -1556,13 +1620,13 @@ func (fake *FakeQuerier) EndpointGetCallCount() int {
 	return len(fake.endpointGetArgsForCall)
 }
 
-func (fake *FakeQuerier) EndpointGetCalls(stub func(context.Context, string) (db.UnweaveEndpoint, error)) {
+func (fake *FakeQuerier) EndpointGetCalls(stub func(context.Context, db.EndpointGetParams) (db.UnweaveEndpoint, error)) {
 	fake.endpointGetMutex.Lock()
 	defer fake.endpointGetMutex.Unlock()
 	fake.EndpointGetStub = stub
 }
 
-func (fake *FakeQuerier) EndpointGetArgsForCall(i int) (context.Context, string) {
+func (fake *FakeQuerier) EndpointGetArgsForCall(i int) (context.Context, db.EndpointGetParams) {
 	fake.endpointGetMutex.RLock()
 	defer fake.endpointGetMutex.RUnlock()
 	argsForCall := fake.endpointGetArgsForCall[i]
@@ -1593,6 +1657,322 @@ func (fake *FakeQuerier) EndpointGetReturnsOnCall(i int, result1 db.UnweaveEndpo
 		result1 db.UnweaveEndpoint
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointVersion(arg1 context.Context, arg2 string) (db.UnweaveEndpointVersion, error) {
+	fake.endpointVersionMutex.Lock()
+	ret, specificReturn := fake.endpointVersionReturnsOnCall[len(fake.endpointVersionArgsForCall)]
+	fake.endpointVersionArgsForCall = append(fake.endpointVersionArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointVersionStub
+	fakeReturns := fake.endpointVersionReturns
+	fake.recordInvocation("EndpointVersion", []interface{}{arg1, arg2})
+	fake.endpointVersionMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointVersionCallCount() int {
+	fake.endpointVersionMutex.RLock()
+	defer fake.endpointVersionMutex.RUnlock()
+	return len(fake.endpointVersionArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointVersionCalls(stub func(context.Context, string) (db.UnweaveEndpointVersion, error)) {
+	fake.endpointVersionMutex.Lock()
+	defer fake.endpointVersionMutex.Unlock()
+	fake.EndpointVersionStub = stub
+}
+
+func (fake *FakeQuerier) EndpointVersionArgsForCall(i int) (context.Context, string) {
+	fake.endpointVersionMutex.RLock()
+	defer fake.endpointVersionMutex.RUnlock()
+	argsForCall := fake.endpointVersionArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointVersionReturns(result1 db.UnweaveEndpointVersion, result2 error) {
+	fake.endpointVersionMutex.Lock()
+	defer fake.endpointVersionMutex.Unlock()
+	fake.EndpointVersionStub = nil
+	fake.endpointVersionReturns = struct {
+		result1 db.UnweaveEndpointVersion
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointVersionReturnsOnCall(i int, result1 db.UnweaveEndpointVersion, result2 error) {
+	fake.endpointVersionMutex.Lock()
+	defer fake.endpointVersionMutex.Unlock()
+	fake.EndpointVersionStub = nil
+	if fake.endpointVersionReturnsOnCall == nil {
+		fake.endpointVersionReturnsOnCall = make(map[int]struct {
+			result1 db.UnweaveEndpointVersion
+			result2 error
+		})
+	}
+	fake.endpointVersionReturnsOnCall[i] = struct {
+		result1 db.UnweaveEndpointVersion
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointVersionCreate(arg1 context.Context, arg2 db.EndpointVersionCreateParams) error {
+	fake.endpointVersionCreateMutex.Lock()
+	ret, specificReturn := fake.endpointVersionCreateReturnsOnCall[len(fake.endpointVersionCreateArgsForCall)]
+	fake.endpointVersionCreateArgsForCall = append(fake.endpointVersionCreateArgsForCall, struct {
+		arg1 context.Context
+		arg2 db.EndpointVersionCreateParams
+	}{arg1, arg2})
+	stub := fake.EndpointVersionCreateStub
+	fakeReturns := fake.endpointVersionCreateReturns
+	fake.recordInvocation("EndpointVersionCreate", []interface{}{arg1, arg2})
+	fake.endpointVersionCreateMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointVersionCreateCallCount() int {
+	fake.endpointVersionCreateMutex.RLock()
+	defer fake.endpointVersionCreateMutex.RUnlock()
+	return len(fake.endpointVersionCreateArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointVersionCreateCalls(stub func(context.Context, db.EndpointVersionCreateParams) error) {
+	fake.endpointVersionCreateMutex.Lock()
+	defer fake.endpointVersionCreateMutex.Unlock()
+	fake.EndpointVersionCreateStub = stub
+}
+
+func (fake *FakeQuerier) EndpointVersionCreateArgsForCall(i int) (context.Context, db.EndpointVersionCreateParams) {
+	fake.endpointVersionCreateMutex.RLock()
+	defer fake.endpointVersionCreateMutex.RUnlock()
+	argsForCall := fake.endpointVersionCreateArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointVersionCreateReturns(result1 error) {
+	fake.endpointVersionCreateMutex.Lock()
+	defer fake.endpointVersionCreateMutex.Unlock()
+	fake.EndpointVersionCreateStub = nil
+	fake.endpointVersionCreateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointVersionCreateReturnsOnCall(i int, result1 error) {
+	fake.endpointVersionCreateMutex.Lock()
+	defer fake.endpointVersionCreateMutex.Unlock()
+	fake.EndpointVersionCreateStub = nil
+	if fake.endpointVersionCreateReturnsOnCall == nil {
+		fake.endpointVersionCreateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointVersionCreateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointVersionDemote(arg1 context.Context, arg2 string) error {
+	fake.endpointVersionDemoteMutex.Lock()
+	ret, specificReturn := fake.endpointVersionDemoteReturnsOnCall[len(fake.endpointVersionDemoteArgsForCall)]
+	fake.endpointVersionDemoteArgsForCall = append(fake.endpointVersionDemoteArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointVersionDemoteStub
+	fakeReturns := fake.endpointVersionDemoteReturns
+	fake.recordInvocation("EndpointVersionDemote", []interface{}{arg1, arg2})
+	fake.endpointVersionDemoteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointVersionDemoteCallCount() int {
+	fake.endpointVersionDemoteMutex.RLock()
+	defer fake.endpointVersionDemoteMutex.RUnlock()
+	return len(fake.endpointVersionDemoteArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointVersionDemoteCalls(stub func(context.Context, string) error) {
+	fake.endpointVersionDemoteMutex.Lock()
+	defer fake.endpointVersionDemoteMutex.Unlock()
+	fake.EndpointVersionDemoteStub = stub
+}
+
+func (fake *FakeQuerier) EndpointVersionDemoteArgsForCall(i int) (context.Context, string) {
+	fake.endpointVersionDemoteMutex.RLock()
+	defer fake.endpointVersionDemoteMutex.RUnlock()
+	argsForCall := fake.endpointVersionDemoteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointVersionDemoteReturns(result1 error) {
+	fake.endpointVersionDemoteMutex.Lock()
+	defer fake.endpointVersionDemoteMutex.Unlock()
+	fake.EndpointVersionDemoteStub = nil
+	fake.endpointVersionDemoteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointVersionDemoteReturnsOnCall(i int, result1 error) {
+	fake.endpointVersionDemoteMutex.Lock()
+	defer fake.endpointVersionDemoteMutex.Unlock()
+	fake.EndpointVersionDemoteStub = nil
+	if fake.endpointVersionDemoteReturnsOnCall == nil {
+		fake.endpointVersionDemoteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointVersionDemoteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointVersionList(arg1 context.Context, arg2 string) ([]db.UnweaveEndpointVersion, error) {
+	fake.endpointVersionListMutex.Lock()
+	ret, specificReturn := fake.endpointVersionListReturnsOnCall[len(fake.endpointVersionListArgsForCall)]
+	fake.endpointVersionListArgsForCall = append(fake.endpointVersionListArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointVersionListStub
+	fakeReturns := fake.endpointVersionListReturns
+	fake.recordInvocation("EndpointVersionList", []interface{}{arg1, arg2})
+	fake.endpointVersionListMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeQuerier) EndpointVersionListCallCount() int {
+	fake.endpointVersionListMutex.RLock()
+	defer fake.endpointVersionListMutex.RUnlock()
+	return len(fake.endpointVersionListArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointVersionListCalls(stub func(context.Context, string) ([]db.UnweaveEndpointVersion, error)) {
+	fake.endpointVersionListMutex.Lock()
+	defer fake.endpointVersionListMutex.Unlock()
+	fake.EndpointVersionListStub = stub
+}
+
+func (fake *FakeQuerier) EndpointVersionListArgsForCall(i int) (context.Context, string) {
+	fake.endpointVersionListMutex.RLock()
+	defer fake.endpointVersionListMutex.RUnlock()
+	argsForCall := fake.endpointVersionListArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointVersionListReturns(result1 []db.UnweaveEndpointVersion, result2 error) {
+	fake.endpointVersionListMutex.Lock()
+	defer fake.endpointVersionListMutex.Unlock()
+	fake.EndpointVersionListStub = nil
+	fake.endpointVersionListReturns = struct {
+		result1 []db.UnweaveEndpointVersion
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointVersionListReturnsOnCall(i int, result1 []db.UnweaveEndpointVersion, result2 error) {
+	fake.endpointVersionListMutex.Lock()
+	defer fake.endpointVersionListMutex.Unlock()
+	fake.EndpointVersionListStub = nil
+	if fake.endpointVersionListReturnsOnCall == nil {
+		fake.endpointVersionListReturnsOnCall = make(map[int]struct {
+			result1 []db.UnweaveEndpointVersion
+			result2 error
+		})
+	}
+	fake.endpointVersionListReturnsOnCall[i] = struct {
+		result1 []db.UnweaveEndpointVersion
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeQuerier) EndpointVersionPromote(arg1 context.Context, arg2 string) error {
+	fake.endpointVersionPromoteMutex.Lock()
+	ret, specificReturn := fake.endpointVersionPromoteReturnsOnCall[len(fake.endpointVersionPromoteArgsForCall)]
+	fake.endpointVersionPromoteArgsForCall = append(fake.endpointVersionPromoteArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+	}{arg1, arg2})
+	stub := fake.EndpointVersionPromoteStub
+	fakeReturns := fake.endpointVersionPromoteReturns
+	fake.recordInvocation("EndpointVersionPromote", []interface{}{arg1, arg2})
+	fake.endpointVersionPromoteMutex.Unlock()
+	if stub != nil {
+		return stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fakeReturns.result1
+}
+
+func (fake *FakeQuerier) EndpointVersionPromoteCallCount() int {
+	fake.endpointVersionPromoteMutex.RLock()
+	defer fake.endpointVersionPromoteMutex.RUnlock()
+	return len(fake.endpointVersionPromoteArgsForCall)
+}
+
+func (fake *FakeQuerier) EndpointVersionPromoteCalls(stub func(context.Context, string) error) {
+	fake.endpointVersionPromoteMutex.Lock()
+	defer fake.endpointVersionPromoteMutex.Unlock()
+	fake.EndpointVersionPromoteStub = stub
+}
+
+func (fake *FakeQuerier) EndpointVersionPromoteArgsForCall(i int) (context.Context, string) {
+	fake.endpointVersionPromoteMutex.RLock()
+	defer fake.endpointVersionPromoteMutex.RUnlock()
+	argsForCall := fake.endpointVersionPromoteArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeQuerier) EndpointVersionPromoteReturns(result1 error) {
+	fake.endpointVersionPromoteMutex.Lock()
+	defer fake.endpointVersionPromoteMutex.Unlock()
+	fake.EndpointVersionPromoteStub = nil
+	fake.endpointVersionPromoteReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeQuerier) EndpointVersionPromoteReturnsOnCall(i int, result1 error) {
+	fake.endpointVersionPromoteMutex.Lock()
+	defer fake.endpointVersionPromoteMutex.Unlock()
+	fake.EndpointVersionPromoteStub = nil
+	if fake.endpointVersionPromoteReturnsOnCall == nil {
+		fake.endpointVersionPromoteReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.endpointVersionPromoteReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
 }
 
 func (fake *FakeQuerier) EndpointsForProject(arg1 context.Context, arg2 string) ([]db.UnweaveEndpoint, error) {
@@ -4119,6 +4499,16 @@ func (fake *FakeQuerier) Invocations() map[string][][]interface{} {
 	defer fake.endpointEvalAttachMutex.RUnlock()
 	fake.endpointGetMutex.RLock()
 	defer fake.endpointGetMutex.RUnlock()
+	fake.endpointVersionMutex.RLock()
+	defer fake.endpointVersionMutex.RUnlock()
+	fake.endpointVersionCreateMutex.RLock()
+	defer fake.endpointVersionCreateMutex.RUnlock()
+	fake.endpointVersionDemoteMutex.RLock()
+	defer fake.endpointVersionDemoteMutex.RUnlock()
+	fake.endpointVersionListMutex.RLock()
+	defer fake.endpointVersionListMutex.RUnlock()
+	fake.endpointVersionPromoteMutex.RLock()
+	defer fake.endpointVersionPromoteMutex.RUnlock()
 	fake.endpointsForProjectMutex.RLock()
 	defer fake.endpointsForProjectMutex.RUnlock()
 	fake.evalCreateMutex.RLock()

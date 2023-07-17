@@ -235,14 +235,14 @@ func (e *EndpointService) endpointVersions(ctx context.Context, endpointID strin
 
 	out := make([]types.EndpointVersion, len(vers))
 
-	for i, v := range vers {
-		out[i] = types.EndpointVersion{
-			ID:          v.ID,
-			ExecID:      v.ExecID,
-			HTTPAddress: v.HttpAddress,
+	for idx, ver := range vers {
+		out[idx] = types.EndpointVersion{
+			ID:          ver.ID,
+			ExecID:      ver.ExecID,
+			HTTPAddress: ver.HttpAddress,
 			Status:      "",
-			Primary:     v.PrimaryVersion,
-			CreatedAt:   v.CreatedAt,
+			Primary:     ver.PrimaryVersion,
+			CreatedAt:   ver.CreatedAt,
 		}
 	}
 
