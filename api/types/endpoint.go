@@ -7,11 +7,11 @@ import (
 
 type EndpointCreate struct {
 	Name   string `json:"name"`
-	ExecID string `json:"execId"`
+	ExecID string `json:"execID"`
 }
 
 type EndpointVersionCreate struct {
-	ExecID  string `json:"execId"`
+	ExecID  string `json:"execID"`
 	Promote bool   `json:"promote"`
 }
 
@@ -27,7 +27,7 @@ type EndpointListItem struct {
 	ID          string    `json:"id"`
 	Name        string    `json:"name"`
 	Icon        string    `json:"icon"`
-	ProjectID   string    `json:"projectId"`
+	ProjectID   string    `json:"projectID"`
 	HTTPAddress string    `json:"httpAddress"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
@@ -40,7 +40,7 @@ type Endpoint struct {
 	ID          string            `json:"id"`
 	Name        string            `json:"name"`
 	Icon        string            `json:"icon"`
-	ProjectID   string            `json:"projectId"`
+	ProjectID   string            `json:"projectID"`
 	HTTPAddress string            `json:"httpAddress"`
 	EvalIDs     []string          `json:"evalIDs"`
 	Status      EndpointStatus    `json:"status"`
@@ -50,7 +50,7 @@ type Endpoint struct {
 
 type EndpointVersion struct {
 	ID          string         `json:"id"`
-	ExecID      string         `json:"execId"`
+	ExecID      string         `json:"execID"`
 	HTTPAddress string         `json:"httpAddress"`
 	Status      EndpointStatus `json:"status"`
 	Primary     bool           `json:"primary"`
@@ -69,16 +69,16 @@ const (
 
 type Eval struct {
 	ID           string `json:"id"`
-	ExecID       string `json:"execId"`
+	ExecID       string `json:"execID"`
 	HTTPEndpoint string `json:"httpEndpoint"`
 }
 
 type EvalCreate struct {
-	ExecID string `json:"execId"`
+	ExecID string `json:"execID"`
 }
 
 type EndpointCheckRun struct {
-	CheckID string `json:"checkId"`
+	CheckID string `json:"checkID"`
 }
 
 type EndpointCheck struct {
