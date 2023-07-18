@@ -661,11 +661,14 @@ func demoteVersions(end *types.Endpoint) {
 
 // stepStatusAndConclusion infers the status of a step based on the contents of the database.
 func stepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
-	if !step.Output.Valid {
+	hasModelOutput := step.Output.Valid
+	hasAssertionOutput := step.Assertion.Valid
+
+	if !hasModelOutput {
 		return types.CheckPending, nil
 	}
 
-	if !step.Assertion.Valid {
+	if !hasAssertionOutput {
 		return types.CheckInProgress, nil
 	}
 
@@ -683,24 +686,21 @@ func stepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatu
 
 // checkStatusAndConclusion infers the status of a check based on the status of the steps.
 func checkStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
-	conclusions := map[string]struct{}{}
+	conclusionsHave := map[types.CheckConclusion]bool{}
 
 	for _, step := range steps {
-		switch step.Status {
-		case types.CheckCompleted:
-		default:
+		if step.Status != types.CheckCompleted {
 			return types.CheckInProgress, nil
 		}
 
-		key := step.Conclusion.String()
-		conclusions[key] = struct{}{}
+		conclusionsHave[*step.Conclusion] = true
 	}
 
-	if _, ok := conclusions[types.CheckError.String()]; ok {
+	if conclusionsHave[types.CheckError] {
 		return types.CheckCompleted, &types.CheckError
 	}
 
-	if _, ok := conclusions[types.CheckFailure.String()]; ok {
+	if conclusionsHave[types.CheckFailure] {
 		return types.CheckCompleted, &types.CheckFailure
 	}
 
