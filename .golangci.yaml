@@ -98,4 +98,4 @@ linters-settings:
     case:
       use-field-name: true
       rules:
-        json: camel
+        json: goCamel

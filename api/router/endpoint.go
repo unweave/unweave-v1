@@ -93,7 +93,7 @@ func (e *EndpointRouter) EndpointEvalAttach(w http.ResponseWriter, r *http.Reque
 
 func (e *EndpointRouter) EndpointEvalCheckStatus(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	checkID := chi.URLParam(r, "checkId")
+	checkID := chi.URLParam(r, "checkID")
 
 	if checkID == "" {
 		_ = render.Render(w, r, types.ErrHTTPBadRequest(errors.New("check id missing"), "Missing check-id from url path"))

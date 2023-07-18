@@ -36,50 +36,29 @@ CREATE TYPE unweave.exec_status AS ENUM (
 
 ALTER TYPE unweave.exec_status OWNER TO postgres;
 
-CREATE FUNCTION unweave.insert_node(v_node_id text, v_provider text, v_region text, v_metadata jsonb, v_status text, v_owner_id text, v_ssh_key_ids text[]) RETURNS void
-    LANGUAGE plpgsql
-    AS $$
-begin
-    insert into unweave.node (id, provider, region, metadata, status, owner_id)
-    values (v_node_id, v_provider, v_region, v_metadata, v_status, v_owner_id);
-
-    if v_ssh_key_ids is not null and array_upper(v_ssh_key_ids, 1) is not null then
-        for i in 1 .. array_upper(v_ssh_key_ids, 1)
-            loop
-                insert into unweave.node_ssh_key (node_id, ssh_key_id)
-                values (v_node_id, v_ssh_key_ids[i]);
-            end loop;
-    end if;
-end;
-$$;
-
-ALTER FUNCTION unweave.insert_node(v_node_id text, v_provider text, v_region text, v_metadata jsonb, v_status text, v_owner_id text, v_ssh_key_ids text[]) OWNER TO postgres;
-
-COMMENT ON FUNCTION unweave.insert_node(v_node_id text, v_provider text, v_region text, v_metadata jsonb, v_status text, v_owner_id text, v_ssh_key_ids text[]) IS 'Insert a new node and associated ssh key';
-
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 CREATE TABLE unweave.build (
     id text DEFAULT ('bld_'::text || public.nanoid()) NOT NULL,
-    name text NOT NULL,
     project_id text NOT NULL,
     builder_type text NOT NULL,
     status unweave.build_status DEFAULT 'initializing'::unweave.build_status NOT NULL,
-    created_by text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    started_at timestamp with time zone,
-    finished_at timestamp with time zone,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     meta_data jsonb DEFAULT '{}'::jsonb NOT NULL,
+    name text NOT NULL,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    created_by text NOT NULL,
     CONSTRAINT build_id_check CHECK ((length(id) > 11))
 );
 
 ALTER TABLE unweave.build OWNER TO postgres;
 
 CREATE TABLE unweave.exec (
-    id text DEFAULT ('se_'::text || public.nanoid()) NOT NULL,
+    id text NOT NULL,
     name text DEFAULT ''::text NOT NULL,
     region text NOT NULL,
     created_by text NOT NULL,
@@ -205,28 +184,6 @@ CREATE TABLE unweave.exec_volume (
 
 ALTER TABLE unweave.exec_volume OWNER TO postgres;
 
-CREATE TABLE unweave.node (
-    id text NOT NULL,
-    provider text NOT NULL,
-    region text NOT NULL,
-    metadata jsonb NOT NULL,
-    status text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    ready_at timestamp with time zone,
-    owner_id text NOT NULL,
-    terminated_at timestamp with time zone
-);
-
-ALTER TABLE unweave.node OWNER TO postgres;
-
-CREATE TABLE unweave.node_ssh_key (
-    node_id text NOT NULL,
-    ssh_key_id text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-ALTER TABLE unweave.node_ssh_key OWNER TO postgres;
-
 CREATE TABLE unweave.volume (
     id text DEFAULT ('vol_'::text || public.nanoid()) NOT NULL,
     size integer NOT NULL,
@@ -269,12 +226,6 @@ ALTER TABLE ONLY unweave.exec_ssh_key
 
 ALTER TABLE ONLY unweave.exec_volume
     ADD CONSTRAINT exec_volume_pkey PRIMARY KEY (exec_id, volume_id, mount_path);
-
-ALTER TABLE ONLY unweave.node
-    ADD CONSTRAINT node_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY unweave.node_ssh_key
-    ADD CONSTRAINT node_ssh_key_pk PRIMARY KEY (node_id, ssh_key_id);
 
 ALTER TABLE ONLY unweave.project
     ADD CONSTRAINT project_pkey PRIMARY KEY (id);
@@ -352,15 +303,6 @@ ALTER TABLE ONLY unweave.exec_volume
 
 ALTER TABLE ONLY unweave.exec_volume
     ADD CONSTRAINT exec_volume_volume_id_fkey FOREIGN KEY (volume_id) REFERENCES unweave.volume(id);
-
-ALTER TABLE ONLY unweave.node
-    ADD CONSTRAINT node_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES unweave.account(id);
-
-ALTER TABLE ONLY unweave.node_ssh_key
-    ADD CONSTRAINT node_ssh_key_node_id_fkey FOREIGN KEY (node_id) REFERENCES unweave.node(id);
-
-ALTER TABLE ONLY unweave.node_ssh_key
-    ADD CONSTRAINT node_ssh_key_ssh_key_id_fkey FOREIGN KEY (ssh_key_id) REFERENCES unweave.ssh_key(id);
 
 ALTER TABLE ONLY unweave.project
     ADD CONSTRAINT project_default_build_id_fkey FOREIGN KEY (default_build_id) REFERENCES unweave.build(id);
