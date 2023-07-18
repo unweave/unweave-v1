@@ -59,6 +59,21 @@ func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) 
 	render.JSON(w, r, endpoint)
 }
 
+func (e *EndpointRouter) EndpointGet(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	endpointID := chi.URLParam(r, "endpointRef")
+	projectID := middleware.GetProjectIDFromContext(ctx)
+
+	endpoint, err := e.endpoints.EndpointGet(ctx, projectID, endpointID)
+	if err != nil {
+		_ = render.Render(w, r, types.ErrHTTPError(err, "get endpoint failed"))
+
+		return
+	}
+
+	render.JSON(w, r, &types.EndpointGetResponse{Endpoint: endpoint})
+}
+
 func (e *EndpointRouter) EndpointList(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	projectID := middleware.GetProjectIDFromContext(ctx)
