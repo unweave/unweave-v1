@@ -508,7 +508,7 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 
 	out := make([]types.EndpointCheckStep, len(steps))
 	for idx, step := range steps {
-		status, conclusion := StepStatusAndConclusion(step)
+		status, conclusion := stepStatusAndConclusion(step)
 		out[idx] = types.EndpointCheckStep{
 			StepID:     step.ID,
 			EvalID:     step.EvalID,
@@ -520,7 +520,7 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 		}
 	}
 
-	status, conclusion := CheckStatusAndConclusion(out)
+	status, conclusion := checkStatusAndConclusion(out)
 	return types.EndpointCheck{
 		CheckID:    checkID,
 		Steps:      out,
@@ -659,8 +659,8 @@ func demoteVersions(end *types.Endpoint) {
 	}
 }
 
-// StepStatusAndConclusion infers the status of a step based on the contents of the database.
-func StepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+// stepStatusAndConclusion infers the status of a step based on the contents of the database.
+func stepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
 	if !step.Output.Valid {
 		return types.CheckPending, nil
 	}
@@ -681,8 +681,8 @@ func StepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatu
 	}
 }
 
-// CheckStatusAndConclusion infers the status of a check based on the status of the steps.
-func CheckStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+// checkStatusAndConclusion infers the status of a check based on the status of the steps.
+func checkStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
 	conclusions := map[string]struct{}{}
 
 	for _, step := range steps {
