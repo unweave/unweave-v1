@@ -219,3 +219,23 @@ type VolumeState struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type CheckStatus string
+
+var (
+	CheckPending    CheckStatus = "pending"
+	CheckInProgress CheckStatus = "in_progress"
+	CheckCompleted  CheckStatus = "completed"
+)
+
+type CheckConclusion string
+
+var (
+	CheckSuccess CheckConclusion = "success"
+	CheckFailure CheckConclusion = "failure"
+	CheckError   CheckConclusion = "error"
+)
+
+func (c CheckConclusion) String() string {
+	return string(c)
+}

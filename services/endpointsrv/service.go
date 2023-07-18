@@ -508,18 +508,24 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 
 	out := make([]types.EndpointCheckStep, len(steps))
 	for idx, step := range steps {
+		status, conclusion := stepStatusAndConclusion(step)
 		out[idx] = types.EndpointCheckStep{
-			StepID:    step.ID,
-			EvalID:    step.EvalID,
-			Input:     []byte(step.Input.String),
-			Output:    []byte(step.Output.String),
-			Assertion: step.Assertion.String,
+			StepID:     step.ID,
+			EvalID:     step.EvalID,
+			Input:      []byte(step.Input.String),
+			Output:     []byte(step.Output.String),
+			Assertion:  step.Assertion.String,
+			Status:     status,
+			Conclusion: conclusion,
 		}
 	}
 
+	status, conclusion := checkStatusAndConclusion(out)
 	return types.EndpointCheck{
-		CheckID: checkID,
-		Steps:   out,
+		CheckID:    checkID,
+		Steps:      out,
+		Status:     status,
+		Conclusion: conclusion,
 	}, nil
 }
 
@@ -651,4 +657,52 @@ func demoteVersions(end *types.Endpoint) {
 	for i := range end.Versions {
 		end.Versions[i].Primary = false
 	}
+}
+
+// stepStatusAndConclusion infers the status of a step based on the contents of the database.
+func stepStatusAndConclusion(step db.UnweaveEndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+	hasModelOutput := step.Output.Valid
+	hasAssertionOutput := step.Assertion.Valid
+
+	if !hasModelOutput {
+		return types.CheckPending, nil
+	}
+
+	if !hasAssertionOutput {
+		return types.CheckInProgress, nil
+	}
+
+	switch step.Assertion.String {
+	case "":
+		return types.CheckInProgress, nil
+	case "success":
+		return types.CheckCompleted, &types.CheckSuccess
+	case "failure":
+		return types.CheckCompleted, &types.CheckFailure
+	default:
+		return types.CheckCompleted, &types.CheckError
+	}
+}
+
+// checkStatusAndConclusion infers the status of a check based on the status of the steps.
+func checkStatusAndConclusion(steps []types.EndpointCheckStep) (types.CheckStatus, *types.CheckConclusion) {
+	conclusionsHave := map[types.CheckConclusion]bool{}
+
+	for _, step := range steps {
+		if step.Status != types.CheckCompleted {
+			return types.CheckInProgress, nil
+		}
+
+		conclusionsHave[*step.Conclusion] = true
+	}
+
+	if conclusionsHave[types.CheckError] {
+		return types.CheckCompleted, &types.CheckError
+	}
+
+	if conclusionsHave[types.CheckFailure] {
+		return types.CheckCompleted, &types.CheckFailure
+	}
+
+	return types.CheckCompleted, &types.CheckSuccess
 }
