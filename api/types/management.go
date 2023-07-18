@@ -67,7 +67,7 @@ type ProjectCreateRequestParams struct {
 }
 
 type ProjectCreateResponse struct {
-	ID string `json:"id"`
+	Project Project `json:"project"`
 }
 
 func (p *ProjectCreateRequestParams) Bind(r *http.Request) error {
