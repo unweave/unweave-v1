@@ -1,7 +1,9 @@
+//nolint:paralleltest,testpackage
 package endpointsrv
 
 import (
 	"database/sql"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -73,15 +75,15 @@ func TestStepStatusAndConclusion(t *testing.T) {
 			},
 		}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				step := tc.step()
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				step := test.step()
 
 				status, conclusion := stepStatusAndConclusion(step)
 
 				require.Equal(t, types.CheckCompleted, status)
 				require.NotNil(t, conclusion)
-				require.Equal(t, tc.expectedConclusion, *conclusion)
+				require.Equal(t, test.expectedConclusion, *conclusion)
 			})
 		}
 	})
@@ -120,9 +122,9 @@ func TestCheckStatusAndConclusion(t *testing.T) {
 			},
 		}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				status, conclusion := checkStatusAndConclusion(tc.steps)
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				status, conclusion := checkStatusAndConclusion(test.steps)
 
 				require.Equal(t, types.CheckInProgress, status)
 				require.Nil(t, conclusion)
@@ -167,13 +169,13 @@ func TestCheckStatusAndConclusion(t *testing.T) {
 			},
 		}
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				status, conclusion := checkStatusAndConclusion(tc.steps)
+		for _, test := range testCases {
+			t.Run(test.name, func(t *testing.T) {
+				status, conclusion := checkStatusAndConclusion(test.steps)
 
 				require.Equal(t, types.CheckCompleted, status)
 				require.NotNil(t, conclusion)
-				require.Equal(t, tc.expectedConclusion, *conclusion)
+				require.Equal(t, test.expectedConclusion, *conclusion)
 			})
 		}
 	})
@@ -189,15 +191,21 @@ func newDBCheckStepBuilder() dbEndpointCheckStepBuilder {
 
 func (b dbEndpointCheckStepBuilder) withModelOutput(o string) dbEndpointCheckStepBuilder {
 	b.object.Output = sql.NullString{String: o, Valid: true}
+
 	return b
 }
 
 func (b dbEndpointCheckStepBuilder) withAssertionOutput(o string) dbEndpointCheckStepBuilder {
 	b.object.Assertion = sql.NullString{String: o, Valid: true}
+
 	return b
 }
 
 func (b dbEndpointCheckStepBuilder) build() (db.UnweaveEndpointCheckStep, error) {
+	if b.object.Assertion.Valid && !b.object.Output.Valid {
+		return db.UnweaveEndpointCheckStep{}, errors.New("cannot have assertion without output")
+	}
+
 	return b.object, nil
 }
 
