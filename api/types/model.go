@@ -9,7 +9,6 @@ import (
 )
 
 type Status string
-type URL = string
 
 const (
 	StatusPending      Status = "pending"
