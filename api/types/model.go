@@ -238,3 +238,17 @@ var (
 func (c CheckConclusion) String() string {
 	return string(c)
 }
+
+type EvalManifest struct {
+	DatasetURL string `json:"datasetURL,omitempty"`
+	AssertURL  string `json:"assertURL,omitempty"`
+	RunURL     string `json:"runURL,omitempty"`
+}
+
+func DefaultEvalManifest() EvalManifest {
+	return EvalManifest{
+		DatasetURL: "/dataset",
+		AssertURL:  "/assert",
+		RunURL:     "",
+	}
+}
