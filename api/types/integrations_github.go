@@ -1,7 +1,8 @@
 package types
 
 type Repository struct {
-	Name string `json:"name,omitempty"`
+	Name     string `json:"name"`
+	FullName string `json:"fullName"`
 	// URL must be cloneable by Git
 	URL string `json:"url,omitempty"`
 }
