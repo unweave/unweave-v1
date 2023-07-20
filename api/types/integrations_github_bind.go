@@ -2,7 +2,7 @@ package types
 
 import "net/http"
 
-func (g *GithubIntegrationConnectRequest) Bind(r *http.Request) error {
+func (g *GithubIntegrationConnectRequest) Bind(_ *http.Request) error {
 	if g.Code == "" && g.AccessToken == "" {
 		return &Error{
 			Code:       http.StatusBadRequest,

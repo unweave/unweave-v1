@@ -2,7 +2,7 @@ package types
 
 import "net/http"
 
-func (e *EndpointCreateParams) Bind(r *http.Request) error {
+func (e *EndpointCreateParams) Bind(_ *http.Request) error {
 	if e.ExecID == "" {
 		return &Error{
 			Code:       http.StatusBadRequest,
@@ -22,7 +22,7 @@ func (e *EndpointCreateParams) Bind(r *http.Request) error {
 	return nil
 }
 
-func (e *EndpointVersionCreateParams) Bind(r *http.Request) error {
+func (e *EndpointVersionCreateParams) Bind(_ *http.Request) error {
 	if e.ExecID == "" {
 		return &Error{
 			Code:       http.StatusBadRequest,
