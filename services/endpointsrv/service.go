@@ -1,4 +1,3 @@
-//nolint:noctx,godox
 package endpointsrv
 
 import (
@@ -282,7 +281,7 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, projectID, endpo
 		return "", fmt.Errorf("create eval check: %w", err)
 	}
 
-	checker, err := newEndpointChecker(ctx, checkID)
+	checker, err := newEndpointChecker(checkID)
 	if err != nil {
 		return "", fmt.Errorf("new endpoint checker: %w", err)
 	}
@@ -292,6 +291,7 @@ func (e *EndpointService) RunEndpointEvals(ctx context.Context, projectID, endpo
 		return "", fmt.Errorf("create endpoint checks: %w", err)
 	}
 
+	//nolint:contextcheck
 	return checkID, checker.Run(context.Background())
 }
 
@@ -328,6 +328,7 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 	}
 
 	out := make([]types.EndpointCheckStep, len(steps))
+
 	for idx, step := range steps {
 		status, conclusion := stepStatusAndConclusion(step)
 		out[idx] = types.EndpointCheckStep{
@@ -342,12 +343,14 @@ func (e *EndpointService) EndpointCheckStatus(ctx context.Context, checkID strin
 	}
 
 	status, conclusion := checkStatusAndConclusion(out)
-	return types.EndpointCheck{
+	check := types.EndpointCheck{
 		CheckID:    checkID,
 		Steps:      out,
 		Status:     status,
 		Conclusion: conclusion,
-	}, nil
+	}
+
+	return check, nil
 }
 
 func (e *EndpointService) EndpointVersionCreate(

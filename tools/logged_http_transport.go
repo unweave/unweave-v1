@@ -12,9 +12,10 @@ type transport struct {
 }
 
 func LoggedHTTPTransport(t http.RoundTripper) http.RoundTripper {
-	return &transport{base: http.DefaultTransport}
+	return &transport{base: t}
 }
 
+//nolint:wrapcheck
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	log.Debug().
 		Str("method", req.Method).
@@ -27,17 +28,17 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.base.RoundTrip(req)
 	duration := time.Since(startTime)
 
-	entry :=
-		log.Debug().
-			Str("method", req.Method).
-			Str("host", req.Host).
-			Str("path", req.URL.Path).
-			Str("event", "http_response").
-			Dur("duration", duration).
-			Err(err)
+	entry := log.Debug().
+		Str("method", req.Method).
+		Str("host", req.Host).
+		Str("path", req.URL.Path).
+		Str("event", "http_response").
+		Dur("duration", duration).
+		Err(err)
 	if err == nil {
 		entry.Int("status", resp.StatusCode)
 	}
+
 	entry.Send()
 
 	return resp, err

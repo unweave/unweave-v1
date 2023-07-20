@@ -1,3 +1,4 @@
+//nolint:paralleltest,testpackage
 package endpointsrv
 
 import (

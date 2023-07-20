@@ -23,7 +23,11 @@ type endpointChecker struct {
 	checks  []checkEndpointStep
 }
 
-func newEndpointChecker(ctx context.Context, checkID string) (*endpointChecker, error) {
+func newEndpointChecker(checkID string) (*endpointChecker, error) {
+	if checkID == "" {
+		return nil, fmt.Errorf("check id must be provided")
+	}
+
 	checker := &endpointChecker{
 		checkID: checkID,
 	}
@@ -58,9 +62,11 @@ func (c *endpointChecker) Run(ctx context.Context) error {
 	return nil
 }
 
-var ErrEndpointUnavailable = fmt.Errorf("endpoint unavailable")
-var ErrInvalidManifest = fmt.Errorf("manifest is invalid")
-var ErrInvalidDataset = fmt.Errorf("dataset is invalid")
+var (
+	ErrEndpointUnavailable = fmt.Errorf("endpoint unavailable")
+	ErrInvalidManifest     = fmt.Errorf("manifest is invalid")
+	ErrInvalidDataset      = fmt.Errorf("dataset is invalid")
+)
 
 func fetchManifest(ctx context.Context, endpoint types.Endpoint, eval types.Eval) (types.EvalManifest, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -94,6 +100,7 @@ func fetchManifest(ctx context.Context, endpoint types.Endpoint, eval types.Eval
 	}
 
 	var manifest types.EvalManifest
+
 	err = json.NewDecoder(response.Body).Decode(&manifest)
 	if err != nil {
 		return types.EvalManifest{}, fmt.Errorf("decoding manifest: %w", err)
@@ -102,13 +109,15 @@ func fetchManifest(ctx context.Context, endpoint types.Endpoint, eval types.Eval
 	return resolveManifestURLs(manifest, endpoint, eval)
 }
 
-// TODO: Security improvement needed to avoid calling loopback or internal endpoints
 func resolveManifestURLs(manifest types.EvalManifest, endpoint types.Endpoint, eval types.Eval) (types.EvalManifest, error) {
+	//nolint:godox
+	// TODO: Security improvement needed to avoid calling loopback or internal endpoints.
 	if manifest.RunURL == "" {
 		manifest.RunURL = "https://" + endpoint.HTTPAddress + "/"
 	}
 
 	var err error
+
 	manifest.RunURL, err = absoluteURL(manifest.RunURL, "https://"+eval.HTTPEndpoint)
 	if err != nil {
 		return types.EvalManifest{}, fmt.Errorf("absolute run url: %w", err)
@@ -191,6 +200,7 @@ func (c *endpointChecker) CreateCheckSteps(ctx context.Context, store Store, end
 
 	c.checks = checks
 	c.loaded = true
+
 	return nil
 }
 
@@ -217,6 +227,7 @@ func (c *checkEndpointStep) callEndpoint(ctx context.Context) {
 
 		return
 	}
+
 	req.Header.Set("X-Unweave-Target-Endpoint-URL", c.endpoint)
 
 	resp, err := http.DefaultClient.Do(req)
@@ -305,7 +316,6 @@ type datasetItemEndpointResponse struct {
 }
 
 func fetchDataset(ctx context.Context, datasetPath string) (dataset, error) {
-	//nolint:gosec
 	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
