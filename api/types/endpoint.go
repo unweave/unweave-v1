@@ -5,12 +5,12 @@ import (
 	"time"
 )
 
-type EndpointCreate struct {
+type EndpointCreateParams struct {
 	Name   string `json:"name"`
 	ExecID string `json:"execID"`
 }
 
-type EndpointVersionCreate struct {
+type EndpointVersionCreateParams struct {
 	ExecID  string `json:"execID"`
 	Promote bool   `json:"promote"`
 }
@@ -46,6 +46,10 @@ type Endpoint struct {
 	Status      EndpointStatus    `json:"status"`
 	Versions    []EndpointVersion `json:"versions"`
 	CreatedAt   time.Time         `json:"createdAt"`
+}
+
+type EndpointGetResponse struct {
+	Endpoint Endpoint `json:"endpoint"`
 }
 
 type EndpointVersion struct {

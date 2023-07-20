@@ -6,11 +6,16 @@ type Repository struct {
 	URL string `json:"url,omitempty"`
 }
 
-// GithubGetIntegrationResponse lists all repositories authenticated to Unweave,
+// GithubIntegrationGetResponse lists all repositories authenticated to Unweave,
 // whether the GitHub application is installed,
 // and the installation URL if applicable.
-type GithubGetIntegrationResponse struct {
+type GithubIntegrationGetResponse struct {
 	Repositories   []Repository `json:"repositories,omitempty"`
 	IsAppInstalled bool         `json:"isAppInstalled"`
 	InstallURL     string       `json:"installURL,omitempty"`
+}
+
+type GithubIntegrationConnectRequest struct {
+	Code        string `json:"code"`
+	AccessToken string `json:"accessToken"`
 }

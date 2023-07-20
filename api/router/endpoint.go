@@ -42,7 +42,7 @@ func (e *EndpointRouter) EndpointCreate(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	var req types.EndpointCreate
+	var req types.EndpointCreateParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		_ = render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
 
@@ -131,7 +131,7 @@ func (e *EndpointRouter) EndpointCreateVersion(w http.ResponseWriter, r *http.Re
 	endpointID := chi.URLParam(r, "endpointRef")
 	projectID := middleware.GetProjectIDFromContext(ctx)
 
-	var req types.EndpointVersionCreate
+	var req types.EndpointVersionCreateParams
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		_ = render.Render(w, r, types.ErrHTTPBadRequest(err, "invalid request body"))
 
