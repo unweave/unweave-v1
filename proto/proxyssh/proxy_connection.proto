@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option go_package = "github.com/unweave/unweave/proto/proxyssh";
+
+package unweave.proxy.v1;
+
+service ProxyConnectionService {
+  // ProxySSH establishes an SSH connection to the target host over a bidirectional stream.
+  //
+  // The client must first send a DialTarget before the connection is established. Agent frames
+  // will be populated if SSH Agent forwarding is enabled for the connection.
+  rpc ProxySSH(stream ProxySSHRequest) returns (stream ProxySSHResponse);
+}
+
+message ProxySSHRequest {
+  // Contains the information required to dial the target.
+  // Must be populated on the initial request so that SSH connection can be established.
+  TargetHost dial_target = 1;
+  // Payload from SSH Protocols
+  Frame ssh = 2;
+}
+
+message ProxySSHResponse {
+  bool connect = 1;
+  // SSH payload
+  Frame ssh = 2;
+}
+
+message TargetHost {
+  // The hostname/ip:port of the remote host.
+  string host_port = 1;
+}
+
+message Frame {
+  // The raw packet of data
+  bytes payload = 1;
+}
