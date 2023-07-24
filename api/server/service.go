@@ -10,25 +10,21 @@ import (
 )
 
 type Service struct {
-	rti     runtime.Initializer
-	aid     string // account ID
-	cid     string // caller ID
-	builder builder.Builder
-	vault   vault.Vault
+	rti   runtime.Initializer
+	aid   string // account ID
+	cid   string // caller ID
+	vault vault.Vault
 
 	Builder *BuilderService
 }
 
 func (s *Service) InitializeBuilder(ctx context.Context, builder string) (builder.Builder, error) {
-	if s.builder != nil {
-		return s.builder, nil
-	}
 	bld, err := s.rti.InitializeBuilder(ctx, s.cid, builder)
 	if err != nil {
 		return nil, err
 	}
-	s.builder = bld
-	return s.builder, nil
+
+	return bld, nil
 }
 
 func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service {
@@ -42,7 +38,6 @@ func NewCtxService(rti runtime.Initializer, accountID, callerID string) *Service
 		aid:     accountID,
 		cid:     callerID,
 		vault:   vlt,
-		builder: nil,
 		Builder: nil,
 	}
 	srv.Builder = &BuilderService{srv: srv}
