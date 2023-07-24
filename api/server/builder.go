@@ -144,11 +144,6 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 		CreatedBy:   b.srv.cid,
 	}
 
-	buildContext, err := convertZipToTarGz(params.BuildContext)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert build context: %w", err)
-	}
-
 	buildID, err := db.Q.BuildCreate(ctx, bcp)
 	if err != nil {
 		return "", fmt.Errorf("failed to create build record: %v", err)
@@ -157,13 +152,6 @@ func (b *BuilderService) Build(ctx context.Context, projectID string, params *ty
 	go func() {
 		c := context.Background()
 		c = log.With().Str(types.BuildIDCtxKey, buildID).Logger().WithContext(c)
-
-		// Upload context to S3
-		if e := builder.Upload(c, buildID, buildContext); e != nil {
-			log.Ctx(c).Error().Err(e).Msgf("Failed to upload build context for build %q", buildID)
-			handleBuildErr(c, buildID, e)
-			return
-		}
 
 		// Reponame must be lowercase for dockerhub
 		reponame := strings.ToLower(projectID)

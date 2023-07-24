@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave/builder/docker"
+	"github.com/unweave/unweave/builder/fslogs"
 	"github.com/unweave/unweave/tools/gonfig"
 	"github.com/unweave/unweave/vault"
 )
@@ -30,8 +32,10 @@ func (i *EnvInitializer) InitializeBuilder(ctx context.Context, userID string, b
 	if builderType != "docker" {
 		return nil, fmt.Errorf("%q builder not supported in the env initializer", builderType)
 	}
-	logger := &builder.FsLogger{}
-	return builder.NewBuilder(logger, cfg.RegistryURI), nil
+
+	logger := fslogs.NewLogger()
+
+	return docker.NewBuilder(logger, cfg.RegistryURI), nil
 }
 
 func (i *EnvInitializer) InitializeVault(ctx context.Context) (vault.Vault, error) {

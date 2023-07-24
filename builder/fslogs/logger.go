@@ -1,4 +1,4 @@
-package builder
+package fslogs
 
 import (
 	"context"
@@ -11,9 +11,21 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+const buildLogsDir = "/tmp/unweave/logs"
+
+// BuildLogsV1 versions the build logs format stored and fetched by FsLogger.
+type BuildLogsV1 struct {
+	Version int16            `json:"version"`
+	Logs    []types.LogEntry `json:"logs"`
+}
+
 // FsLogger is a FileSystem logger that implements the builder.LogDriver interface.
 // It stores the build logs in a directory on the filesystem.
 type FsLogger struct{}
+
+func NewLogger() *FsLogger {
+	return &FsLogger{}
+}
 
 func (l *FsLogger) GetLogs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
 	path := filepath.Join(buildLogsDir, buildID+".json")

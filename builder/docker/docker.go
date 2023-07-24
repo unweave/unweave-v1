@@ -1,4 +1,4 @@
-package builder
+package docker
 
 import (
 	"archive/zip"
@@ -15,11 +15,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/builder"
 )
 
 const (
-	buildCtxDir  = "/tmp/unweave/buildctx"
-	buildLogsDir = "/tmp/unweave/logs"
+	buildCtxDir = "/tmp/unweave/buildctx"
 )
 
 var (
@@ -223,9 +223,12 @@ func tagImage(ctx context.Context, source, target string) (string, error) {
 
 // DockerBuilder is a Docker builder that implements the builder.Builder interface.
 type DockerBuilder struct {
-	logger      LogDriver
+	logger      builder.LogDriver
 	registryURI string
 }
+
+// Check it satisfies the interface.
+var _ builder.Builder = (*DockerBuilder)(nil)
 
 func (b *DockerBuilder) GetBuilder() string {
 	return "docker"
@@ -233,10 +236,6 @@ func (b *DockerBuilder) GetBuilder() string {
 
 func (b *DockerBuilder) GetImageURI(ctx context.Context, buildID, namespace, reponame string) string {
 	return fmt.Sprintf("%s/%s/%s:%s", b.registryURI, namespace, reponame, buildID)
-}
-
-func (b *DockerBuilder) HealthCheck(ctx context.Context) error {
-	return nil
 }
 
 func (b *DockerBuilder) Logs(ctx context.Context, buildID string) ([]types.LogEntry, error) {
@@ -253,23 +252,21 @@ func (b *DockerBuilder) Build(ctx context.Context, buildID string, buildCtx io.R
 
 	log.Ctx(ctx).Info().Msg("Executing build request")
 
+	if buildCtx == nil {
+		err := fmt.Errorf("build context missing")
+
+		return &types.Error{
+			Code:       http.StatusBadRequest,
+			Message:    "Build context not found for build ID: " + buildID,
+			Suggestion: "Ensure you have uploaded the context.zip",
+			Err:        err,
+		}
+	}
+
 	dir := filepath.Join(buildCtxDir, buildID)
 	buildBytes, err := io.ReadAll(buildCtx)
 	if err != nil {
 		return fmt.Errorf("failed to read build context: %w", err)
-	}
-
-	if buildCtx == nil {
-		// Ensure build context has been pre-uploaded
-		if _, err := os.Stat(dir); err != nil {
-			err = fmt.Errorf("build context not found: %w", err)
-			return &types.Error{
-				Code:       http.StatusBadRequest,
-				Message:    "Build context not found for build ID: " + buildID,
-				Suggestion: "Make sure you have uploaded your build context before building",
-				Err:        err,
-			}
-		}
 	}
 
 	if err := saveContext(dir, buildBytes); err != nil {
@@ -374,6 +371,6 @@ func (b *DockerBuilder) Upload(ctx context.Context, buildID string, buildCtx io.
 	return nil
 }
 
-func NewBuilder(logger LogDriver, registryURI string) *DockerBuilder {
+func NewBuilder(logger builder.LogDriver, registryURI string) *DockerBuilder {
 	return &DockerBuilder{logger: logger, registryURI: registryURI}
 }
