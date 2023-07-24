@@ -43,7 +43,7 @@ func main() {
 	awss := awsService(execStore, volStore)
 
 	delegatingExecSrv := execsrv.NewDelegatingService(execStore, lls, awss)
-	execRouter := router.NewExecRouter(execStore, delegatingExecSrv)
+	execRouter := router.NewExecRouter(runtimeCfg, execStore, delegatingExecSrv)
 	sshKeysRouter := router.NewSSHKeysRouter(sshkeys.NewService())
 
 	server.API(cfg, runtimeCfg, execRouter, sshKeysRouter)

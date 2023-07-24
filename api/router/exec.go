@@ -3,23 +3,29 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"github.com/unweave/unweave/api/middleware"
 	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave/runtime"
 	"github.com/unweave/unweave/services/execsrv"
+	"github.com/unweave/unweave/tools"
 )
 
 type ExecRouter struct {
 	r       chi.Router
+	rti     runtime.Initializer
 	store   execsrv.Store
 	service execsrv.Service
 }
 
-func NewExecRouter(store execsrv.Store, service execsrv.Service) *ExecRouter {
+func NewExecRouter(rti runtime.Initializer, store execsrv.Store, service execsrv.Service) *ExecRouter {
 	return &ExecRouter{
+		rti:     rti,
 		store:   store,
 		service: service,
 	}
@@ -52,8 +58,47 @@ func (e *ExecRouter) ExecCreateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accountID := middleware.GetAccountIDFromContext(ctx)
 	userID := middleware.GetUserIDFromContext(ctx)
 	projectID := middleware.GetProjectIDFromContext(ctx)
+
+	if params.Source.Context != nil {
+		if params.Image != nil {
+			err := fmt.Errorf("cannot specify both image and source")
+			render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Invalid request"))
+
+			return
+		}
+
+		builder, err := e.rti.InitializeBuilder(ctx, accountID, "docker")
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), types.ErrHTTPError(err, "Failed to initialize container builder"))
+
+			return
+		}
+
+		var (
+			buildID   = uuid.NewString()
+			namespace = strings.ToLower(accountID)
+			repo      = strings.ToLower(projectID)
+		)
+
+		ctx := log.Ctx(ctx).
+			With().
+			Str("buildID", buildID).
+			Str("namespace", namespace).
+			Str("reponame", repo).
+			Logger().WithContext(ctx)
+
+		err = builder.BuildAndPush(ctx, buildID, namespace, repo, params.Source.Context)
+		if err != nil {
+			render.Render(w, r.WithContext(ctx), types.ErrHTTPBadRequest(err, "Failed to build and push container"))
+
+			return
+		}
+
+		params.Image = tools.Pointery(builder.GetImageURI(ctx, buildID, namespace, repo))
+	}
 
 	exec, err := e.service.Create(ctx, projectID, userID, *params)
 	if err != nil {

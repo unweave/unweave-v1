@@ -7,6 +7,11 @@ import (
 	"github.com/unweave/unweave/api/types"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
+//counterfeiter:generate -o builderfakes . LogDriver
+//counterfeiter:generate -o builderfakes . Builder
+
 // LogDriver defines the interface for storing and retrieving build logs.
 type LogDriver interface {
 	// GetLogs returns the logs for a build.
