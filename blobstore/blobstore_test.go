@@ -261,6 +261,8 @@ func TestBlobStore_UploadFromPath(t *testing.T) {
 			// Check if the expected number of files are uploaded. Make sure the files
 			// that already exist remotely are not uploaded again.
 			count := 0
+			mockUploader.mu.Lock()
+			defer mockUploader.mu.Unlock()
 			for k, v := range mockUploader.uploadedFiles {
 				if tt.overwrite {
 					if v == tt.localFiles[k] {

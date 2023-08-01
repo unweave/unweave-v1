@@ -17,10 +17,13 @@ func LoggedHTTPTransport(t http.RoundTripper) http.RoundTripper {
 
 //nolint:wrapcheck
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	log.Debug().
+	ctx := log.Ctx(req.Context()).With().
 		Str("method", req.Method).
 		Str("host", req.Host).
 		Str("path", req.URL.Path).
+		Logger().WithContext(req.Context())
+
+	log.Ctx(ctx).Debug().
 		Str("event", "http_request").
 		Send()
 
@@ -28,18 +31,16 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	resp, err := t.base.RoundTrip(req)
 	duration := time.Since(startTime)
 
-	entry := log.Debug().
-		Str("method", req.Method).
-		Str("host", req.Host).
-		Str("path", req.URL.Path).
+	event := log.Ctx(ctx).Debug().
 		Str("event", "http_response").
 		Dur("duration", duration).
 		Err(err)
+
 	if err == nil {
-		entry.Int("status", resp.StatusCode)
+		event = event.Int("status", resp.StatusCode)
 	}
 
-	entry.Send()
+	event.Send()
 
 	return resp, err
 }

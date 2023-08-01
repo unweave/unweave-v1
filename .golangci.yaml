@@ -99,3 +99,7 @@ linters-settings:
       use-field-name: true
       rules:
         json: goCamel
+
+  errcheck:
+    exclude-functions:
+      - github.com/go-chi/render.Render
