@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/unweave/unweave/builder"
-	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/vault"
+	"github.com/unweave/unweave-v1/builder"
+	"github.com/unweave/unweave-v1/runtime"
+	"github.com/unweave/unweave-v1/vault"
 )
 
 type Service struct {

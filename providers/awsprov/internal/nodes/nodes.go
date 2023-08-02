@@ -4,7 +4,7 @@ import (
 	"math"
 
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 type AwsNodeType struct {

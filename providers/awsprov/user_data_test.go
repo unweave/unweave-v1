@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/awsprov"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/providers/awsprov"
 )
 
 const expected = `#!/bin/bash

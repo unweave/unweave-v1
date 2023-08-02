@@ -3,8 +3,8 @@ package local
 import (
 	"context"
 
-	"github.com/unweave/unweave/wip/conductor/node"
-	"github.com/unweave/unweave/wip/conductor/volume"
+	"github.com/unweave/unweave-v1/wip/conductor/node"
+	"github.com/unweave/unweave-v1/wip/conductor/volume"
 )
 
 // Local provider runs locally on the machine. This should only be used for testing.

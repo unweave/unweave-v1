@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/db"
+	"github.com/unweave/unweave-v1/tools/random"
 )
 
 func handleBuildErr(ctx context.Context, buildID string, err error) {

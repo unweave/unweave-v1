@@ -1,7 +1,7 @@
 package lambdalabs
 
 import (
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 const apiURL = "https://cloud.lambdalabs.com/api/v1/"

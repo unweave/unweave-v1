@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave-v1/db"
 )
 
 type Store struct{}

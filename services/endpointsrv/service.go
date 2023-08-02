@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/services/evalsrv"
-	"github.com/unweave/unweave/services/execsrv"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/db"
+	"github.com/unweave/unweave-v1/services/evalsrv"
+	"github.com/unweave/unweave-v1/services/execsrv"
+	"github.com/unweave/unweave-v1/tools/random"
 	"go.jetpack.io/typeid"
 )
 

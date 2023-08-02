@@ -4,8 +4,8 @@ package runtime
 import (
 	"context"
 
-	"github.com/unweave/unweave/builder"
-	"github.com/unweave/unweave/vault"
+	"github.com/unweave/unweave-v1/builder"
+	"github.com/unweave/unweave-v1/vault"
 )
 
 type Initializer interface {

@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/lambdalabs/client"
-	"github.com/unweave/unweave/services/execsrv"
-	"github.com/unweave/unweave/tools"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/providers/lambdalabs/client"
+	"github.com/unweave/unweave-v1/services/execsrv"
+	"github.com/unweave/unweave-v1/tools"
+	"github.com/unweave/unweave-v1/tools/random"
 )
 
 func (d *Driver) ExecCreate(ctx context.Context, project, image string, spec types.HardwareSpec, network types.ExecNetwork, volumes []types.ExecVolume, pubKeys []string, region *string) (string, error) {

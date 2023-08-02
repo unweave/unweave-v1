@@ -6,8 +6,8 @@ import (
 	"io"
 	"sync"
 
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/builder"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/builder"
 )
 
 type FakeBuilder struct {

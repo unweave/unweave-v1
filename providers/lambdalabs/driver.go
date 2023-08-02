@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
-	"github.com/unweave/unweave/providers/lambdalabs/client"
+	"github.com/unweave/unweave-v1/providers/lambdalabs/client"
 )
 
 // Driver implements the execsrv.Driver and the providersrv.Driver interface for Lambda Labs.

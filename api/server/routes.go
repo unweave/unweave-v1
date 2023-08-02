@@ -9,10 +9,10 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	middleware2 "github.com/unweave/unweave/api/middleware"
-	"github.com/unweave/unweave/api/router"
-	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/runtime"
+	middleware2 "github.com/unweave/unweave-v1/api/middleware"
+	"github.com/unweave/unweave-v1/api/router"
+	"github.com/unweave/unweave-v1/db"
+	"github.com/unweave/unweave-v1/runtime"
 )
 
 type Config struct {

@@ -12,10 +12,10 @@ import (
 
 	"github.com/deepmap/oapi-codegen/pkg/securityprovider"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/lambdalabs/client"
-	"github.com/unweave/unweave/tools"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/providers/lambdalabs/client"
+	"github.com/unweave/unweave-v1/tools"
+	"github.com/unweave/unweave-v1/tools/random"
 )
 
 var gpuMemoryMap = map[string]int{

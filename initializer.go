@@ -7,11 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/unweave/unweave/builder"
-	"github.com/unweave/unweave/builder/docker"
-	"github.com/unweave/unweave/builder/fslogs"
-	"github.com/unweave/unweave/tools/gonfig"
-	"github.com/unweave/unweave/vault"
+	"github.com/unweave/unweave-v1/builder"
+	"github.com/unweave/unweave-v1/builder/docker"
+	"github.com/unweave/unweave-v1/builder/fslogs"
+	"github.com/unweave/unweave-v1/tools/gonfig"
+	"github.com/unweave/unweave-v1/vault"
 )
 
 // EnvInitializer is only used in development or if you're self-hosting Unweave.

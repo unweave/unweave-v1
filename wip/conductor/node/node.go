@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/unweave/unweave/wip/conductor/types"
+	"github.com/unweave/unweave-v1/wip/conductor/types"
 )
 
 type Node struct {

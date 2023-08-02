@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave-v1/db"
 )
 
 type FakeQuerier struct {

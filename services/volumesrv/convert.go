@@ -1,8 +1,8 @@
 package volumesrv
 
 import (
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/db"
 )
 
 func volumeFromDB(volume db.UnweaveVolume) types.Volume {

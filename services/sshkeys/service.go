@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/tools/random"
 	"golang.org/x/crypto/ssh"
 )
 

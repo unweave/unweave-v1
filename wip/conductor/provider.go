@@ -1,8 +1,8 @@
 package conductor
 
 import (
-	"github.com/unweave/unweave/wip/conductor/node"
-	"github.com/unweave/unweave/wip/conductor/volume"
+	"github.com/unweave/unweave-v1/wip/conductor/node"
+	"github.com/unweave/unweave-v1/wip/conductor/volume"
 )
 
 type Keys interface {

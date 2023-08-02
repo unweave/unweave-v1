@@ -14,10 +14,10 @@ import (
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/awsprov/internal/nodes"
-	"github.com/unweave/unweave/services/execsrv"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/providers/awsprov/internal/nodes"
+	"github.com/unweave/unweave-v1/services/execsrv"
+	"github.com/unweave/unweave-v1/tools/random"
 )
 
 type ExecDriver struct {

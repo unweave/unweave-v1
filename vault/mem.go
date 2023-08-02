@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/unweave/unweave/tools"
-	"github.com/unweave/unweave/tools/random"
+	"github.com/unweave/unweave-v1/tools"
+	"github.com/unweave/unweave-v1/tools/random"
 )
 
 // MemVault is an in-memory implementation of the Vault interface.

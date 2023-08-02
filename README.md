@@ -108,7 +108,7 @@ The self-hosted platform does not include any authentication or project handling
 - [Documentation](https://docs.unweave.io)
 - [Discord](https://discord.gg/ydyVHbFjPt)
 - [Twitter](https://twitter.com/intent/follow?screen_name=unweaveio)
-- [GitHub Issues](https://github.com/unweave/unweave/issues)
+- [GitHub Issues](https://github.com/unweave/unweave-v1/issues)
 
 ### Roadmap
 
