@@ -1,6 +1,6 @@
 package volume
 
-import "github.com/unweave/unweave/api/types"
+import "github.com/unweave/unweave-v1/api/types"
 
 // Store is an interface that must be implemented any volume store.
 type Store interface {

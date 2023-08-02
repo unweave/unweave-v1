@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/unweave/unweave/wip/conductor/node"
-	"github.com/unweave/unweave/wip/conductor/types"
-	"github.com/unweave/unweave/wip/conductor/volume"
+	"github.com/unweave/unweave-v1/wip/conductor/node"
+	"github.com/unweave/unweave-v1/wip/conductor/types"
+	"github.com/unweave/unweave-v1/wip/conductor/volume"
 )
 
 // Each user has their own orchestrator

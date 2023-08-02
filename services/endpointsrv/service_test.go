@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/db"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/db"
 )
 
 func TestStepStatusAndConclusion(t *testing.T) {

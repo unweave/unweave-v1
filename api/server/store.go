@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/unweave/unweave/wip/conductor/volume"
+	"github.com/unweave/unweave-v1/wip/conductor/volume"
 )
 
 var store struct {

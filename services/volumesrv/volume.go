@@ -3,7 +3,7 @@ package volumesrv
 import (
 	"context"
 
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 type Store interface {

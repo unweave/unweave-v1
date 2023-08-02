@@ -4,8 +4,8 @@ package awsprov
 import (
 	"context"
 
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/providers/awsprov/internal/nodes"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/providers/awsprov/internal/nodes"
 )
 
 type ProviderDriver struct {

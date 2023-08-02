@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/services/execsrv"
-	"github.com/unweave/unweave/services/execsrv/internal/execsrvfakes"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/services/execsrv"
+	"github.com/unweave/unweave-v1/services/execsrv/internal/execsrvfakes"
 )
 
 func TestPollingHeartbeatInformerManager(t *testing.T) {

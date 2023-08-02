@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/unweave/unweave/wip/conductor"
-	"github.com/unweave/unweave/wip/providers/local"
+	"github.com/unweave/unweave-v1/wip/conductor"
+	"github.com/unweave/unweave-v1/wip/providers/local"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate

@@ -4,7 +4,7 @@ package lambdalabs
 import (
 	"context"
 
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 func (d *Driver) VolumeCreate(ctx context.Context, projectID, name string, size int) (string, error) {

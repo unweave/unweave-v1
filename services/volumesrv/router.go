@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 // DelegatingService is a service that routes requests to the correct provider. In most cases

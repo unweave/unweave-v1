@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/unweave/unweave/api/middleware"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/services/endpointsrv"
+	"github.com/unweave/unweave-v1/api/middleware"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/services/endpointsrv"
 )
 
 func NewEndpointRouter(endpoints endpointsrv.Service) *EndpointRouter {

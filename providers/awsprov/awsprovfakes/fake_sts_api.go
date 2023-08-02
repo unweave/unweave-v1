@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/unweave/unweave/providers/awsprov"
+	"github.com/unweave/unweave-v1/providers/awsprov"
 )
 
 type FakeStsAPI struct {

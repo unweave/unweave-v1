@@ -9,11 +9,11 @@ import (
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/middleware"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/runtime"
-	"github.com/unweave/unweave/services/execsrv"
-	"github.com/unweave/unweave/tools"
+	"github.com/unweave/unweave-v1/api/middleware"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/runtime"
+	"github.com/unweave/unweave-v1/services/execsrv"
+	"github.com/unweave/unweave-v1/tools"
 )
 
 type ExecRouter struct {

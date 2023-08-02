@@ -8,9 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/middleware"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/services/providersrv"
+	"github.com/unweave/unweave-v1/api/middleware"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/services/providersrv"
 )
 
 type ProviderRouter struct {

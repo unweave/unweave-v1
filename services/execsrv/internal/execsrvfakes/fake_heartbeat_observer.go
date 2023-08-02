@@ -4,7 +4,7 @@ package execsrvfakes
 import (
 	"sync"
 
-	"github.com/unweave/unweave/services/execsrv"
+	"github.com/unweave/unweave-v1/services/execsrv"
 )
 
 type FakeHeartbeatObserver struct {

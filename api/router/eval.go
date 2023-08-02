@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-	"github.com/unweave/unweave/api/middleware"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/services/evalsrv"
+	"github.com/unweave/unweave-v1/api/middleware"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/services/evalsrv"
 )
 
 type EvalRouter struct {

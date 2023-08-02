@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
+	"github.com/unweave/unweave-v1/api/types"
 )
 
 func (d *Driver) ProviderListNodeTypes(ctx context.Context, accountID string, filterAvailable bool) ([]types.NodeType, error) {

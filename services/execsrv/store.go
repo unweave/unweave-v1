@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/unweave/unweave/api/types"
-	"github.com/unweave/unweave/db"
-	"github.com/unweave/unweave/tools"
+	"github.com/unweave/unweave-v1/api/types"
+	"github.com/unweave/unweave-v1/db"
+	"github.com/unweave/unweave-v1/tools"
 )
 
-//counterfeiter:generate -o internal/execsrvfakes github.com/unweave/unweave/db.Querier
+//counterfeiter:generate -o internal/execsrvfakes github.com/unweave/unweave-v1/db.Querier
 
 type postgresStore struct {
 	db db.Querier
